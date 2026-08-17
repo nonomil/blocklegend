@@ -1,0 +1,13 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel chicken, clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard.
+
+Subject: small white box chicken. Body 6x6x8. Head 4x6x3 with yellow 4x2x2 beak, red wattle under the beak, tiny red comb on top, two black square eyes. Thin side wings 1x4x6. Two yellow stick legs with flat three-toe feet.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR, flat Lambert.
+Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic.
+Text (verbatim): none.
+Constraints: one chicken only, original palette.
+Output: 1024x1024 PNG four-view sheet.

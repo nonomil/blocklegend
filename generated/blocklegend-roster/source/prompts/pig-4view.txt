@@ -1,0 +1,15 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel pig, same identity as a chunky farm pig, clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no environment.
+
+Subject: axis-aligned box pig. Body 10 wide x 8 tall x 16 long pink box. Cube head 8x8x8 on the front. Protruding darker-pink snout 4x3x1 with two dark nostrils. Two black square pixel eyes. Small pink ear flaps. Four short 4x6x4 legs. Tiny curly tail nub on the rear. Nearest-neighbor pink pixel hide, slightly darker hooves.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR, 16-bit pixels, flat Lambert.
+
+Composition/framing: 2x2 grid, equal cells, same scale, same baseline. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic, no perspective.
+
+Text (verbatim): none.
+Constraints: one pig only, original palette not an official skin dump.
+Output: 1024x1024 PNG four-view sheet.

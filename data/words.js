@@ -8,7 +8,7 @@
     const SKIP_COMBO = 3;
     const BOSS_ASK_HP = 170;
     const QUIZ_MS = 12000;
-    const PACK_BASE = '../../assets/vocab/core-english-2026.08.15';
+    const PACK_BASE = './vocab/core-english-2026.08.15';
     const CAT_ORDER = ['颜色', '家人', '身体', '自然', '食物', '动物', '动作', '表达', '物品', '描述', '高频词', '生活', '学校'];
     const FALLBACK_BANK = [
         { id: 'tree', text: 'tree', zh: '树', theme: '自然' },

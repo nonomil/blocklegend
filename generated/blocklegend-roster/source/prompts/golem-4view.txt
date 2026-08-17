@@ -1,0 +1,25 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel iron statue, same identity as a weathered village guardian, shown as a clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow blob, no environment.
+
+Subject: hulking axis-aligned box character. Wide 18-wide iron chest, shorter waist, long hanging arms that reach the ankles (thin 4-wide x 30-tall pillars, not thick clubs), stocky 16-tall legs, small 8x10 head sitting forward on the chest. Villager-like rectangular nose. Recessed glowing red slit eyes under a heavy brow. Pixel moss/vines wrap the chest and one shoulder. One small pink four-petal flower on the vine. Subtle rivets on the outer arms. Weathered iron pixel texture, nearest-neighbor, not smooth metal.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no rounded corners, no PBR, no photoreal skin, 16-bit pixel faces, flat Lambert lighting.
+
+Composition/framing: 2x2 grid, equal cell size, same scale, same baseline, full body in every cell.
+Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
+Orthographic camera, no perspective, no 3/4 cheat. Arms hang straight. T-pose not needed; idle standing.
+
+Lighting/mood: soft top-left studio light, readable planes, no HDRI.
+
+Color palette: iron #c4ccd2, dark iron #6a7278, vine #3d7a32, flower #e07090, eye #c62828.
+
+Text (verbatim): none. No labels, no letters, no watermarks.
+
+Transparency: solid studio background, not checkerboard.
+
+Constraints: one character only, no extra statues, no official copyrighted skin dump, original palette, keep silhouette recognizable as a box iron guardian.
+
+Output: 1024x1024 PNG four-view sheet.

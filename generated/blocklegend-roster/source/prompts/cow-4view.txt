@@ -1,0 +1,13 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel cow, clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard.
+
+Subject: axis-aligned box cow. Long brown body 12x10x18 with irregular cream patches. Head 8x8x6 with peach muzzle, two dark nostrils, two black square eyes, tiny cream horns, brown ears. Pink udder under the belly. Four 4x12x4 brown legs with black hooves. Nearest-neighbor hide.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR, flat Lambert.
+Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic.
+Text (verbatim): none.
+Constraints: one cow only, original palette.
+Output: 1024x1024 PNG four-view sheet.

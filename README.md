@@ -22,7 +22,7 @@
 npm start
 ```
 
-打开 http://127.0.0.1:4173/games/blocklegend/ 。根路径会跳进游戏。
+打开 http://127.0.0.1:4173/ 。仓库根目录就是游戏本身。
 
 操作：WASD 移动，鼠标看，左键挖/打，V 说单词，T 拼写，1–4 换工具。
 
@@ -46,13 +46,14 @@ APK 在 `android/app/build/outputs/apk/debug/app-debug.apk`。
 
 ## 目录
 
-游戏本体与工作台 `prj/games/blocklegend` **同一套文件**（含文档、审查页、工具脚本）。为了在本仓库里也能打开，额外带上它原来要跨目录加载的依赖：
+仓库根目录就是工作台 `prj/games/blocklegend`（`index.html`、`game.js`、`assets/atlas`、`assets/sky`、`assets/ui` 都在这一层）。另外带上它原来要跨目录加载的依赖：
 
 | 路径 | 对应工作台 |
 | --- | --- |
-| `games/blocklegend/` | `prj/games/blocklegend/` |
-| `games/shared/` | `prj/games/shared/` |
-| `assets/vocab/core-english-2026.08.15/` | `prj/assets/vocab/core-english-2026.08.15/` |
+| `./`（游戏文件） | `prj/games/blocklegend/` |
+| `shared/` | `prj/games/shared/` |
+| `vocab/core-english-2026.08.15/` | `prj/assets/vocab/core-english-2026.08.15/` |
+| `generated/blocklegend-roster/` | `prj/assets/generated/blocklegend-roster/` |
 | `preschool-english-vocab.js` | `prj/preschool-english-vocab.js` |
 | `child-courses.js` | `prj/child-courses.js` |
 

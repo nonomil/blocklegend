@@ -1,0 +1,13 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel wolf, clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard.
+
+Subject: lean gray box wolf. Body 6x6x9 plus a slightly larger mane box. Head 6x6x4 with a 3x3x4 snout, black nose pixel, two amber square eyes, two pointed ear boxes. Four thin 2x8x2 legs. Long 2x8 tail box out the back. Cool gray #b4b8c0 hide, darker back stripe.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR, flat Lambert.
+Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic.
+Text (verbatim): none.
+Constraints: one wolf only, original palette.
+Output: 1024x1024 PNG four-view sheet.

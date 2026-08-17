@@ -1,6 +1,6 @@
 /**
- * Assemble Capacitor webDir so original relative paths still work:
- * games/blocklegend/index.html → ../shared, ../../assets/vocab, ../../preschool-english-vocab.js
+ * Assemble Capacitor webDir from the flattened game tree.
+ * Skip docs/tools so the APK does not ship the 63MB reference video.
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -9,17 +9,25 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const www = path.join(root, 'www');
 
+const FILES = [
+  'index.html',
+  'game.js',
+  'game.css',
+  'engine.js',
+  'mobs.js',
+  'preschool-english-vocab.js',
+  'child-courses.js'
+];
+const DIRS = ['assets', 'data', 'vendor', 'shared', 'vocab'];
+
 await fs.rm(www, { recursive: true, force: true });
 await fs.mkdir(www, { recursive: true });
 
-async function copy(rel) {
+for (const rel of DIRS) {
   await fs.cp(path.join(root, rel), path.join(www, rel), { recursive: true });
 }
+for (const rel of FILES) {
+  await fs.copyFile(path.join(root, rel), path.join(www, rel));
+}
 
-await copy('games');
-await copy('assets');
-await fs.copyFile(path.join(root, 'preschool-english-vocab.js'), path.join(www, 'preschool-english-vocab.js'));
-await fs.copyFile(path.join(root, 'child-courses.js'), path.join(www, 'child-courses.js'));
-await fs.copyFile(path.join(root, 'index.html'), path.join(www, 'index.html'));
-
-console.log('[prepare-mobile] assembled www/ with workbench-relative paths');
+console.log('[prepare-mobile] assembled www/ from flattened game tree');

@@ -20,16 +20,19 @@ jobs:
 
       - name: Check workbench-aligned tree
         run: |
-          test -s games/blocklegend/index.html
-          test -s games/blocklegend/game.js
-          test -s games/blocklegend/data/words.js
-          test -s games/shared/workbench-bridge.js
-          test -s games/shared/game-sfx.js
+          test -s index.html
+          test -s game.js
+          test -s data/words.js
+          test -s assets/atlas/dirt.png
+          test -s assets/sky/plains.png
+          test -s assets/ui/sword.png
+          test -s shared/workbench-bridge.js
+          test -s shared/game-sfx.js
           test -s preschool-english-vocab.js
           test -s child-courses.js
-          test -s assets/vocab/core-english-2026.08.15/catalog.json
-          grep -q "../../assets/vocab/core-english-2026.08.15" games/blocklegend/data/words.js
-          grep -q "../shared/workbench-bridge.js" games/blocklegend/index.html
+          test -s vocab/core-english-2026.08.15/catalog.json
+          grep -q "./vocab/core-english-2026.08.15" data/words.js
+          grep -q "./shared/workbench-bridge.js" index.html
 
       - name: Assemble Capacitor webDir
         run: npm run android:prepare

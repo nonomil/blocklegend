@@ -1,0 +1,48 @@
+{
+  "asset_id": "blocklegend-roster-four-view",
+  "type": "character",
+  "tool": "gpt-image-2",
+  "pipeline": "gpt-game-asset-pipeline via Cliprox images/generations + fourview-to-atlas projection",
+  "outputs": [
+    "four-view/golem-4view.png",
+    "four-view/pig-4view.png",
+    "four-view/cow-4view.png",
+    "four-view/sheep-4view.png",
+    "four-view/chicken-4view.png",
+    "four-view/wolf-4view.png",
+    "four-view/villager-4view.png"
+  ],
+  "derived_outputs": [
+    "prj/games/blocklegend/assets/atlas4v/golem-atlas.png",
+    "prj/games/blocklegend/assets/atlas4v/golem-atlas.js",
+    "prj/games/blocklegend/assets/atlas4v/villager-atlas.png",
+    "prj/games/blocklegend/assets/atlas4v/villager-atlas.js"
+  ],
+  "projection_tool": "prj/games/blocklegend/tools/fourview-to-atlas.py",
+  "runtime_builder": "prj/games/blocklegend/assets/img2threejs/fourViewModel.js",
+  "source_references": [
+    "raw/golem.png",
+    "raw/animals.png",
+    "raw/village.png",
+    "source/prompts/*-4view.txt"
+  ],
+  "acceptance": {
+    "alpha_checked": false,
+    "dimensions_checked": true,
+    "four_view_compare": {
+      "page": "prj/games/blocklegend/compare-four-view.html",
+      "passed": ["golem", "villager"],
+      "evidence": [
+        "review/golem-4view-compare.png",
+        "review/villager-4view-compare.png"
+      ]
+    },
+    "notes": "Studio gray background, not transparent. 2x2 orthographic sheets projected onto cuboids; golem + villager passed the four-view side-by-side gate on 2026-08-17."
+  },
+  "limitations": [
+    "GPT sheets are design input, not exact 3D geometry.",
+    "Original BlockLegend palette; not official skin files.",
+    "Top/bottom faces are flat fills; occluded side faces fall back to mirror/front crops.",
+    "Pig/cow/sheep/chicken/wolf not yet migrated to the atlas pipeline."
+  ]
+}

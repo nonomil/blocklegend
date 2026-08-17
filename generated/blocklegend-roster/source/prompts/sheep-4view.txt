@@ -1,0 +1,13 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel sheep, clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard.
+
+Subject: puffy cream wool body 12x10x16 with a subtle white/gray pixel checker. Small dark-brown 6x6x8 head sticking out the front, two black square eyes, tiny brown ears. Four thin dark-brown 4x12x4 legs. No extra fluff clusters, still axis-aligned boxes.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR, flat Lambert.
+Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic.
+Text (verbatim): none.
+Constraints: one sheep only, original palette.
+Output: 1024x1024 PNG four-view sheet.

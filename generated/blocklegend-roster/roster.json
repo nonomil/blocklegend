@@ -1,0 +1,228 @@
+{
+  "note": "Internal kind ids stay stable for combat/levels/tests. Display en/zh are what kids see. Natural English and friendly Chinese names.",
+  "pipeline": [
+    "1. 调研搜索与下载参考图",
+    "2. 编写四视图提示词 (Character Bible)",
+    "3. GPT生成 2x2 四视图 (gpt-image-2 / imagegen)",
+    "4. 公开盒模型尺寸定义 (specs.json)",
+    "5. fourview-to-atlas 机械裁切与投射贴图 + fourViewModel.js 建模",
+    "6. compare-four-view 四向正交对比验收与调优"
+  ],
+  "characters": [
+    {
+      "id": "creeper",
+      "en": "creeper",
+      "zh": "绿爆怪",
+      "group": "hostile",
+      "rename": false,
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "zombie",
+      "en": "zombie",
+      "zh": "僵尸",
+      "group": "hostile",
+      "rename": false,
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "skeleton",
+      "en": "skeleton",
+      "zh": "骷髅",
+      "group": "hostile",
+      "rename": false,
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "spider",
+      "en": "spider",
+      "zh": "蜘蛛",
+      "group": "hostile",
+      "rename": false,
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "enderman",
+      "en": "shadow",
+      "zh": "高影",
+      "group": "hostile",
+      "rename": true,
+      "old_en": "enderman",
+      "old_zh": "末影人",
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "piglin",
+      "en": "hog",
+      "zh": "金牙",
+      "group": "hostile",
+      "rename": true,
+      "old_en": "piglin",
+      "old_zh": "猪灵",
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "witch",
+      "en": "witch",
+      "zh": "女巫",
+      "group": "hostile",
+      "rename": false,
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "golem",
+      "en": "golem",
+      "zh": "铁卫",
+      "group": "hostile",
+      "rename": false,
+      "status": "verified_atlas"
+    },
+    {
+      "id": "blaze",
+      "en": "flame",
+      "zh": "焰灵",
+      "group": "hostile",
+      "rename": true,
+      "old_en": "blaze",
+      "old_zh": "烈焰人",
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "ghast",
+      "en": "ghost",
+      "zh": "哭魂",
+      "group": "hostile",
+      "rename": true,
+      "old_en": "ghast",
+      "old_zh": "恶魂",
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "warden",
+      "en": "guard",
+      "zh": "听卫",
+      "group": "hostile",
+      "rename": true,
+      "old_en": "warden",
+      "old_zh": "循声守卫",
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "slime",
+      "en": "slime",
+      "zh": "软泥怪",
+      "group": "hostile",
+      "rename": true,
+      "old_zh": "漏字史莱姆",
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "cube",
+      "en": "cube",
+      "zh": "方块兽",
+      "group": "hostile",
+      "rename": false,
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "magma",
+      "en": "lava",
+      "zh": "熔岩块",
+      "group": "hostile",
+      "rename": true,
+      "old_en": "magma",
+      "old_zh": "岩浆怪",
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "fox",
+      "en": "fox",
+      "zh": "狐狸",
+      "group": "hostile",
+      "rename": false,
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "pig",
+      "en": "pig",
+      "zh": "猪",
+      "group": "animal",
+      "rename": false,
+      "status": "4view_generated_pending_atlas"
+    },
+    {
+      "id": "cow",
+      "en": "cow",
+      "zh": "牛",
+      "group": "animal",
+      "rename": false,
+      "status": "4view_generated_pending_atlas"
+    },
+    {
+      "id": "sheep",
+      "en": "sheep",
+      "zh": "羊",
+      "group": "animal",
+      "rename": false,
+      "status": "4view_generated_pending_atlas"
+    },
+    {
+      "id": "chicken",
+      "en": "chicken",
+      "zh": "鸡",
+      "group": "animal",
+      "rename": false,
+      "status": "4view_generated_pending_atlas"
+    },
+    {
+      "id": "wolf",
+      "en": "wolf",
+      "zh": "狼",
+      "group": "animal",
+      "rename": false,
+      "status": "4view_generated_pending_atlas"
+    },
+    {
+      "id": "villager",
+      "en": "villager",
+      "zh": "镇民",
+      "group": "animal",
+      "rename": true,
+      "old_zh": "村民",
+      "status": "verified_atlas"
+    },
+    {
+      "id": "trader",
+      "en": "trader",
+      "zh": "货郎",
+      "group": "animal",
+      "rename": true,
+      "old_zh": "流浪商人",
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "wither",
+      "en": "wither",
+      "zh": "字母石像",
+      "group": "boss",
+      "rename": false,
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "dragon",
+      "en": "dragon",
+      "zh": "墨翼",
+      "group": "boss",
+      "rename": false,
+      "status": "ready_for_4view"
+    },
+    {
+      "id": "storm",
+      "en": "storm",
+      "zh": "雷语",
+      "group": "boss",
+      "rename": false,
+      "status": "ready_for_4view"
+    }
+  ]
+}

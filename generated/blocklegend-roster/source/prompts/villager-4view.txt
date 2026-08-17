@@ -1,0 +1,13 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel villager, clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard.
+
+Subject: bald tan cubic head 8x10x8, thick brown unibrow, two small green square eyes, long rectangular brown nose. Floor-length brown robe, arms folded into one crossed sleeve bar across the chest. Two brown 4x12 legs, dark shoes. Same identity in every view.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR, flat Lambert.
+Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic.
+Text (verbatim): none.
+Constraints: one villager only, original palette, no official skin dump.
+Output: 1024x1024 PNG four-view sheet.
