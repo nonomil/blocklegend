@@ -148,7 +148,7 @@
       "zh": "猪",
       "group": "animal",
       "rename": false,
-      "status": "4view_generated_pending_atlas"
+      "status": "verified_atlas"
     },
     {
       "id": "cow",
@@ -156,7 +156,7 @@
       "zh": "牛",
       "group": "animal",
       "rename": false,
-      "status": "4view_generated_pending_atlas"
+      "status": "verified_atlas"
     },
     {
       "id": "sheep",
@@ -164,7 +164,7 @@
       "zh": "羊",
       "group": "animal",
       "rename": false,
-      "status": "4view_generated_pending_atlas"
+      "status": "verified_atlas"
     },
     {
       "id": "chicken",
@@ -172,7 +172,7 @@
       "zh": "鸡",
       "group": "animal",
       "rename": false,
-      "status": "4view_generated_pending_atlas"
+      "status": "verified_atlas"
     },
     {
       "id": "wolf",
@@ -180,7 +180,7 @@
       "zh": "狼",
       "group": "animal",
       "rename": false,
-      "status": "4view_generated_pending_atlas"
+      "status": "verified_atlas"
     },
     {
       "id": "villager",

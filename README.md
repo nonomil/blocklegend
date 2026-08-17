@@ -2,7 +2,7 @@
 
 在 3D 方块世界里学英语：碰到怪物先做题，说对单词才能暴击、破罩。
 
-当前版本：**0.8.0**（2026-08-18）  
+当前版本：**0.8.1**（2026-08-18）  
 仓库：https://github.com/nonomil/blocklegend
 
 ## 这版有什么
@@ -24,7 +24,7 @@ npm start
 
 打开 http://127.0.0.1:4173/ 。仓库根目录就是游戏本身。
 
-操作：WASD 移动，鼠标看，左键挖/打，V 说单词，T 拼写，1–4 换工具。
+操作：WASD 移动，鼠标看，左键挖/打，V 说单词，T 拼写，1–4 换工具。平板自动出现左边方向键和右边「放 / 打 / 跳」。
 
 ## 在线编译 APK
 
@@ -32,7 +32,8 @@ npm start
 
 - 工作流：[.github/workflows/android-apk.yml](.github/workflows/android-apk.yml)
 - 产物：Actions artifact `blocklegend-apk-<branch>`
-- 打 `v*` 标签时，Debug APK 会附到 Release
+- 打 `v*` 标签时，APK 会附到 Release
+- 仓库 Secrets 配齐 `ANDROID_KEYSTORE_BASE64` / `ANDROID_KEYSTORE_PASSWORD` / `ANDROID_KEY_ALIAS` / `ANDROID_KEY_PASSWORD` 后打签名包；没配则打 Debug 包
 
 本地（需要 Node 22、Java 21、Android SDK）：
 

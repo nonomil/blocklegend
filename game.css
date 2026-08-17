@@ -1366,6 +1366,91 @@ button.bl-quiz-en,
 .bl-craft-btn:hover { background: #6b4a28; }
 .bl-craft-btn.is-off { opacity: .45; cursor: not-allowed; }
 
+/* 我的世界平板：左方向键 + 右三键，半透明 */
+.bl-touch {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+}
+.bl-touch[hidden] { display: none; }
+.bl-dpad,
+.bl-touch-act { pointer-events: auto; }
+.bl-dpad {
+    position: absolute;
+    left: max(16px, env(safe-area-inset-left));
+    bottom: max(22px, env(safe-area-inset-bottom));
+    width: 168px;
+    height: 168px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 4px;
+}
+.bl-dpad-btn {
+    margin: 0;
+    padding: 0;
+    border: 2px solid rgba(255, 255, 255, .32);
+    background: rgba(8, 10, 14, .34);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .28);
+    border-radius: 10px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    appearance: none;
+}
+.bl-dpad-btn.is-up { grid-area: 1 / 2; }
+.bl-dpad-btn.is-left { grid-area: 2 / 1; }
+.bl-dpad-btn.is-right { grid-area: 2 / 3; }
+.bl-dpad-btn.is-down { grid-area: 3 / 2; }
+.bl-dpad-btn::after {
+    content: "";
+    display: block;
+    width: 0;
+    height: 0;
+    margin: 0 auto;
+    border: 10px solid transparent;
+}
+.bl-dpad-btn.is-up::after { border-bottom-color: rgba(255, 255, 255, .78); border-top-width: 0; }
+.bl-dpad-btn.is-down::after { border-top-color: rgba(255, 255, 255, .78); border-bottom-width: 0; }
+.bl-dpad-btn.is-left::after { border-right-color: rgba(255, 255, 255, .78); border-left-width: 0; margin-left: 14px; }
+.bl-dpad-btn.is-right::after { border-left-color: rgba(255, 255, 255, .78); border-right-width: 0; margin-right: 14px; }
+.bl-dpad-btn.is-held,
+.bl-touch-btn.is-held {
+    background: rgba(255, 255, 255, .30);
+    border-color: rgba(255, 255, 255, .62);
+}
+.bl-touch-act {
+    position: absolute;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(22px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+.bl-touch-btn {
+    width: 68px;
+    height: 68px;
+    margin: 0;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, .34);
+    background: rgba(8, 10, 14, .34);
+    color: rgba(255, 255, 255, .88);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .55);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    appearance: none;
+}
+.bl-touch-btn.is-jump {
+    width: 78px;
+    height: 78px;
+    font-size: 22px;
+}
+
 @media (max-width: 520px) {
     .bl-rpg { width: 46vw; }
     .bl-mc-hud { transform: translateX(-50%) scale(.78); transform-origin: bottom center; }
@@ -1375,4 +1460,7 @@ button.bl-quiz-en,
     .bl-learn { width: 42vw; bottom: 78px; }
     .bl-hint { max-width: 40vw; }
     .bl-cast-hud { bottom: 96px; }
+    .bl-dpad { width: 136px; height: 136px; }
+    .bl-touch-btn { width: 58px; height: 58px; font-size: 17px; }
+    .bl-touch-btn.is-jump { width: 66px; height: 66px; }
 }

@@ -1948,6 +1948,7 @@
 
         /* ---------- 输入 ---------- */
         const input = { fwd: false, back: false, left: false, right: false, jump: false };
+        const held = { fwd: false, back: false, left: false, right: false, jump: false };
         let moveLocked = false;
         function refreshKeys() {
             if (moveLocked) {
@@ -1958,11 +1959,16 @@
                 input.jump = false;
                 return;
             }
-            input.fwd = !!(keys['w'] || keys['arrowup']);
-            input.back = !!(keys['s'] || keys['arrowdown']);
-            input.left = !!(keys['a'] || keys['arrowleft']);
-            input.right = !!(keys['d'] || keys['arrowright']);
-            input.jump = !!keys[' '];
+            input.fwd = !!(keys['w'] || keys['arrowup'] || held.fwd);
+            input.back = !!(keys['s'] || keys['arrowdown'] || held.back);
+            input.left = !!(keys['a'] || keys['arrowleft'] || held.left);
+            input.right = !!(keys['d'] || keys['arrowright'] || held.right);
+            input.jump = !!(keys[' '] || held.jump);
+        }
+        function setHeld(part, on) {
+            if (!Object.prototype.hasOwnProperty.call(held, part)) return;
+            held[part] = !!on;
+            refreshKeys();
         }
 
         let pointerLocked = false;
@@ -2153,7 +2159,8 @@
             fps: function () { return fps; },
             setUiMode: setUiMode,
             resumeLook: resumeLook,
-            setCastMode: setCastMode
+            setCastMode: setCastMode,
+            setHeld: setHeld
         };
         return api;
     }

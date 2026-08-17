@@ -11,6 +11,29 @@ if (fs.existsSync(gradle)) {
   let text = fs.readFileSync(gradle, 'utf8');
   text = text.replace(/versionCode\s+\d+/, 'versionCode ' + code);
   text = text.replace(/versionName\s+"[^"]+"/, 'versionName "' + version + '"');
+  if (!text.includes('signingConfigs')) {
+    text = text.replace(
+      '    buildTypes {',
+      [
+        '    signingConfigs {',
+        '        release {',
+        '            def ks = System.getenv("ANDROID_KEYSTORE_FILE")',
+        '            if (ks != null && !ks.isEmpty()) {',
+        '                storeFile file(ks)',
+        '                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")',
+        '                keyAlias System.getenv("ANDROID_KEY_ALIAS")',
+        '                keyPassword System.getenv("ANDROID_KEY_PASSWORD")',
+        '            }',
+        '        }',
+        '    }',
+        '    buildTypes {'
+      ].join('\n')
+    );
+    text = text.replace(
+      '        release {\n            minifyEnabled false',
+      '        release {\n            minifyEnabled false\n            signingConfig signingConfigs.release'
+    );
+  }
   fs.writeFileSync(gradle, text);
 }
 

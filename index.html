@@ -2,9 +2,9 @@
 <html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>方块传奇 · 学英语大冒险</title>
-    <link rel="stylesheet" href="./game.css?v=20260818-bl-hot1">
+    <link rel="stylesheet" href="./game.css?v=20260818-bl-touch1">
 </head>
 <body class="bl-body">
     <main class="bl-stage">
@@ -97,6 +97,19 @@
                 <div class="bl-slot" data-key="7" data-place="oak-log"><img class="bl-hot-art is-tile" src="./assets/atlas/oak_side.png" alt=""><em>7</em></div>
                 <div class="bl-slot" data-key="8" data-place="plank"><img class="bl-hot-art is-tile" src="./assets/atlas/oak_top.png" alt=""><em>8</em></div>
                 <div class="bl-slot" data-key="9" data-place="table"><img class="bl-hot-art is-tile" src="./assets/atlas/oak_top.png" alt=""><em>9</em></div>
+            </div>
+        </div>
+        <div class="bl-touch" id="touch-pad" hidden>
+            <div class="bl-dpad" id="touch-dpad" aria-label="方向">
+                <button type="button" class="bl-dpad-btn is-up" data-dir="fwd" aria-label="前"></button>
+                <button type="button" class="bl-dpad-btn is-left" data-dir="left" aria-label="左"></button>
+                <button type="button" class="bl-dpad-btn is-right" data-dir="right" aria-label="右"></button>
+                <button type="button" class="bl-dpad-btn is-down" data-dir="back" aria-label="后"></button>
+            </div>
+            <div class="bl-touch-act" aria-label="动作">
+                <button type="button" class="bl-touch-btn" id="touch-place" data-act="place" aria-label="放置">放</button>
+                <button type="button" class="bl-touch-btn" id="touch-attack" data-act="attack" aria-label="攻击">打</button>
+                <button type="button" class="bl-touch-btn is-jump" id="touch-jump" data-act="jump" aria-label="跳跃">跳</button>
             </div>
         </div>
         <div class="bl-break is-hidden" id="break-bar"><i id="break-fill"></i></div>
@@ -281,7 +294,7 @@
     <script src="./data/craft.js?v=20260817-bl-hold2"></script>
     <script src="./data/atlas-paint.js?v=20260817-bl-art3"></script>
     <script src="./data/fx.js?v=20260817-bl-art6"></script>
-    <script src="./engine.js?v=20260817-bl-sfx2"></script>
+    <script src="./engine.js?v=20260818-bl-touch1"></script>
     <script src="./data/combat.js?v=20260817-bl-aggro1"></script>
     <script src="./data/speech-input.js?v=20260817-bl-stt1"></script>
     <script src="./data/companion.js?v=20260817-bl-quiz1"></script>
@@ -317,6 +330,6 @@
     <script src="./assets/img2threejs/createTools3d.js?v=20260817-bl-tools3d"></script>
     <script src="./assets/img2threejs/createProps3d.js?v=20260817-bl-i2t4v2"></script>
     <script src="./mobs.js?v=20260818-bl-hot1"></script>
-    <script src="./game.js?v=20260818-bl-learn1"></script>
+    <script src="./game.js?v=20260818-bl-touch1"></script>
 </body>
 </html>

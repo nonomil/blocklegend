@@ -149,6 +149,7 @@
         session.buddyConfig = readBuddyConfig();
         bindChrome();
         bindCombatInput(canvas);
+        bindTouchPad();
         spawnMerchant();
         engine.onTick(tick);
         maybeShowBuddyGate();
@@ -799,29 +800,144 @@
         return '合成了 ' + name + '。点背包再点下面物品栏，就能装到 1–9。';
     }
 
+    function uiBlocksWorld() {
+        return !!(document.querySelector('.bl-layer:not(.is-hidden), .bl-quiz-layer:not(.is-hidden)'));
+    }
+
+    function beginMine() {
+        hideLookTip();
+        if (session.paused || uiBlocksWorld()) return;
+        session.mining = true;
+        if (meleeTarget()) tryMelee();
+    }
+
+    function endMine() {
+        stopMining();
+    }
+
+    function usePlace() {
+        hideLookTip();
+        if (session.paused || uiBlocksWorld()) return;
+        if (tryInteract()) return;
+        const hit = lookHit();
+        if (hit && hit.hit && hit.kind === 'table') {
+            toggleCraft(true, true);
+            return;
+        }
+        if (session.tool === 'place') tryPlace();
+    }
+
+    function wantTouchPad() {
+        if (/[?&]pad=0(?:&|$)/.test(location.search || '')) return false;
+        if (/[?&]pad=1(?:&|$)/.test(location.search || '')) return true;
+        if (window.Capacitor) return true;
+        if (window.matchMedia && (window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(hover: none)').matches)) return true;
+        return false;
+    }
+
+    function bindTouchPad() {
+        const root = document.getElementById('touch-pad');
+        const dpad = document.getElementById('touch-dpad');
+        if (!root || !engine || !engine.setHeld) return;
+        if (!wantTouchPad()) return;
+        root.hidden = false;
+        document.body.classList.add('is-touch');
+        const dirs = ['fwd', 'back', 'left', 'right'];
+        let padId = null;
+
+        function paintDirs(state) {
+            dirs.forEach(function (dir) {
+                engine.setHeld(dir, !!(state && state[dir]));
+                const btn = dpad && dpad.querySelector('[data-dir="' + dir + '"]');
+                if (btn) btn.classList.toggle('is-held', !!(state && state[dir]));
+            });
+        }
+
+        function dirFromEvent(ev) {
+            if (!dpad) return null;
+            const box = dpad.getBoundingClientRect();
+            const x = ev.clientX - (box.left + box.width / 2);
+            const y = ev.clientY - (box.top + box.height / 2);
+            const dead = Math.max(16, box.width * 0.12);
+            return {
+                fwd: y < -dead,
+                back: y > dead,
+                left: x < -dead,
+                right: x > dead
+            };
+        }
+
+        function holdBtn(el, on) {
+            if (el) el.classList.toggle('is-held', !!on);
+        }
+
+        if (dpad) {
+            dpad.addEventListener('pointerdown', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                padId = e.pointerId;
+                if (dpad.setPointerCapture) dpad.setPointerCapture(e.pointerId);
+                paintDirs(dirFromEvent(e));
+            });
+            dpad.addEventListener('pointermove', function (e) {
+                if (padId == null || e.pointerId !== padId) return;
+                e.preventDefault();
+                paintDirs(dirFromEvent(e));
+            });
+            function endPad(e) {
+                if (padId == null || (e && e.pointerId !== padId)) return;
+                padId = null;
+                paintDirs(null);
+            }
+            dpad.addEventListener('pointerup', endPad);
+            dpad.addEventListener('pointercancel', endPad);
+        }
+
+        const jump = document.getElementById('touch-jump');
+        const attack = document.getElementById('touch-attack');
+        const place = document.getElementById('touch-place');
+
+        function bindHold(el, onDown, onUp) {
+            if (!el) return;
+            let id = null;
+            el.addEventListener('pointerdown', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                id = e.pointerId;
+                if (el.setPointerCapture) el.setPointerCapture(e.pointerId);
+                holdBtn(el, true);
+                onDown();
+            });
+            function end(e) {
+                if (id == null || (e && e.pointerId !== id)) return;
+                id = null;
+                holdBtn(el, false);
+                onUp();
+            }
+            el.addEventListener('pointerup', end);
+            el.addEventListener('pointercancel', end);
+        }
+
+        bindHold(jump, function () { engine.setHeld('jump', true); }, function () { engine.setHeld('jump', false); });
+        bindHold(attack, beginMine, endMine);
+        bindHold(place, usePlace, function () {});
+        root.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    }
+
     function bindCombatInput(canvas) {
         canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
         document.addEventListener('mousedown', function (e) {
-            if (e.target && e.target.closest && e.target.closest('.bl-layer, button, a')) return;
+            if (e.target && e.target.closest && e.target.closest('.bl-layer, .bl-touch, button, a')) return;
             hideLookTip();
             if (session.paused) return;
-            if (e.button === 0) {
-                session.mining = true;
-                if (meleeTarget()) tryMelee();
-            }
+            if (e.button === 0) beginMine();
             if (e.button === 2) {
                 e.preventDefault();
-                if (tryInteract()) return;
-                const hit = lookHit();
-                if (hit && hit.hit && hit.kind === 'table') {
-                    toggleCraft(true, true);
-                    return;
-                }
-                if (session.tool === 'place') tryPlace();
+                usePlace();
             }
         });
         document.addEventListener('mouseup', function (e) {
-            if (e.button === 0) stopMining();
+            if (e.button === 0) endMine();
         });
         document.querySelectorAll('.bl-slot[data-key]').forEach(function (el) {
             el.addEventListener('click', function () {

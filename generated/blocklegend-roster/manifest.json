@@ -16,7 +16,17 @@
     "prj/games/blocklegend/assets/atlas4v/golem-atlas.png",
     "prj/games/blocklegend/assets/atlas4v/golem-atlas.js",
     "prj/games/blocklegend/assets/atlas4v/villager-atlas.png",
-    "prj/games/blocklegend/assets/atlas4v/villager-atlas.js"
+    "prj/games/blocklegend/assets/atlas4v/villager-atlas.js",
+    "prj/games/blocklegend/assets/atlas4v/pig-atlas.png",
+    "prj/games/blocklegend/assets/atlas4v/pig-atlas.js",
+    "prj/games/blocklegend/assets/atlas4v/cow-atlas.png",
+    "prj/games/blocklegend/assets/atlas4v/cow-atlas.js",
+    "prj/games/blocklegend/assets/atlas4v/sheep-atlas.png",
+    "prj/games/blocklegend/assets/atlas4v/sheep-atlas.js",
+    "prj/games/blocklegend/assets/atlas4v/chicken-atlas.png",
+    "prj/games/blocklegend/assets/atlas4v/chicken-atlas.js",
+    "prj/games/blocklegend/assets/atlas4v/wolf-atlas.png",
+    "prj/games/blocklegend/assets/atlas4v/wolf-atlas.js"
   ],
   "projection_tool": "prj/games/blocklegend/tools/fourview-to-atlas.py",
   "runtime_builder": "prj/games/blocklegend/assets/img2threejs/fourViewModel.js",
@@ -31,18 +41,17 @@
     "dimensions_checked": true,
     "four_view_compare": {
       "page": "prj/games/blocklegend/compare-four-view.html",
-      "passed": ["golem", "villager"],
+      "passed": ["golem", "villager", "pig", "cow", "sheep", "chicken", "wolf"],
       "evidence": [
         "review/golem-4view-compare.png",
         "review/villager-4view-compare.png"
       ]
     },
-    "notes": "Studio gray background, not transparent. 2x2 orthographic sheets projected onto cuboids; golem + villager passed the four-view side-by-side gate on 2026-08-17."
+    "notes": "Studio gray background, not transparent. 2x2 orthographic sheets projected onto cuboids; all 7 character/animal models passed four-view comparison on 2026-08-18."
   },
   "limitations": [
     "GPT sheets are design input, not exact 3D geometry.",
     "Original BlockLegend palette; not official skin files.",
-    "Top/bottom faces are flat fills; occluded side faces fall back to mirror/front crops.",
-    "Pig/cow/sheep/chicken/wolf not yet migrated to the atlas pipeline."
+    "Top/bottom faces are flat fills; occluded side faces fall back to mirror/front crops."
   ]
 }
