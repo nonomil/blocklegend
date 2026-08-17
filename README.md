@@ -22,7 +22,7 @@
 npm start
 ```
 
-打开 http://127.0.0.1:4173/ 。也可以把 `www/` 放到任意静态服务器。
+打开 http://127.0.0.1:4173/games/blocklegend/ 。根路径会跳进游戏。
 
 操作：WASD 移动，鼠标看，左键挖/打，V 说单词，T 拼写，1–4 换工具。
 
@@ -46,11 +46,20 @@ APK 在 `android/app/build/outputs/apk/debug/app-debug.apk`。
 
 ## 目录
 
-| 路径 | 说明 |
-| --- | --- |
-| `www/` | 可运行的游戏和词库 |
-| `templates/local-bridge.js` | 独立进度存储（不依赖幼儿工作台） |
-| `scripts/pack-from-workbench.mjs` | 从个人工作台再导出一版 |
-| `VERSION` | 当前版本号，写入 APK `versionName` |
+游戏本体与工作台 `prj/games/blocklegend` **同一套文件**（含文档、审查页、工具脚本）。为了在本仓库里也能打开，额外带上它原来要跨目录加载的依赖：
 
-本仓库是从个人工作台 `prj/games/blocklegend` 整理出的独立发行包，不包含工作台其它游戏和 80MB+ 参考文档。
+| 路径 | 对应工作台 |
+| --- | --- |
+| `games/blocklegend/` | `prj/games/blocklegend/` |
+| `games/shared/` | `prj/games/shared/` |
+| `assets/vocab/core-english-2026.08.15/` | `prj/assets/vocab/core-english-2026.08.15/` |
+| `preschool-english-vocab.js` | `prj/preschool-english-vocab.js` |
+| `child-courses.js` | `prj/child-courses.js` |
+
+从工作台再同步：
+
+```powershell
+node scripts/sync-from-workbench.mjs "G:\StudyCode\个人工作台"
+```
+
+`VERSION` 写入 APK `versionName`。编 APK 时会再生成不入库的 `www/`。

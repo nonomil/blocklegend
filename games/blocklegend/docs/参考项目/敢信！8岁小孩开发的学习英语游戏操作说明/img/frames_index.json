@@ -1,0 +1,157 @@
+{
+  "video": "video.mp4",
+  "mode": "hybrid",
+  "count": 30,
+  "frames": [
+    {
+      "index": 1,
+      "time": 0.5,
+      "file": "frame_1.jpg"
+    },
+    {
+      "index": 2,
+      "time": 4.63,
+      "file": "frame_2.jpg"
+    },
+    {
+      "index": 3,
+      "time": 5.82,
+      "file": "frame_3.jpg"
+    },
+    {
+      "index": 4,
+      "time": 7.6,
+      "file": "frame_4.jpg"
+    },
+    {
+      "index": 5,
+      "time": 8.62,
+      "file": "frame_5.jpg"
+    },
+    {
+      "index": 6,
+      "time": 9.9,
+      "file": "frame_6.jpg"
+    },
+    {
+      "index": 7,
+      "time": 16.73,
+      "file": "frame_7.jpg"
+    },
+    {
+      "index": 8,
+      "time": 18.68,
+      "file": "frame_8.jpg"
+    },
+    {
+      "index": 9,
+      "time": 24.85,
+      "file": "frame_9.jpg"
+    },
+    {
+      "index": 10,
+      "time": 32.97,
+      "file": "frame_10.jpg"
+    },
+    {
+      "index": 11,
+      "time": 34.3,
+      "file": "frame_11.jpg"
+    },
+    {
+      "index": 12,
+      "time": 41.09,
+      "file": "frame_12.jpg"
+    },
+    {
+      "index": 13,
+      "time": 45.72,
+      "file": "frame_13.jpg"
+    },
+    {
+      "index": 14,
+      "time": 49.2,
+      "file": "frame_14.jpg"
+    },
+    {
+      "index": 15,
+      "time": 54.33,
+      "file": "frame_15.jpg"
+    },
+    {
+      "index": 16,
+      "time": 56.43,
+      "file": "frame_16.jpg"
+    },
+    {
+      "index": 17,
+      "time": 57.32,
+      "file": "frame_17.jpg"
+    },
+    {
+      "index": 18,
+      "time": 59.12,
+      "file": "frame_18.jpg"
+    },
+    {
+      "index": 19,
+      "time": 60.32,
+      "file": "frame_19.jpg"
+    },
+    {
+      "index": 20,
+      "time": 64.08,
+      "file": "frame_20.jpg"
+    },
+    {
+      "index": 21,
+      "time": 65.44,
+      "file": "frame_21.jpg"
+    },
+    {
+      "index": 22,
+      "time": 73.56,
+      "file": "frame_22.jpg"
+    },
+    {
+      "index": 23,
+      "time": 74.85,
+      "file": "frame_23.jpg"
+    },
+    {
+      "index": 24,
+      "time": 79.05,
+      "file": "frame_24.jpg"
+    },
+    {
+      "index": 25,
+      "time": 81.67,
+      "file": "frame_25.jpg"
+    },
+    {
+      "index": 26,
+      "time": 89.79,
+      "file": "frame_26.jpg"
+    },
+    {
+      "index": 27,
+      "time": 97.91,
+      "file": "frame_27.jpg"
+    },
+    {
+      "index": 28,
+      "time": 106.03,
+      "file": "frame_28.jpg"
+    },
+    {
+      "index": 29,
+      "time": 114.14,
+      "file": "frame_29.jpg"
+    },
+    {
+      "index": 30,
+      "time": 122.26,
+      "file": "frame_30.jpg"
+    }
+  ]
+}

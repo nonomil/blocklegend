@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>BlockLegend · 角色资产审查</title>
+    <style>
+        html, body { margin: 0; background: #14171c; color: #f4f0e6; font-family: sans-serif; }
+        h1 { margin: 16px 20px 8px; font-size: 22px; }
+        .sub { margin: 0 20px 16px; opacity: .75; font-size: 13px; }
+        h2 { margin: 20px 20px 8px; font-size: 16px; color: #9ecbff; }
+        .review-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; padding: 0 20px 28px; }
+        .card { background: #1d222b; border-radius: 10px; overflow: hidden; }
+        .card canvas { display: block; width: 100%; height: 180px; background: #7ec8f0; }
+        .card img { display: block; width: 100%; background: #14171c; }
+        .card b { display: block; padding: 8px 10px 2px; font-size: 15px; }
+        .card span { display: block; padding: 0 10px 10px; font-size: 12px; opacity: .65; }
+    </style>
+</head>
+<body>
+    <h1>角色资产审查</h1>
+    <p class="sub">原像素体素，非官方贴图。拖卡片可转。双击打开单模型预览。铁卫/村口动物已按公开盒尺寸重做，下方有四视图对照。</p>
+    <h2>四视图对照</h2>
+    <div class="review-grid" id="g-fourview"></div>
+    <h2>敌对</h2>
+    <div class="review-grid" id="g-hostile"></div>
+    <h2>动物 / 村民</h2>
+    <div class="review-grid" id="g-animal"></div>
+    <h2>Boss</h2>
+    <div class="review-grid" id="g-boss"></div>
+    <h2>道具</h2>
+    <div class="review-grid" id="g-prop"></div>
+    <h2>工具</h2>
+    <div class="review-grid" id="g-tool"></div>
+    <script src="./vendor/three.min.js?v=20260815-bl-s1"></script>
+    <script src="./data/skins.js?v=20260817-bl-art3"></script>
+    <script src="./assets/img2threejs/voxelPix.js?v=20260816-bl-mobs3"></script>
+    <script src="./assets/img2threejs/createCreeperModel.js?v=20260816-bl-i2t3"></script>
+    <script src="./assets/img2threejs/createZombieModel.js?v=20260816-bl-i2t3"></script>
+    <script src="./assets/img2threejs/createSlimeModel.js?v=20260817-bl-art3"></script>
+    <script src="./assets/img2threejs/createFoxModel.js?v=20260817-bl-art3"></script>
+    <script src="./assets/img2threejs/createSkeletonModel.js?v=20260816-bl-mobs3"></script>
+    <script src="./assets/img2threejs/createSpiderModel.js?v=20260816-bl-mobs3"></script>
+    <script src="./assets/img2threejs/createEndermanModel.js?v=20260816-bl-mobs3"></script>
+    <script src="./assets/img2threejs/createPiglinModel.js?v=20260816-bl-mobs3"></script>
+    <script src="./assets/img2threejs/createWitchModel.js?v=20260816-bl-mobs3"></script>
+    <script src="./assets/atlas4v/golem-atlas.js?v=20260817-bl-4vatlas1"></script>
+    <script src="./assets/atlas4v/villager-atlas.js?v=20260817-bl-4vatlas1"></script>
+    <script src="./assets/atlas4v/pig-atlas.js?v=20260817-bl-4vatlas1"></script>
+    <script src="./assets/atlas4v/cow-atlas.js?v=20260817-bl-4vatlas1"></script>
+    <script src="./assets/atlas4v/sheep-atlas.js?v=20260817-bl-4vatlas1"></script>
+    <script src="./assets/atlas4v/chicken-atlas.js?v=20260817-bl-4vatlas1"></script>
+    <script src="./assets/atlas4v/wolf-atlas.js?v=20260817-bl-4vatlas1"></script>
+    <script src="./assets/img2threejs/fourViewModel.js?v=20260817-bl-4vatlas1"></script>
+    <script src="./assets/img2threejs/createGolemModel.js?v=20260817-bl-4vatlas1"></script>
+    <script src="./assets/img2threejs/createGhastModel.js?v=20260817-bl-i2t1"></script>
+    <script src="./assets/img2threejs/createBlazeModel.js?v=20260817-bl-i2t1"></script>
+    <script src="./assets/img2threejs/createWardenModel.js?v=20260817-bl-i2t1"></script>
+    <script src="./assets/img2threejs/createWitherModel.js?v=20260816-bl-mobs4"></script>
+    <script src="./assets/img2threejs/createDragonModel.js?v=20260816-bl-mobs4"></script>
+    <script src="./assets/img2threejs/createStormModel.js?v=20260816-bl-mobs4"></script>
+    <script src="./assets/img2threejs/createTools3d.js?v=20260816-bl-mobs4"></script>
+    <script src="./assets/img2threejs/createProps3d.js?v=20260817-bl-i2t4v2"></script>
+    <script>
+    (function () {
+        const THREE = window.THREE;
+        const P = window.BlockLegendProps3d;
+        const ROSTER = [
+            { id: 'creeper', zh: '绿爆怪', group: 'hostile', make: function () { return window.BlockLegendCreeperModel.create(THREE); } },
+            { id: 'zombie', zh: '僵尸', group: 'hostile', make: function () { return window.BlockLegendZombieModel.create(THREE); } },
+            { id: 'skeleton', zh: '骷髅', group: 'hostile', make: function () { return window.BlockLegendSkeletonModel.create(THREE); } },
+            { id: 'spider', zh: '蜘蛛', group: 'hostile', make: function () { return window.BlockLegendSpiderModel.create(THREE); } },
+            { id: 'enderman', zh: '末影人', group: 'hostile', make: function () { return window.BlockLegendEndermanModel.create(THREE); } },
+            { id: 'piglin', zh: '猪灵', group: 'hostile', make: function () { return window.BlockLegendPiglinModel.create(THREE); } },
+            { id: 'witch', zh: '女巫', group: 'hostile', make: function () { return window.BlockLegendWitchModel.create(THREE); } },
+            { id: 'golem', zh: '铁卫', group: 'hostile', make: function () { return window.BlockLegendGolemModel.create(THREE); } },
+            { id: 'blaze', zh: '烈焰人', group: 'hostile', make: function () { return window.BlockLegendBlazeModel.create(THREE); } },
+            { id: 'ghast', zh: '恶魂', group: 'hostile', make: function () { return window.BlockLegendGhastModel.create(THREE); } },
+            { id: 'warden', zh: '循声守卫', group: 'hostile', make: function () { return window.BlockLegendWardenModel.create(THREE); } },
+            { id: 'slime', zh: '漏字史莱姆', group: 'hostile', make: function () { return window.BlockLegendSlimeModel.create(THREE, { kind: 'slime' }); } },
+            { id: 'cube', zh: '方块兽', group: 'hostile', make: function () { return window.BlockLegendSlimeModel.create(THREE, { kind: 'cube' }); } },
+            { id: 'magma', zh: '岩浆怪', group: 'hostile', make: function () { return window.BlockLegendSlimeModel.create(THREE, { kind: 'magma' }); } },
+            { id: 'fox', zh: '狐狸', group: 'hostile', make: function () { return window.BlockLegendFoxModel.create(THREE); } },
+            { id: 'pig', zh: '猪', group: 'animal', make: function () { return P.createPig(THREE); } },
+            { id: 'cow', zh: '牛', group: 'animal', make: function () { return P.createCow(THREE); } },
+            { id: 'sheep', zh: '羊', group: 'animal', make: function () { return P.createSheep(THREE); } },
+            { id: 'chicken', zh: '鸡', group: 'animal', make: function () { return P.createChicken(THREE); } },
+            { id: 'wolf', zh: '狼', group: 'animal', make: function () { return P.createWolf(THREE); } },
+            { id: 'villager', zh: '村民', group: 'animal', make: function () { return P.createVillager(THREE); } },
+            { id: 'trader', zh: '流浪商人', group: 'animal', make: function () { return P.createTrader(THREE); } },
+            { id: 'wither', zh: '字母石像', group: 'boss', make: function () { return window.BlockLegendWitherModel.create(THREE); } },
+            { id: 'dragon', zh: '墨翼', group: 'boss', make: function () { return window.BlockLegendDragonModel.create(THREE); } },
+            { id: 'storm', zh: '雷语', group: 'boss', make: function () { return window.BlockLegendStormModel.create(THREE); } },
+            { id: 'chest', zh: '箱子', group: 'prop', make: function () { return P.createChest(THREE); } },
+            { id: 'furnace', zh: '熔炉', group: 'prop', make: function () { return P.createFurnace(THREE); } },
+            { id: 'torch', zh: '火把', group: 'prop', make: function () { return P.createTorch(THREE); } },
+            { id: 'wood_sword', zh: '木剑', group: 'tool', make: function () { return window.BlockLegendTools3d.createWoodSword(THREE); } },
+            { id: 'iron_sword', zh: '铁剑', group: 'tool', make: function () { return window.BlockLegendTools3d.createIronSword(THREE); } },
+            { id: 'diamond_sword', zh: '钻石剑', group: 'tool', make: function () { return window.BlockLegendTools3d.createDiamondSword(THREE); } },
+            { id: 'wood_axe', zh: '木斧', group: 'tool', make: function () { return window.BlockLegendTools3d.createWoodAxe(THREE); } },
+            { id: 'iron_axe', zh: '铁斧', group: 'tool', make: function () { return window.BlockLegendTools3d.createIronAxe(THREE); } },
+            { id: 'diamond_axe', zh: '钻石斧', group: 'tool', make: function () { return window.BlockLegendTools3d.createDiamondAxe(THREE); } },
+            { id: 'wood_pickaxe', zh: '木镐', group: 'tool', make: function () { return window.BlockLegendTools3d.createWoodPickaxe(THREE); } },
+            { id: 'iron_pickaxe', zh: '铁镐', group: 'tool', make: function () { return window.BlockLegendTools3d.createIronPickaxe(THREE); } },
+            { id: 'diamond_pickaxe', zh: '钻石镐', group: 'tool', make: function () { return window.BlockLegendTools3d.createDiamondPickaxe(THREE); } },
+            { id: 'bow', zh: '木弓', group: 'tool', make: function () { return window.BlockLegendTools3d.createBow(THREE); } }
+        ];
+        const shared = new THREE.WebGLRenderer({ antialias: false });
+        shared.setPixelRatio(1);
+        shared.setSize(220, 180, false);
+        const cards = [];
+        ROSTER.forEach(function (row) {
+            const host = document.getElementById('g-' + row.group);
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.setAttribute('data-kind', row.id);
+            const canvas = document.createElement('canvas');
+            canvas.width = 220;
+            canvas.height = 180;
+            const title = document.createElement('b');
+            title.textContent = row.zh;
+            const sub = document.createElement('span');
+            sub.textContent = row.id;
+            card.appendChild(canvas);
+            card.appendChild(title);
+            card.appendChild(sub);
+            host.appendChild(card);
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x7ec8f0);
+            const camera = new THREE.PerspectiveCamera(42, 220 / 180, 0.1, 30);
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x667788, 0.9));
+            const sun = new THREE.DirectionalLight(0xfff4d6, 0.5);
+            sun.position.set(3, 6, 2);
+            scene.add(sun);
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(8, 8), new THREE.MeshLambertMaterial({ color: 0x7a9a4a }));
+            ground.rotation.x = -Math.PI / 2;
+            scene.add(ground);
+            const model = row.make();
+            if (row.group === 'prop') model.position.y = 0.15;
+            if (row.group === 'tool') model.position.y = 0.85;
+            scene.add(model);
+            const box = new THREE.Box3().setFromObject(model);
+            const size = box.getSize(new THREE.Vector3());
+            const center = box.getCenter(new THREE.Vector3());
+            const dist = Math.max(1.7, Math.max(size.x, size.y, size.z) * 1.9);
+            let yaw = 0.7;
+            card.addEventListener('pointermove', function (e) {
+                if (e.buttons) yaw += e.movementX * 0.01;
+            });
+            card.addEventListener('dblclick', function () {
+                location.href = './preview-mobs.html?v=20260816-bl-mobs3';
+            });
+            cards.push({
+                scene: scene,
+                camera: camera,
+                canvas: canvas,
+                model: model,
+                dist: dist,
+                lookY: Math.max(0.35, center.y),
+                yaw: function () { return yaw; }
+            });
+        });
+        ['pig', 'cow', 'sheep', 'chicken', 'wolf', 'villager', 'golem'].forEach(function (id) {
+            const host = document.getElementById('g-fourview');
+            const card = document.createElement('div');
+            card.className = 'card';
+            const img = document.createElement('img');
+            img.src = '../../assets/generated/blocklegend-roster/four-view/' + id + '-4view.png?v=20260817-bl-gpt4v';
+            img.alt = id + ' four-view';
+            img.style.width = '100%';
+            img.style.display = 'block';
+            img.style.background = '#14171c';
+            const title = document.createElement('b');
+            title.textContent = id + ' 四视图';
+            card.appendChild(img);
+            card.appendChild(title);
+            host.appendChild(card);
+        });
+        const clock = new THREE.Clock();
+        function frame() {
+            requestAnimationFrame(frame);
+            const t = clock.getElapsedTime();
+            cards.forEach(function (c) {
+                if (c.model.userData.tick) c.model.userData.tick(t);
+                const yaw = c.yaw();
+                c.camera.position.set(Math.cos(yaw) * c.dist, c.lookY + c.dist * 0.22, Math.sin(yaw) * c.dist);
+                c.camera.lookAt(0, c.lookY, 0);
+                shared.render(c.scene, c.camera);
+                c.canvas.getContext('2d').drawImage(shared.domElement, 0, 0);
+            });
+        }
+        frame();
+    }());
+    </script>
+</body>
+</html>

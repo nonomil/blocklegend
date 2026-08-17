@@ -18,15 +18,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check standalone web tree
+      - name: Check workbench-aligned tree
         run: |
-          test -s www/index.html
-          test -s www/game.js
-          test -s www/vendor/local-bridge.js
-          test -s www/vendor/three.min.js
-          test -s www/assets/vocab/core-english-2026.08.15/catalog.json
-          grep -q './assets/vocab/core-english-2026.08.15' www/data/words.js
-          grep -q 'local-bridge.js' www/index.html
+          test -s games/blocklegend/index.html
+          test -s games/blocklegend/game.js
+          test -s games/blocklegend/data/words.js
+          test -s games/shared/workbench-bridge.js
+          test -s games/shared/game-sfx.js
+          test -s preschool-english-vocab.js
+          test -s child-courses.js
+          test -s assets/vocab/core-english-2026.08.15/catalog.json
+          grep -q "../../assets/vocab/core-english-2026.08.15" games/blocklegend/data/words.js
+          grep -q "../shared/workbench-bridge.js" games/blocklegend/index.html
+
+      - name: Assemble Capacitor webDir
+        run: npm run android:prepare
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

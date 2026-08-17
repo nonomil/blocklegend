@@ -1,5 +1,8 @@
 node_modules/
 android/
+www/
+__pycache__/
+*.pyc
 *.apk
 .DS_Store
 Thumbs.db

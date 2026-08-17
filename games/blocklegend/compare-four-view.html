@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>BlockLegend · 四视图对比验收</title>
+    <style>
+        html, body { margin: 0; background: #14171c; color: #f4f0e6; font-family: sans-serif; }
+        h1 { margin: 16px 20px 4px; font-size: 20px; }
+        .sub { margin: 0 20px 12px; opacity: .75; font-size: 13px; }
+        .tabs { display: flex; gap: 8px; padding: 0 20px 14px; flex-wrap: wrap; }
+        .tab-btn { background: #1d222b; border: 1px solid #333d4d; color: #ccd; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+        .tab-btn:hover { background: #28303e; }
+        .tab-btn.active { background: #2563eb; border-color: #3b82f6; color: #fff; font-weight: bold; }
+        .row { display: flex; gap: 20px; padding: 0 20px 24px; align-items: flex-start; flex-wrap: nowrap; }
+        .row.is-hidden { display: none; }
+        .pane { background: #1d222b; border-radius: 10px; padding: 12px; }
+        .pane b { display: block; margin-bottom: 8px; font-size: 14px; }
+        .pane canvas, .pane img { display: block; width: 380px; height: 380px; image-rendering: pixelated; }
+    </style>
+</head>
+<body>
+    <h1>四视图对比验收</h1>
+    <p class="sub">左：three.js 模型正交四向渲染（前/右/后/左，与参考图同布局）。右：GPT 生图参考。逐格对比找差异。</p>
+    <div class="tabs" id="tabs"></div>
+    <div id="stage"></div>
+    <script src="./vendor/three.min.js?v=20260815-bl-s1"></script>
+    <script src="./assets/atlas4v/golem-atlas.js?v=20260817-bl-4vc1"></script>
+    <script src="./assets/atlas4v/villager-atlas.js?v=20260817-bl-4vc1"></script>
+    <script src="./assets/atlas4v/pig-atlas.js?v=20260817-bl-4vc1"></script>
+    <script src="./assets/atlas4v/cow-atlas.js?v=20260817-bl-4vc1"></script>
+    <script src="./assets/atlas4v/sheep-atlas.js?v=20260817-bl-4vc1"></script>
+    <script src="./assets/atlas4v/chicken-atlas.js?v=20260817-bl-4vc1"></script>
+    <script src="./assets/atlas4v/wolf-atlas.js?v=20260817-bl-4vc1"></script>
+    <script src="./assets/img2threejs/fourViewModel.js?v=20260817-bl-4vc1"></script>
+    <script>
+    (function () {
+        const THREE = window.THREE;
+        const bust = '?t=' + Date.now();
+        const MODELS = [
+            { id: 'golem', zh: '铁卫', opts: { swingArms: true, texQuery: bust } },
+            { id: 'villager', zh: '镇民', opts: { swingArms: false, texQuery: bust } },
+            { id: 'pig', zh: '猪', opts: { texQuery: bust } },
+            { id: 'cow', zh: '牛', opts: { texQuery: bust } },
+            { id: 'sheep', zh: '羊', opts: { texQuery: bust } },
+            { id: 'chicken', zh: '鸡', opts: { texQuery: bust } },
+            { id: 'wolf', zh: '狼', opts: { texQuery: bust } }
+        ];
+        // same quadrant layout as the reference sheets
+        const VIEWS = [
+            { name: 'front', dir: [0, 0, 1] },
+            { name: 'right', dir: [1, 0, 0] },
+            { name: 'back', dir: [0, 0, -1] },
+            { name: 'left', dir: [-1, 0, 0] }
+        ];
+        const stage = document.getElementById('stage');
+
+        const tabs = document.getElementById('tabs');
+        const rows = [];
+
+        function selectTab(targetId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.id === targetId);
+            });
+            rows.forEach(({ id, row }) => {
+                row.classList.toggle('is-hidden', targetId !== 'all' && id !== targetId);
+            });
+        }
+
+        const allBtn = document.createElement('button');
+        allBtn.className = 'tab-btn active';
+        allBtn.dataset.id = 'all';
+        allBtn.textContent = '全部角色 (' + MODELS.length + ')';
+        allBtn.onclick = () => selectTab('all');
+        tabs.appendChild(allBtn);
+
+        MODELS.forEach(function (m) {
+            const btn = document.createElement('button');
+            btn.className = 'tab-btn';
+            btn.dataset.id = m.id;
+            btn.textContent = m.zh + ' (' + m.id + ')';
+            btn.onclick = () => selectTab(m.id);
+            tabs.appendChild(btn);
+
+            const row = document.createElement('div');
+            row.className = 'row';
+            row.id = 'row-' + m.id;
+            rows.push({ id: m.id, row: row });
+            const paneA = document.createElement('div');
+            paneA.className = 'pane';
+            paneA.innerHTML = '<b>' + m.zh + ' · 模型渲染</b>';
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 1024;
+            canvas.id = 'render-' + m.id;
+            paneA.appendChild(canvas);
+            const paneB = document.createElement('div');
+            paneB.className = 'pane';
+            paneB.innerHTML = '<b>' + m.zh + ' · 生图参考</b>';
+            const img = document.createElement('img');
+            img.src = '../../assets/generated/blocklegend-roster/four-view/' + m.id + '-4view.png';
+            paneB.appendChild(img);
+            row.appendChild(paneA);
+            row.appendChild(paneB);
+            stage.appendChild(row);
+
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, preserveDrawingBuffer: true });
+            renderer.setSize(1024, 1024, false);
+            renderer.setClearColor(0xe5e2d8);
+            renderer.setScissorTest(true);
+
+            const scene = new THREE.Scene();
+            scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+            const model = window.BlockLegendFourView.build(THREE, m.id, m.opts);
+            scene.add(model);
+
+            const bbox = new THREE.Box3().setFromObject(model);
+            const center = bbox.getCenter(new THREE.Vector3());
+            const size = bbox.getSize(new THREE.Vector3());
+            const half = Math.max(size.x, size.y, size.z) * 0.5 * 1.15;
+
+            function renderAll() {
+                VIEWS.forEach(function (v, i) {
+                    const cam = new THREE.OrthographicCamera(-half, half, half, -half, 0.01, 100);
+                    cam.position.set(center.x + v.dir[0] * 10, center.y + v.dir[1] * 10, center.z + v.dir[2] * 10);
+                    cam.lookAt(center);
+                    const vx = (i % 2) * 512;
+                    const vy = i < 2 ? 512 : 0; // WebGL y-up: top row first
+                    renderer.setViewport(vx, vy, 512, 512);
+                    renderer.setScissor(vx, vy, 512, 512);
+                    renderer.render(scene, cam);
+                });
+            }
+            let frames = 0;
+            (function loop() {
+                renderAll();
+                frames += 1;
+                if (frames < 240) { requestAnimationFrame(loop); }
+            }());
+        });
+    }());
+    </script>
+</body>
+</html>
