@@ -1,0 +1,19 @@
+{
+  "name": "blocklegend",
+  "version": "0.8.0",
+  "private": true,
+  "description": "方块传奇 · 在 3D 方块世界里学英语",
+  "scripts": {
+    "start": "npx --yes serve www -p 4173",
+    "android:init": "cap add android && node scripts/patch-android.mjs",
+    "android:sync": "cap sync android && node scripts/patch-android.mjs",
+    "android:build": "npm run android:sync && cd android && gradlew.bat assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.4.2"
+  },
+  "devDependencies": {
+    "@capacitor/android": "8.4.2",
+    "@capacitor/cli": "8.4.2"
+  }
+}

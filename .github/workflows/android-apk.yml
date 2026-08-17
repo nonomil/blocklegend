@@ -1,0 +1,82 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check standalone web tree
+        run: |
+          test -s www/index.html
+          test -s www/game.js
+          test -s www/vendor/local-bridge.js
+          test -s www/vendor/three.min.js
+          test -s www/assets/vocab/core-english-2026.08.15/catalog.json
+          grep -q './assets/vocab/core-english-2026.08.15' www/data/words.js
+          grep -q 'local-bridge.js' www/index.html
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+
+      - name: Generate Android project
+        run: npm run android:init
+
+      - name: Sync web assets
+        run: npx cap sync android && node scripts/patch-android.mjs
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Verify debug APK is non-empty
+        run: test -s android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Name APK
+        run: |
+          VER=$(tr -d '\r\n' < VERSION)
+          cp android/app/build/outputs/apk/debug/app-debug.apk "blocklegend-${VER}-${GITHUB_REF_NAME}.apk"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blocklegend-apk-${{ github.ref_name }}
+          path: blocklegend-*.apk
+          if-no-files-found: error
+
+      - name: Attach APK to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: blocklegend-*.apk
