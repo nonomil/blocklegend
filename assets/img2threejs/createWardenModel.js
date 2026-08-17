@@ -14,6 +14,12 @@
     }
 
     function createWardenModel(THREE, options) {
+        if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.warden) {
+            const fv = global.BlockLegendFourView.build(THREE, 'warden', Object.assign({
+                emissive: { match: 'visor', color: 0x146060 }
+            }, options || {}));
+            if (fv) { return fv; }
+        }
         const px = (options && options.pixel) || 1 / 16;
         const root = new THREE.Group();
         root.name = 'warden';

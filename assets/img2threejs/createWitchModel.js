@@ -5,6 +5,10 @@
     'use strict';
 
     function createWitchModel(THREE, options) {
+        if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.witch) {
+            const fv = global.BlockLegendFourView.build(THREE, 'witch', options || {});
+            if (fv) { return fv; }
+        }
         const px = (options && options.pixel) || 1 / 16;
         const P = global.BlockLegendVoxelPix;
         const root = new THREE.Group();

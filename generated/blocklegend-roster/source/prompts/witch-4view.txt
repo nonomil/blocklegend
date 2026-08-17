@@ -1,0 +1,25 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel witch, same identity as a purple-robed potion hag, shown as a clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow blob, no environment.
+
+Subject: axis-aligned box humanoid. Tan head with a long rectangular nose. Tall pointed purple hat with a wide brim. Purple robe and wide skirt. Arms hanging in sleeves. Pixel cloth, nearest-neighbor.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no rounded corners, no PBR, 16-bit pixel faces, flat Lambert lighting.
+
+Composition/framing: 2x2 grid, equal cell size, same scale, same baseline, full body in every cell.
+Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
+Orthographic camera, no perspective, no 3/4 cheat. Idle standing.
+
+Lighting/mood: soft top-left studio light, readable planes, no HDRI.
+
+Color palette: robe #6a1b9a, hat #34214a, skin #e8c090, nose #b8865a.
+
+Text (verbatim): none. No labels, no letters, no watermarks.
+
+Transparency: solid studio background, not checkerboard.
+
+Constraints: one character only, original palette, keep silhouette recognizable as a box witch with a pointed hat.
+
+Output: 1024x1024 PNG four-view sheet.

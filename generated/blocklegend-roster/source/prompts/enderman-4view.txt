@@ -1,0 +1,25 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel tall shadow, same identity as a very tall thin black watcher, shown as a clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow blob, no environment.
+
+Subject: axis-aligned box humanoid, much taller than a villager. Small 8x8 black head with two glowing purple slit eyes. Narrow 8x12 torso. Extremely long thin 2-wide arms hanging to the knees, long thin legs. Pure black pixel body.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no rounded corners, no PBR, 16-bit pixel faces, flat Lambert lighting.
+
+Composition/framing: 2x2 grid, equal cell size, same scale, same baseline, full body in every cell.
+Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
+Orthographic camera, no perspective, no 3/4 cheat. Idle standing.
+
+Lighting/mood: soft top-left studio light, readable planes, no HDRI.
+
+Color palette: body #0b0b0b, head #101010, eyes #aa00ff.
+
+Text (verbatim): none. No labels, no letters, no watermarks.
+
+Transparency: solid studio background, not checkerboard.
+
+Constraints: one character only, original palette, keep silhouette recognizable as a very tall thin black box figure.
+
+Output: 1024x1024 PNG four-view sheet.

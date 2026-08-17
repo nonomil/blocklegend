@@ -36,7 +36,13 @@
         astral: { temp: 0.16, moist: 0.38, hMin: 6, hMax: 16, trees: 48, flowers: 16, oak: 0, birch: 0.12, spruce: 0.88, sky: 0xc8d4e8 },
         cherry: { temp: 0.52, moist: 0.72, hMin: 3, hMax: 10, trees: 200, flowers: 180, oak: 0.1, birch: 0.1, spruce: 0.1, sky: 0xf3c2d4 },
         desert: { temp: 0.86, moist: 0.12, hMin: 3, hMax: 8, trees: 24, flowers: 8, oak: 0, birch: 0, spruce: 0, sky: 0xe8d08a },
-        nether: { temp: 0.92, moist: 0.08, hMin: 4, hMax: 12, trees: 40, flowers: 0, oak: 0, birch: 0, spruce: 1, sky: 0x5a1814 }
+        nether: { temp: 0.92, moist: 0.08, hMin: 4, hMax: 12, trees: 40, flowers: 0, oak: 0, birch: 0, spruce: 1, sky: 0x5a1814 },
+        snow: { temp: 0.12, moist: 0.36, hMin: 4, hMax: 14, trees: 64, flowers: 8, oak: 0, birch: 0.2, spruce: 0.8, sky: 0xc8d8e8 },
+        ocean: { temp: 0.46, moist: 0.92, hMin: 1, hMax: 6, trees: 8, flowers: 12, oak: 0.4, birch: 0.4, spruce: 0.2, sky: 0x4aa0c8 },
+        mushroom: { temp: 0.5, moist: 0.7, hMin: 3, hMax: 9, trees: 90, flowers: 40, oak: 0.2, birch: 0.2, spruce: 0.6, sky: 0xc8a0d0 },
+        volcano: { temp: 0.9, moist: 0.1, hMin: 5, hMax: 16, trees: 16, flowers: 0, oak: 0, birch: 0, spruce: 1, sky: 0x6a2018 },
+        deep_dark: { temp: 0.22, moist: 0.55, hMin: 2, hMax: 8, trees: 20, flowers: 4, oak: 0, birch: 0, spruce: 1, sky: 0x0d1f2b },
+        end: { temp: 0.28, moist: 0.2, hMin: 6, hMax: 14, trees: 12, flowers: 0, oak: 0, birch: 0.1, spruce: 0.9, sky: 0x1a1028 }
     };
     const ATLAS_TILE = 16;
     const ATLAS_COLS = 4;
@@ -115,11 +121,14 @@
         if (climate === 'cherry') return 'cherry';
         if (climate === 'crystal') return 'crystal';
         if (climate === 'duskvale') return 'dusk';
+        if (climate === 'snow') return 'snow';
+        if (climate === 'mushroom') return 'mushroom';
+        if (climate === 'deep_dark') return 'dusk';
         return 'oak';
     }
 
     function villagePlan(climate, cx, cz) {
-        if (climate === 'astral' || climate === 'quarry' || climate === 'nether') return null;
+        if (climate === 'astral' || climate === 'quarry' || climate === 'nether' || climate === 'volcano' || climate === 'end' || climate === 'deep_dark') return null;
         if (climate === 'desert') {
             return {
                 x0: cx + 6,
@@ -158,7 +167,7 @@
     }
 
     function hamletPlans(climate, cx, cz, n) {
-        if (climate === 'astral' || climate === 'quarry' || climate === 'nether') return [];
+        if (climate === 'astral' || climate === 'quarry' || climate === 'nether' || climate === 'volcano' || climate === 'end' || climate === 'deep_dark') return [];
         const style = villageStyle(climate);
         const sites = [
             { x: cx - 46, z: cz + 24, w: 5, d: 5, extra: { x: cx - 40, z: cz + 28, w: 4, d: 4 } },
@@ -529,8 +538,8 @@
                 biomes[z * n + x] = pickBiome(tv, mv, hv);
             }
         }
-        if (climateName === 'desert' || climateName === 'nether' || climateName === 'cherry') {
-            const forced = climateName === 'desert' ? 2 : climateName === 'nether' ? 3 : 1;
+        if (climateName === 'desert' || climateName === 'nether' || climateName === 'cherry' || climateName === 'snow') {
+            const forced = climateName === 'desert' ? 2 : climateName === 'nether' ? 3 : climateName === 'snow' ? 4 : 1;
             biomes.fill(forced);
         }
         const cx = Math.floor(n / 2), cz = Math.floor(n / 2);
@@ -637,11 +646,15 @@
             plants.push({ x: px, z: pz, kind: pkind });
         }
         const animals = [];
-        const animalKinds = climateName === 'nether' || climateName === 'desert' ? []
+        const animalKinds = climateName === 'nether' || climateName === 'desert' || climateName === 'volcano' || climateName === 'end' ? []
             : climateName === 'crystal' ? ['sheep', 'chicken']
                 : climateName === 'duskvale' ? ['wolf', 'cow', 'chicken']
-                    : climateName === 'cherry' ? ['pig', 'chicken', 'sheep']
-                        : ['pig', 'cow', 'sheep', 'chicken', 'wolf'];
+                    : climateName === 'cherry' ? ['pig', 'chicken', 'sheep', 'bee']
+                        : climateName === 'snow' ? ['wolf', 'sheep', 'chicken']
+                            : climateName === 'mushroom' ? ['cow', 'sheep', 'bee']
+                                : climateName === 'deep_dark' ? ['wolf']
+                                    : climateName === 'ocean' ? ['chicken']
+                                        : ['pig', 'cow', 'sheep', 'chicken', 'wolf', 'bee'];
         guard = 0;
         while (animals.length < animalKinds.length * 4 && guard < 2200 && animalKinds.length) {
             guard += 1;
@@ -713,6 +726,12 @@
         const grass = climate === 'cherry' ? [0.78, 0.62, 0.72]
             : climate === 'duskvale' ? [0.78, 0.58, 0.32]
             : climate === 'crystal' ? [0.42, 0.78, 0.74]
+            : climate === 'snow' ? [0.86, 0.92, 0.88]
+            : climate === 'mushroom' ? [0.72, 0.48, 0.70]
+            : climate === 'volcano' ? [0.42, 0.22, 0.16]
+            : climate === 'deep_dark' ? [0.16, 0.28, 0.30]
+            : climate === 'end' ? [0.42, 0.28, 0.58]
+            : climate === 'ocean' ? [0.36, 0.70, 0.52]
             : [0.64, 0.86, 0.48];
         const log = species === 'cactus' ? [0.28, 0.62, 0.32]
             : species === 'crimson' ? [0.46, 0.16, 0.18]
@@ -1611,7 +1630,13 @@
             desert: { hemi: 0xffe6a8, ground: 0xc4a060, sun: 0xffe8b0, cloud: 0xfff0d0 },
             duskvale: { hemi: 0xffc898, ground: 0x6a4a38, sun: 0xffb070, cloud: 0xffc8a0 },
             crystal: { hemi: 0xc8f0ff, ground: 0x3a6a78, sun: 0xb8e8f8, cloud: 0xd0f4ff },
-            nether: { hemi: 0xff6040, ground: 0x3a1010, sun: 0xff4020, cloud: 0x6a2020 }
+            nether: { hemi: 0xff6040, ground: 0x3a1010, sun: 0xff4020, cloud: 0x6a2020 },
+            snow: { hemi: 0xe8f0f8, ground: 0x8aa0b0, sun: 0xf4f8ff, cloud: 0xffffff },
+            ocean: { hemi: 0xc8e8f8, ground: 0x2a6a78, sun: 0xb0d8f0, cloud: 0xe0f0f8 },
+            mushroom: { hemi: 0xf0c8e0, ground: 0x6a4060, sun: 0xe8a0c8, cloud: 0xf8d0e8 },
+            volcano: { hemi: 0xff8040, ground: 0x3a1810, sun: 0xff5020, cloud: 0x5a2018 },
+            deep_dark: { hemi: 0x3a6070, ground: 0x0a1820, sun: 0x206070, cloud: 0x1a3038 },
+            end: { hemi: 0xc8a0e8, ground: 0x201028, sun: 0xa070d0, cloud: 0x3a2048 }
         };
         function applySky(climateName) {
             const sky = climateOf(climateName).sky;
@@ -1759,10 +1784,11 @@
                     : a.kind === 'sheep' ? 'createSheep'
                         : a.kind === 'chicken' ? 'createChicken'
                             : a.kind === 'wolf' ? 'createWolf'
-                                : 'createPig';
+                                : a.kind === 'bee' ? 'createBee'
+                                    : 'createPig';
                 const animal = propOf(factory, function () {
                     const g = new THREE.Group();
-                    const color = a.kind === 'cow' ? 0x6b4424 : a.kind === 'sheep' ? 0xf4f0ea : a.kind === 'chicken' ? 0xf4f0ea : a.kind === 'wolf' ? 0xa8a8b0 : 0xf2a0b4;
+                    const color = a.kind === 'cow' ? 0x6b4424 : a.kind === 'sheep' ? 0xf4f0ea : a.kind === 'chicken' ? 0xf4f0ea : a.kind === 'wolf' ? 0xa8a8b0 : a.kind === 'bee' ? 0xffd54f : 0xf2a0b4;
                     g.add(boxMesh(a.kind === 'chicken' ? 0.28 : 0.55, a.kind === 'chicken' ? 0.28 : 0.36, a.kind === 'chicken' ? 0.28 : 0.7, color, a.kind === 'chicken' ? 0.38 : 0.42));
                     return g;
                 });

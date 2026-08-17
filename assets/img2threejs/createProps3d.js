@@ -228,6 +228,10 @@
     }
 
     function createTrader(THREE) {
+        if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.trader) {
+            const fv = global.BlockLegendFourView.build(THREE, 'trader', { swingArms: false });
+            if (fv) { return fv; }
+        }
         const g = createVillager(THREE);
         g.name = 'trader';
         const coat = pbox(THREE, 9.4, 14, 7.4, 0x2f5cb0);
@@ -471,6 +475,34 @@
         return g;
     }
 
+    function createBee(THREE) {
+        if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.bee) {
+            const fv = global.BlockLegendFourView.build(THREE, 'bee');
+            if (fv) { return fv; }
+        }
+        const g = new THREE.Group();
+        g.name = 'bee';
+        const hide = new THREE.MeshLambertMaterial({ color: 0xffd54f });
+        const body = named(pbox(THREE, 8, 6, 10, hide), 'body');
+        const stripe = pbox(THREE, 8.2, 6.2, 3, 0x141010);
+        const head = named(pbox(THREE, 5, 5, 4, hide), 'head');
+        const wingL = named(pbox(THREE, 6, 1, 6, 0xe8f4ff), 'wingL');
+        const wingR = named(pbox(THREE, 6, 1, 6, 0xe8f4ff), 'wingR');
+        put(body, 0, 8, 0);
+        put(stripe, 0, 8, 0);
+        put(head, 0, 8, 6.5);
+        put(wingL, -4, 12, 0);
+        put(wingR, 4, 12, 0);
+        g.add(body);
+        g.add(stripe);
+        g.add(head);
+        g.add(wingL);
+        g.add(wingR);
+        g.userData.wings = [wingL, wingR];
+        attachWalk(g);
+        return g;
+    }
+
     global.BlockLegendProps3d = {
         createChest: createChest,
         createFurnace: createFurnace,
@@ -482,6 +514,7 @@
         createCow: createCow,
         createSheep: createSheep,
         createChicken: createChicken,
-        createWolf: createWolf
+        createWolf: createWolf,
+        createBee: createBee
     };
 }(typeof window !== 'undefined' ? window : globalThis));

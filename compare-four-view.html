@@ -24,14 +24,33 @@
     <div class="tabs" id="tabs"></div>
     <div id="stage"></div>
     <script src="./vendor/three.min.js?v=20260815-bl-s1"></script>
-    <script src="./assets/atlas4v/golem-atlas.js?v=20260817-bl-4vc2"></script>
-    <script src="./assets/atlas4v/villager-atlas.js?v=20260817-bl-4vc2"></script>
-    <script src="./assets/atlas4v/pig-atlas.js?v=20260817-bl-4vc2"></script>
-    <script src="./assets/atlas4v/cow-atlas.js?v=20260817-bl-4vc2"></script>
-    <script src="./assets/atlas4v/sheep-atlas.js?v=20260817-bl-4vc2"></script>
-    <script src="./assets/atlas4v/chicken-atlas.js?v=20260817-bl-4vc2"></script>
-    <script src="./assets/atlas4v/wolf-atlas.js?v=20260817-bl-4vc2"></script>
-    <script src="./assets/img2threejs/fourViewModel.js?v=20260817-bl-4vc2"></script>
+    <script src="./assets/atlas4v/golem-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/villager-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/pig-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/cow-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/sheep-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/chicken-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/wolf-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/creeper-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/zombie-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/skeleton-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/spider-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/enderman-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/witch-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/piglin-atlas.js?v=20260818-bl-4vhost1"></script>
+    <script src="./assets/atlas4v/slime-atlas.js?v=20260818-bl-4vhost2"></script>
+    <script src="./assets/atlas4v/blaze-atlas.js?v=20260818-bl-4vhost2"></script>
+    <script src="./assets/atlas4v/ghast-atlas.js?v=20260818-bl-4vhost2"></script>
+    <script src="./assets/atlas4v/warden-atlas.js?v=20260818-bl-4vhost2"></script>
+    <script src="./assets/atlas4v/fox-atlas.js?v=20260818-bl-4vhost2"></script>
+    <script src="./assets/atlas4v/cube-atlas.js?v=20260818-bl-4vhost2"></script>
+    <script src="./assets/atlas4v/magma-atlas.js?v=20260818-bl-4vhost2"></script>
+    <script src="./assets/atlas4v/trader-atlas.js?v=20260818-bl-4vhost2"></script>
+    <script src="./assets/atlas4v/bee-atlas.js?v=20260818-bl-4vhost2"></script>
+    <script src="./assets/atlas4v/wither-atlas.js?v=20260818-bl-4vhost2"></script>
+    <script src="./assets/atlas4v/dragon-atlas.js?v=20260818-bl-4vhost2"></script>
+    <script src="./assets/atlas4v/storm-atlas.js?v=20260818-bl-4vhost2"></script>
+    <script src="./assets/img2threejs/fourViewModel.js?v=20260818-bl-4vhost2"></script>
     <script>
     (function () {
         const THREE = window.THREE;
@@ -43,7 +62,26 @@
             { id: 'cow', zh: '牛', opts: { texQuery: bust } },
             { id: 'sheep', zh: '羊', opts: { texQuery: bust } },
             { id: 'chicken', zh: '鸡', opts: { texQuery: bust } },
-            { id: 'wolf', zh: '狼', opts: { texQuery: bust } }
+            { id: 'wolf', zh: '狼', opts: { texQuery: bust } },
+            { id: 'creeper', zh: '绿爆怪', opts: { texQuery: bust } },
+            { id: 'zombie', zh: '僵尸', opts: { texQuery: bust } },
+            { id: 'skeleton', zh: '骷髅', opts: { texQuery: bust } },
+            { id: 'spider', zh: '蜘蛛', opts: { texQuery: bust } },
+            { id: 'enderman', zh: '高影', opts: { texQuery: bust } },
+            { id: 'witch', zh: '女巫', opts: { texQuery: bust } },
+            { id: 'piglin', zh: '金牙', opts: { texQuery: bust } },
+            { id: 'slime', zh: '软泥怪', opts: { texQuery: bust } },
+            { id: 'blaze', zh: '焰灵', opts: { texQuery: bust } },
+            { id: 'ghast', zh: '哭魂', opts: { texQuery: bust } },
+            { id: 'warden', zh: '听卫', opts: { texQuery: bust } },
+            { id: 'fox', zh: '狐狸', opts: { texQuery: bust } },
+            { id: 'cube', zh: '方块兽', opts: { texQuery: bust } },
+            { id: 'magma', zh: '熔岩块', opts: { texQuery: bust } },
+            { id: 'trader', zh: '货郎', opts: { swingArms: false, texQuery: bust } },
+            { id: 'bee', zh: '蜜蜂', opts: { texQuery: bust } },
+            { id: 'wither', zh: '字母石像', opts: { texQuery: bust } },
+            { id: 'dragon', zh: '墨翼', opts: { texQuery: bust } },
+            { id: 'storm', zh: '雷语', opts: { texQuery: bust } }
         ];
         // same quadrant layout as the reference sheets
         const VIEWS = [

@@ -8,6 +8,11 @@
     function createSlimeModel(THREE, options) {
         const o = options || {};
         const kind = o.kind || 'slime';
+        if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V[kind]) {
+            const extra = kind === 'magma' ? { emissive: { match: 'eye', color: 0x663300 } } : {};
+            const fv = global.BlockLegendFourView.build(THREE, kind, Object.assign(extra, o));
+            if (fv) { return fv; }
+        }
         const px = o.pixel || 1 / 16;
         const P = global.BlockLegendVoxelPix;
         const root = new THREE.Group();

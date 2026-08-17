@@ -1,0 +1,13 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel jelly cube: translucent green 16-cube with darker inner cube, two black square eyes, small mouth. Clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
+
+Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic.
+
+Color palette: outer #7ed957, inner #5bb83a, eyes #141010.
+
+Text: none. Output: 1024x1024 PNG four-view sheet.

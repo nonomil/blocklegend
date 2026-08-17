@@ -6,6 +6,12 @@
     'use strict';
 
     function createWitherModel(THREE, options) {
+        if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.wither) {
+            const fv = global.BlockLegendFourView.build(THREE, 'wither', Object.assign({
+                emissive: { match: 'eye', color: 0x441010 }
+            }, options || {}));
+            if (fv) { return fv; }
+        }
         const px = (options && options.pixel) || 1 / 16;
         const P = global.BlockLegendVoxelPix;
         const root = new THREE.Group();

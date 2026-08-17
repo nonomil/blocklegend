@@ -1,0 +1,25 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel bone archer, same identity as a thin white skeleton, shown as a clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow blob, no environment.
+
+Subject: axis-aligned box humanoid. 8x8x8 bone-white skull with two black eye sockets. Thin 8x12x4 ribcage torso. Very thin 2-wide arms and legs hanging straight. No bow required. Pixel bone texture, nearest-neighbor.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no rounded corners, no PBR, 16-bit pixel faces, flat Lambert lighting.
+
+Composition/framing: 2x2 grid, equal cell size, same scale, same baseline, full body in every cell.
+Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
+Orthographic camera, no perspective, no 3/4 cheat. Idle standing.
+
+Lighting/mood: soft top-left studio light, readable planes, no HDRI.
+
+Color palette: bone #e6e0d6, rib #d8d2c8, sockets #141010.
+
+Text (verbatim): none. No labels, no letters, no watermarks.
+
+Transparency: solid studio background, not checkerboard.
+
+Constraints: one character only, original palette, keep silhouette recognizable as a thin box skeleton.
+
+Output: 1024x1024 PNG four-view sheet.

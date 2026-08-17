@@ -14,6 +14,10 @@
     }
 
     function createGhastModel(THREE, options) {
+        if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.ghast) {
+            const fv = global.BlockLegendFourView.build(THREE, 'ghast', options || {});
+            if (fv) { return fv; }
+        }
         const px = (options && options.pixel) || 1 / 14;
         const root = new THREE.Group();
         root.name = 'ghast';

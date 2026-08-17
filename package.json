@@ -1,6 +1,6 @@
 {
   "name": "blocklegend",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "private": true,
   "description": "方块传奇 · 在 3D 方块世界里学英语",
   "scripts": {

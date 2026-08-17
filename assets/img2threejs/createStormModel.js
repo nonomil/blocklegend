@@ -7,6 +7,12 @@
     'use strict';
 
     function createStormModel(THREE, options) {
+        if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.storm) {
+            const fv = global.BlockLegendFourView.build(THREE, 'storm', Object.assign({
+                emissive: { match: 'eye', color: 0x146060 }
+            }, options || {}));
+            if (fv) { return fv; }
+        }
         const px = (options && options.pixel) || 1 / 16;
         const P = global.BlockLegendVoxelPix;
         const root = new THREE.Group();

@@ -1846,9 +1846,9 @@
         if (mob.isBoss) mob.bossHits = (Number(mob.bossHits) || 0) + 1;
         if (W.shouldAsk({
             firstHit: !mob.asked,
+            quizPassed: !!mob.quizPassed,
             lastQuizWrong: !!mob.lastQuizWrong,
-            hitsSinceQuiz: Number(mob.hitsSinceQuiz) || 0,
-            voiceFails: Number(mob.voiceFails) || 0
+            hitsSinceQuiz: Number(mob.hitsSinceQuiz) || 0
         })) {
             openQuiz(mob, kind);
             return;
@@ -2206,6 +2206,9 @@
             chipBossShield('spell', 1);
         }
         mob.asked = true;
+        mob.quizPassed = true;
+        mob.lastQuizWrong = false;
+        mob.voiceFails = 0;
         launchBoltToward(mob, { cosmetic: true });
         applyResolvedHit(mob, 'bolt', { answered: true, correct: true, channel: 'spell' });
         if (mob.hp > 0 && !mob.isBoss) bindMobWord(mob);
@@ -2295,6 +2298,8 @@
         pending.mob.asked = true;
         pending.mob.lastQuizWrong = !correct;
         pending.mob.hitsSinceQuiz = 0;
+        pending.mob.voiceFails = 0;
+        if (correct) pending.mob.quizPassed = true;
         if (correct && rec.channel === 'speak') noteWordSpoken(word);
         if (correct && pending.mob.isBoss && session.boss) {
             chipBossShield(rec.channel, rec.channel === 'speak' ? 2 : 1);
@@ -2891,6 +2896,8 @@
         }
         mob.voiceFails = 0;
         mob.asked = true;
+        mob.quizPassed = true;
+        mob.lastQuizWrong = false;
         session.combo = C.nextCombo({ answered: true, correct: true, combo: session.combo });
         applyResolvedHit(mob, 'melee', { answered: true, correct: true, channel: 'speak' });
         hideVoiceFallback();

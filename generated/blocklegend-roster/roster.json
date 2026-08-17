@@ -15,7 +15,7 @@
       "zh": "绿爆怪",
       "group": "hostile",
       "rename": false,
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "zombie",
@@ -23,7 +23,7 @@
       "zh": "僵尸",
       "group": "hostile",
       "rename": false,
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "skeleton",
@@ -31,7 +31,7 @@
       "zh": "骷髅",
       "group": "hostile",
       "rename": false,
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "spider",
@@ -39,7 +39,7 @@
       "zh": "蜘蛛",
       "group": "hostile",
       "rename": false,
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "enderman",
@@ -49,7 +49,7 @@
       "rename": true,
       "old_en": "enderman",
       "old_zh": "末影人",
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "piglin",
@@ -59,7 +59,7 @@
       "rename": true,
       "old_en": "piglin",
       "old_zh": "猪灵",
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "witch",
@@ -67,7 +67,7 @@
       "zh": "女巫",
       "group": "hostile",
       "rename": false,
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "golem",
@@ -85,7 +85,7 @@
       "rename": true,
       "old_en": "blaze",
       "old_zh": "烈焰人",
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "ghast",
@@ -95,7 +95,7 @@
       "rename": true,
       "old_en": "ghast",
       "old_zh": "恶魂",
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "warden",
@@ -105,7 +105,7 @@
       "rename": true,
       "old_en": "warden",
       "old_zh": "循声守卫",
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "slime",
@@ -114,7 +114,7 @@
       "group": "hostile",
       "rename": true,
       "old_zh": "漏字史莱姆",
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "cube",
@@ -122,7 +122,7 @@
       "zh": "方块兽",
       "group": "hostile",
       "rename": false,
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "magma",
@@ -132,7 +132,7 @@
       "rename": true,
       "old_en": "magma",
       "old_zh": "岩浆怪",
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "fox",
@@ -140,7 +140,7 @@
       "zh": "狐狸",
       "group": "hostile",
       "rename": false,
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "pig",
@@ -198,7 +198,7 @@
       "group": "animal",
       "rename": true,
       "old_zh": "流浪商人",
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "wither",
@@ -206,7 +206,7 @@
       "zh": "字母石像",
       "group": "boss",
       "rename": false,
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "dragon",
@@ -214,7 +214,7 @@
       "zh": "墨翼",
       "group": "boss",
       "rename": false,
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
     },
     {
       "id": "storm",
@@ -222,7 +222,15 @@
       "zh": "雷语",
       "group": "boss",
       "rename": false,
-      "status": "ready_for_4view"
+      "status": "atlas_compiled"
+    },
+    {
+      "id": "bee",
+      "en": "bee",
+      "zh": "蜜蜂",
+      "group": "animal",
+      "rename": false,
+      "status": "atlas_compiled"
     }
   ]
 }

@@ -1,0 +1,13 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel deep-dark listener: bulky dark-teal body, glowing cyan chest heart, pink visor slit, long hanging arms. Clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
+
+Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic, full body.
+
+Color palette: body #0d1f2b, head #3f3e53, chest #63d8d1, visor #f48fb1.
+
+Text: none. Output: 1024x1024 PNG four-view sheet.

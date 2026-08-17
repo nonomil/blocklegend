@@ -6,6 +6,10 @@
     'use strict';
 
     function createFoxModel(THREE, options) {
+        if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.fox) {
+            const fv = global.BlockLegendFourView.build(THREE, 'fox', options || {});
+            if (fv) { return fv; }
+        }
         const px = (options && options.pixel) || 1 / 20;
         const P = global.BlockLegendVoxelPix;
         const root = new THREE.Group();

@@ -1,0 +1,8 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel bee: yellow body with one black stripe, small head, two translucent white wing slabs, tiny stinger. Clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc. Style: Minecraft-like voxel boxes only.
+Composition: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
+Color palette: body #ffd54f, stripe #141010, wing #e8f4ff.
+Text: none. Output: 1024x1024 PNG four-view sheet.

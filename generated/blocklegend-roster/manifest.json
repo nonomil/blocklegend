@@ -10,23 +10,30 @@
     "four-view/sheep-4view.png",
     "four-view/chicken-4view.png",
     "four-view/wolf-4view.png",
-    "four-view/villager-4view.png"
+    "four-view/villager-4view.png",
+    "four-view/creeper-4view.png",
+    "four-view/zombie-4view.png",
+    "four-view/skeleton-4view.png",
+    "four-view/spider-4view.png",
+    "four-view/enderman-4view.png",
+    "four-view/witch-4view.png",
+    "four-view/piglin-4view.png",
+    "four-view/slime-4view.png",
+    "four-view/blaze-4view.png",
+    "four-view/ghast-4view.png",
+    "four-view/warden-4view.png",
+    "four-view/fox-4view.png",
+    "four-view/cube-4view.png",
+    "four-view/magma-4view.png",
+    "four-view/trader-4view.png",
+    "four-view/bee-4view.png",
+    "four-view/wither-4view.png",
+    "four-view/dragon-4view.png",
+    "four-view/storm-4view.png"
   ],
   "derived_outputs": [
-    "prj/games/blocklegend/assets/atlas4v/golem-atlas.png",
-    "prj/games/blocklegend/assets/atlas4v/golem-atlas.js",
-    "prj/games/blocklegend/assets/atlas4v/villager-atlas.png",
-    "prj/games/blocklegend/assets/atlas4v/villager-atlas.js",
-    "prj/games/blocklegend/assets/atlas4v/pig-atlas.png",
-    "prj/games/blocklegend/assets/atlas4v/pig-atlas.js",
-    "prj/games/blocklegend/assets/atlas4v/cow-atlas.png",
-    "prj/games/blocklegend/assets/atlas4v/cow-atlas.js",
-    "prj/games/blocklegend/assets/atlas4v/sheep-atlas.png",
-    "prj/games/blocklegend/assets/atlas4v/sheep-atlas.js",
-    "prj/games/blocklegend/assets/atlas4v/chicken-atlas.png",
-    "prj/games/blocklegend/assets/atlas4v/chicken-atlas.js",
-    "prj/games/blocklegend/assets/atlas4v/wolf-atlas.png",
-    "prj/games/blocklegend/assets/atlas4v/wolf-atlas.js"
+    "prj/games/blocklegend/assets/atlas4v/*-atlas.png",
+    "prj/games/blocklegend/assets/atlas4v/*-atlas.js"
   ],
   "projection_tool": "prj/games/blocklegend/tools/fourview-to-atlas.py",
   "runtime_builder": "prj/games/blocklegend/assets/img2threejs/fourViewModel.js",
@@ -34,7 +41,10 @@
     "raw/golem.png",
     "raw/animals.png",
     "raw/village.png",
-    "source/prompts/*-4view.txt"
+    "raw/cubes-fox.png",
+    "raw/bosses.png",
+    "source/prompts/*-4view.txt",
+    "G:/UserCode/Mario_Minecraft/mario-minecraft-game_godot_release_v141/config/biomes.json"
   ],
   "acceptance": {
     "alpha_checked": false,
@@ -42,16 +52,18 @@
     "four_view_compare": {
       "page": "prj/games/blocklegend/compare-four-view.html",
       "passed": ["golem", "villager", "pig", "cow", "sheep", "chicken", "wolf"],
+      "pending_visual": ["creeper", "zombie", "skeleton", "spider", "enderman", "witch", "piglin", "slime", "blaze", "ghast", "warden", "fox", "cube", "magma", "trader", "bee", "wither", "dragon", "storm"],
       "evidence": [
         "review/golem-4view-compare.png",
         "review/villager-4view-compare.png"
       ]
     },
-    "notes": "Studio gray background, not transparent. 2x2 orthographic sheets projected onto cuboids; all 7 character/animal models passed four-view comparison on 2026-08-18."
+    "notes": "Studio gray background, not transparent. 2x2 orthographic sheets projected onto cuboids. Animals/golem/villager passed compare on 2026-08-18; remaining roster compiled and hooked the same day."
   },
   "limitations": [
     "GPT sheets are design input, not exact 3D geometry.",
     "Original BlockLegend palette; not official skin files.",
-    "Top/bottom faces are flat fills; occluded side faces fall back to mirror/front crops."
+    "Top/bottom faces are flat fills; occluded side faces fall back to mirror/front crops.",
+    "Mario repos have no four-view PNGs; reused palettes, cuboid layouts, and biome list only."
   ]
 }

@@ -1,0 +1,13 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel crying ghost: large pale 16-cube body, two sad black eyes, small red mouth, four hanging tentacles. Clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
+
+Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic, full body.
+
+Color palette: body #f2efe8, tentacle #e8e0d8, eyes #141010, mouth #c62828.
+
+Text: none. Output: 1024x1024 PNG four-view sheet.

@@ -73,6 +73,10 @@
     }
 
     function createZombieModel(THREE, options) {
+        if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.zombie) {
+            const fv = global.BlockLegendFourView.build(THREE, 'zombie', options || {});
+            if (fv) { return fv; }
+        }
         const o = options || {};
         const px = o.pixel || 1 / 16;
         const root = new THREE.Group();

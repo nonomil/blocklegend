@@ -1,0 +1,25 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel moss-green box creeper, same identity as a four-legged walking bomb plant, shown as a clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow blob, no environment.
+
+Subject: axis-aligned box character. Cube 8x8 head sitting on a tall 8x12x4 torso. Four short 4x6x4 legs at the corners. Front face: two black square eyes and a flat rectangular mouth. Pixel moss texture, nearest-neighbor, not smooth.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no rounded corners, no PBR, 16-bit pixel faces, flat Lambert lighting.
+
+Composition/framing: 2x2 grid, equal cell size, same scale, same baseline, full body in every cell.
+Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
+Orthographic camera, no perspective, no 3/4 cheat. Idle standing.
+
+Lighting/mood: soft top-left studio light, readable planes, no HDRI.
+
+Color palette: moss #6fbf45, dark moss #4f8a32, face #141414.
+
+Text (verbatim): none. No labels, no letters, no watermarks.
+
+Transparency: solid studio background, not checkerboard.
+
+Constraints: one character only, original palette, keep silhouette recognizable as a four-legged green box bomb.
+
+Output: 1024x1024 PNG four-view sheet.

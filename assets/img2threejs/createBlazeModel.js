@@ -14,6 +14,12 @@
     }
 
     function createBlazeModel(THREE, options) {
+        if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.blaze) {
+            const fv = global.BlockLegendFourView.build(THREE, 'blaze', Object.assign({
+                emissive: { match: 'rod', color: 0x441000 }
+            }, options || {}));
+            if (fv) { return fv; }
+        }
         const px = (options && options.pixel) || 1 / 16;
         const root = new THREE.Group();
         root.name = 'blaze';

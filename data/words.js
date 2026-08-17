@@ -555,14 +555,15 @@
         return bossAskTimes(maxHp) === 3 ? [0.75, 0.5, 0.25] : [0.5, 0.25];
     }
 
-    const REASK_HITS = 3;
+    const REASK_HITS = 4;
 
     function shouldAsk(opts) {
         const o = opts || {};
         if (o.force) return true;
+        if (o.quizPassed) return false;
         if (o.firstHit) return true;
         if (o.lastQuizWrong && (Number(o.hitsSinceQuiz) || 0) >= REASK_HITS) return true;
-        return (Number(o.voiceFails) || 0) >= 2;
+        return false;
     }
 
     function shouldNudgeSpeak(opts) {

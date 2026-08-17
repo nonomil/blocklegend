@@ -1,0 +1,8 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel thunder speaker: slate-blue robe, glowing cyan eyes, dark cape. Clean 2x2 orthographic turnaround.
+
+Scene/backdrop: flat warm gray studio #c8c4bc. Style: Minecraft-like voxel boxes only.
+Composition: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
+Color palette: body #3a3a58, head #4a4a6a, eyes #80deea, cape #1a1a30.
+Text: none. Output: 1024x1024 PNG four-view sheet.
