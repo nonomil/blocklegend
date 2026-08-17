@@ -98,13 +98,15 @@ jobs:
       - name: Verify and name APK
         run: |
           VER=$(tr -d '\r\n' < VERSION)
+          echo "APP_VER=$VER" >> "$GITHUB_ENV"
           if [ -s android/app/build/outputs/apk/release/app-release.apk ]; then
-            cp android/app/build/outputs/apk/release/app-release.apk "blocklegend-${VER}-${GITHUB_REF_NAME}.apk"
+            SRC=android/app/build/outputs/apk/release/app-release.apk
           else
             test -s android/app/build/outputs/apk/debug/app-debug.apk
-            cp android/app/build/outputs/apk/debug/app-debug.apk "blocklegend-${VER}-${GITHUB_REF_NAME}.apk"
+            SRC=android/app/build/outputs/apk/debug/app-debug.apk
           fi
-          test -s "blocklegend-${VER}-${GITHUB_REF_NAME}.apk"
+          cp "$SRC" "blocklegend-${VER}.apk"
+          test -s "blocklegend-${VER}.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -113,8 +115,17 @@ jobs:
           path: blocklegend-*.apk
           if-no-files-found: error
 
-      - name: Attach APK to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: blocklegend-*.apk
+      - name: Publish GitHub Release
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VER="$APP_VER"
+          TAG="v$VER"
+          NOTES=$(node scripts/release-notes.mjs "$VER")
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --title "方块传奇 $VER" --notes "$NOTES" --latest
+            gh release upload "$TAG" "blocklegend-${VER}.apk" --clobber
+          else
+            gh release create "$TAG" "blocklegend-${VER}.apk" --title "方块传奇 $VER" --notes "$NOTES" --latest
+          fi
