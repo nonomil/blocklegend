@@ -465,6 +465,7 @@
     function pickQuizMode(word, opts) {
         const o = opts || {};
         if (o.mode && QUIZ_MODES.indexOf(o.mode) >= 0) return o.mode;
+        if ((Number(o.missStreak) || 0) > 0) return 'choice';
         if (needsHardMode(word, o)) {
             const modes = availableModes(word);
             if (modes.indexOf('spell') >= 0) return 'spell';
@@ -676,16 +677,25 @@
         }
         const preferred = findText(o.prefer);
         if (preferred && !o.reviewFirst) return preferred;
+        function skipped(hit) {
+            if (!hit) return true;
+            const skip = {};
+            (Array.isArray(o.skip) ? o.skip : []).forEach(function (key) {
+                const k = normAnswer(key);
+                if (k) skip[k] = true;
+            });
+            return !!(skip[normAnswer(hit.id)] || skip[normAnswer(hit.text)]);
+        }
         if (o.reviewFirst) {
             const reviewHits = (Array.isArray(o.review) ? o.review : []).map(findText).filter(function (hit) {
-                return hit && !used[hit.id || hit.text] && !isBlockFiller(hit.text);
+                return hit && !used[hit.id || hit.text] && !isBlockFiller(hit.text) && !skipped(hit);
             });
             if (reviewHits.length) return reviewHits[0];
         }
         if (preferred) return preferred;
         if (o.theme) {
             const themed = list.filter(function (w) {
-                return w && w.theme === o.theme && !used[w.id || w.text] && !isBlockFiller(w.text);
+                return w && w.theme === o.theme && !used[w.id || w.text] && !isBlockFiller(w.text) && !skipped(w);
             });
             if (themed.length) return themed[Math.floor(Math.random() * themed.length)];
         }
@@ -699,11 +709,11 @@
             if (word && id && !used[id] && !isBlockFiller(word.text)) return word;
         }
         const focusHits = (Array.isArray(o.focus) ? o.focus : []).map(findText).filter(function (hit) {
-            return hit && !used[hit.id || hit.text] && !isBlockFiller(hit.text);
+            return hit && !used[hit.id || hit.text] && !isBlockFiller(hit.text) && !skipped(hit);
         });
         if (focusHits.length) return focusHits[Math.floor(Math.random() * focusHits.length)];
         const fresh = list.filter(function (w) {
-            return w && !used[w.id || w.text] && !isBlockFiller(w.text);
+            return w && !used[w.id || w.text] && !isBlockFiller(w.text) && !skipped(w);
         });
         if (fresh.length) return fresh[Math.floor(Math.random() * fresh.length)];
         const nonFill = list.filter(function (w) { return w && !isBlockFiller(w.text); });

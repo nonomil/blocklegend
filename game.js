@@ -2381,6 +2381,7 @@
             prefer: mob.word && mob.word.text,
             review: sessionReviewKeys(),
             reviewFirst: !!mob.reviewFirst && !(mob.word && mob.word.text),
+            skip: Object.keys(session.seenByWord || {}),
             theme: (!mob.reviewFirst && session.waveTheme) || ''
         });
         if (!mob.word) {

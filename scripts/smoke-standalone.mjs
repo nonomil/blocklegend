@@ -20,7 +20,7 @@ assert.match(words, /function rebindWorldReviewWords/);
 const html = fs.readFileSync('index.html', 'utf8');
 assert.match(html, /\.\/shared\/workbench-bridge\.js/);
 assert.doesNotMatch(html, /\.\.\/shared\/workbench-bridge\.js/);
-assert.match(html, /words\.js\?v=20260818-bl-learn5/);
+assert.match(html, /words\.js\?v=20260818-bl-miss1/);
 assert.match(html, /interactive-widget=resizes-content/);
 const game = fs.readFileSync('game.js', 'utf8');
 assert.match(game, /function refreshQuizKeyPaint/);
