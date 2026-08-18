@@ -1043,7 +1043,14 @@ button.bl-quiz-en,
 .bl-quiz-phrase.is-hidden,
 .bl-quiz-phrase-zh.is-hidden,
 .bl-quiz-type.is-hidden,
-.bl-quiz-mic.is-hidden { display: none; }
+.bl-quiz-mic.is-hidden,
+.bl-quiz-heard.is-hidden { display: none; }
+.bl-quiz-heard {
+    margin: 8px 4px 0;
+    color: #6b4a28;
+    font-size: 15px;
+    font-weight: 700;
+}
 .bl-quiz .bl-btn.is-ghost {
     display: inline-block;
     margin: 8px 4px 0;

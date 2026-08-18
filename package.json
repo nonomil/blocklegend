@@ -1,6 +1,6 @@
 {
   "name": "blocklegend",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "private": true,
   "description": "方块传奇 · 在 3D 方块世界里学英语",
   "scripts": {
@@ -11,7 +11,8 @@
     "android:build": "npm run android:sync && cd android && gradlew.bat assembleDebug"
   },
   "dependencies": {
-    "@capacitor/core": "8.4.2"
+    "@capacitor/core": "8.4.2",
+    "@capgo/capacitor-speech-recognition": "8.0.10"
   },
   "devDependencies": {
     "@capacitor/android": "8.4.2",

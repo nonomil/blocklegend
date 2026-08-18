@@ -3044,6 +3044,12 @@
     function paintHeard(text) {
         const el = document.getElementById('heard-text');
         if (el) el.textContent = text ? ('"' + text + '"') : '""';
+        const quizHeard = document.getElementById('quiz-heard');
+        if (quizHeard) {
+            if (text === '…') quizHeard.textContent = '正在听…';
+            else quizHeard.textContent = text ? ('听到：' + text) : '';
+            quizHeard.classList.toggle('is-hidden', !text);
+        }
         if (text && text !== '…') session.lastHeard = text;
     }
 
@@ -3076,10 +3082,13 @@
         const rec = window.SpeechRecognition || window.webkitSpeechRecognition;
         const android = /Android/i.test(navigator.userAgent || '');
         const on = session.buddyConfig && session.buddyConfig.enabled;
+        const native = !!capacitorSpeech();
         const bits = [
             on ? 'Model on this session.' : 'Template buddy. Paste a model URL to upgrade.',
             android
-                ? 'Android WebView usually has no speech. Type with G. 127.0.0.1 is this phone.'
+                ? (native || rec
+                    ? 'Mic ready. Tap 说出来 or V.'
+                    : 'Android WebView usually has no speech. Type with G. 127.0.0.1 is this phone.')
                 : (rec ? 'Mic ready. Hold G to talk.' : 'No speech API. Type with G.')
         ];
         el.textContent = bits.join(' ');
@@ -3275,7 +3284,7 @@
             targetKey: wordKey(word),
             startedAt: nowMs()
         } : null;
-        if (session.buddyTypeOnly || (!hasWebSpeech() && !hasGatewayStt())) {
+        if (session.buddyTypeOnly || (!canListen())) {
             setVoiceState('unsupported');
             showBuddyType(true);
             return;
@@ -3335,6 +3344,10 @@
             try { rec.abort(); } catch (e) { /* ignore */ }
             session.voice.rec = null;
         }
+        const SR = capacitorSpeech();
+        if (SR && SR.stop) {
+            try { SR.stop(); } catch (e) { /* ignore */ }
+        }
         if (session.voice && session.voice.state === 'listening') setVoiceState('idle');
     }
 
@@ -3359,7 +3372,7 @@
             startedAt: nowMs()
         };
         session.voice.lock = lock;
-        if (session.buddyTypeOnly || session.voice.blocked || (!hasWebSpeech() && !hasGatewayStt())) {
+        if (session.buddyTypeOnly || session.voice.blocked || !canListen()) {
             setVoiceState('unsupported');
             showVoiceFallback(lock, { reason: 'unsupported' });
             return;
@@ -3455,9 +3468,42 @@
         return !!(session.buddyConfig && session.buddyConfig.sttUrl);
     }
 
+    function capacitorSpeech() {
+        try {
+            const cap = window.Capacitor;
+            if (!cap) return null;
+            const plugins = cap.Plugins || {};
+            return plugins.SpeechRecognition || cap.SpeechRecognition || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function canListen() {
+        return hasWebSpeech() || !!capacitorSpeech() || hasGatewayStt();
+    }
+
+    function voiceHoldQuiz() {
+        const holding = !!(session.voice && session.voice.state === 'listening');
+        if (holding && session.quiz && session.quizEndsAt) {
+            const minEnd = nowMs() + 6500;
+            if (session.quizEndsAt < minEnd) session.quizEndsAt = minEnd;
+        }
+        return holding;
+    }
+
+    function heardMatchOpts(lock) {
+        const word = (lock && lock.word) || (session.quiz && session.quiz.word) || null;
+        return { zh: word && word.zh };
+    }
+
+    function heardHits(target, heard, lock) {
+        return !!(SP && SP.matchHeard && SP.matchHeard(target, heard, heardMatchOpts(lock)).ok);
+    }
+
     function finishListen(heard, o, lock, inQuiz, target) {
         paintHeard(heard);
-        const hit = !!(SP && SP.matchHeard && SP.matchHeard(target, heard).ok);
+        const hit = heardHits(target, heard, lock);
         if (o.buddy) {
             setVoiceState(hit ? 'matched' : 'not-matched');
             handleBuddyHeard(heard, lock);
@@ -3497,6 +3543,7 @@
             return;
         }
         setVoiceState('listening');
+        voiceHoldQuiz();
         paintHeard('…');
         toast(o.buddy ? '跟陪玩说英语' : ('说：' + target));
         navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
@@ -3546,23 +3593,89 @@
             || '';
         if (!target && !o.buddy) return;
         if (session.voice && session.voice.rec) stopVoiceRec();
+        try {
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
+        } catch (e) { /* ignore */ }
+        const quizInput = document.getElementById('quiz-input');
+        if (quizInput) quizInput.blur();
         if (hasGatewayStt()) {
             listenViaGateway(o);
             return;
         }
+        if (capacitorSpeech()) {
+            listenViaNative(o, lock, inQuiz, target);
+            return;
+        }
+        listenViaWeb(o, lock, inQuiz, target);
+    }
+
+    function listenViaNative(o, lock, inQuiz, target) {
+        const SR = capacitorSpeech();
+        if (!SR || !SR.start) {
+            listenViaWeb(o, lock, inQuiz, target);
+            return;
+        }
+        setVoiceState('listening');
+        voiceHoldQuiz();
+        paintHeard('…');
+        toast(o.buddy ? '跟陪玩说英语' : ('说：' + target));
+        const begin = function () {
+            return SR.start({
+                language: 'en-US',
+                maxResults: 5,
+                partialResults: false,
+                popup: false
+            });
+        };
+        const go = SR.requestPermissions ? SR.requestPermissions() : Promise.resolve({});
+        go.then(function (perm) {
+            const status = perm && (perm.speechRecognition || perm.record_audio || perm.granted);
+            if (status === 'denied') {
+                const err = new Error('not-allowed');
+                err.error = 'not-allowed';
+                throw err;
+            }
+            return begin();
+        }).then(function (res) {
+            const matches = (res && (res.matches || res.results)) || [];
+            const alts = Array.isArray(matches) ? matches.map(String) : [];
+            const heard = alts[0] || '';
+            const hitLine = alts.filter(function (line) { return heardHits(target, line, lock); })[0];
+            finishListen(hitLine || heard, o, lock, inQuiz, target);
+        }).catch(function (err) {
+            const msg = String((err && (err.error || err.message)) || '');
+            if (/not-allowed|denied|permission/i.test(msg)) {
+                session.voice.blocked = true;
+                setVoiceState('mic-blocked');
+                if (lock) showVoiceFallback(lock, { reason: 'unsupported' });
+                toast('没有麦克风权限，点中文或按 T');
+                return;
+            }
+            if (hasWebSpeech()) {
+                listenViaWeb(o, lock, inQuiz, target);
+                return;
+            }
+            setVoiceState('not-matched');
+            toast('没听清，再按 V 或按 T 打字');
+        });
+    }
+
+    function listenViaWeb(o, lock, inQuiz, target) {
         const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!Rec) {
             setVoiceState('unsupported');
             if (o.buddy) showBuddyType(true);
             else if (lock) showVoiceFallback(lock, { reason: 'unsupported' });
+            else toast('这台设备没有语音识别，请打字');
             return;
         }
         const rec = new Rec();
         rec.lang = 'en-US';
         rec.interimResults = false;
-        rec.maxAlternatives = 3;
+        rec.maxAlternatives = 5;
         session.voice.rec = rec;
         setVoiceState('listening');
+        voiceHoldQuiz();
         let done = false;
         rec.onresult = function (ev) {
             if (done) return;
@@ -3574,8 +3687,8 @@
             done = true;
             session.voice.rec = null;
             const heard = alts[0] || '';
-            const hit = alts.some(function (line) { return SP.matchHeard(target, line).ok; });
-            finishListen(hit ? (alts.filter(function (line) { return SP.matchHeard(target, line).ok; })[0] || heard) : heard, o, lock, inQuiz, target);
+            const hitLine = alts.filter(function (line) { return heardHits(target, line, lock); })[0];
+            finishListen(hitLine || heard, o, lock, inQuiz, target);
         };
         rec.onerror = function (ev) {
             if (done) return;
@@ -3590,6 +3703,10 @@
                 return;
             }
             if (err === 'no-speech') {
+                if (!o._retried) {
+                    listenOnce(Object.assign({}, o, { _retried: true, lock: lock }));
+                    return;
+                }
                 setVoiceState('timeout');
                 toast('没有听清');
                 return;
@@ -3613,6 +3730,7 @@
             session.voice.rec = null;
             setVoiceState('unsupported');
             if (lock) showVoiceFallback(lock, { reason: 'unsupported' });
+            else toast('这台设备没有语音识别，请打字');
         }
     }
 
@@ -3628,7 +3746,7 @@
                 sceneGroups: engine.scene.children.filter(function (n) { return n.type === 'Group'; }).length
             };
         }
-        if (session.quiz && t >= session.quizEndsAt) resolveQuiz(false);
+        if (session.quiz && t >= session.quizEndsAt && !voiceHoldQuiz()) resolveQuiz(false);
         if (session.quiz) {
             const left = Math.max(0, session.quizEndsAt - t);
             const bar = document.getElementById('quiz-timer');

@@ -61,6 +61,19 @@ if (fs.existsSync(manifest)) {
     );
     fs.writeFileSync(manifest, text);
   }
+  if (!text.includes('android.speech.RecognitionService')) {
+    const queries = [
+      '    <queries>',
+      '        <intent>',
+      '            <action android:name="android.speech.RecognitionService" />',
+      '        </intent>',
+      '    </queries>'
+    ].join('\n');
+    if (text.includes('</manifest>')) {
+      text = text.replace('</manifest>', queries + '\n</manifest>');
+      fs.writeFileSync(manifest, text);
+    }
+  }
 }
 
 console.log('[patch-android] version', version, 'code', code);

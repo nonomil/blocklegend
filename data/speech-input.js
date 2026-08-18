@@ -38,6 +38,46 @@
         return String(s || '').toLowerCase().split(/[^a-z']+/).filter(Boolean);
     }
 
+    const STT_ALIASES = {
+        tree: ['three', 'tee', 'free'],
+        bee: ['be'],
+        sea: ['see', 'c'],
+        see: ['sea', 'c'],
+        sun: ['son'],
+        one: ['won'],
+        two: ['to', 'too'],
+        four: ['for'],
+        eight: ['ate'],
+        no: ['know'],
+        know: ['no'],
+        night: ['knight'],
+        knight: ['night'],
+        right: ['write'],
+        write: ['right'],
+        flower: ['flour'],
+        flour: ['flower'],
+        bear: ['bare'],
+        blue: ['blew'],
+        red: ['read'],
+        read: ['red']
+    };
+
+    function aliasHit(want, got) {
+        const list = STT_ALIASES[want];
+        return !!(list && list.indexOf(got) >= 0);
+    }
+
+    function cjkOf(s) {
+        return String(s || '').replace(/[^\u4e00-\u9fff]/g, '');
+    }
+
+    function matchZh(wantZh, heard) {
+        const want = String(wantZh || '').replace(/\s+/g, '');
+        const got = cjkOf(heard);
+        if (!want || !got) return false;
+        return got === want || got.indexOf(want) !== -1 || want.indexOf(got) !== -1;
+    }
+
     function closeEnough(want, got) {
         if (!want || !got) return false;
         if (want === got) return true;
@@ -45,18 +85,22 @@
         return editDistance(want, got) <= 1;
     }
 
-    function matchHeard(target, heard) {
+    function matchHeard(target, heard, extra) {
         const want = normHeard(target);
         if (!want) return { ok: false, kind: 'mismatch' };
+        extra = extra || {};
+        if (matchZh(extra.zh, heard)) return { ok: true, kind: 'zh' };
         const parts = tokensOf(heard);
         let i = 0;
         for (i = 0; i < parts.length; i += 1) {
-            if (closeEnough(want, parts[i])) {
+            if (closeEnough(want, parts[i]) || aliasHit(want, parts[i])) {
                 return { ok: true, kind: parts[i] === want ? 'match' : 'close' };
             }
         }
         const got = normHeard(heard);
-        if (closeEnough(want, got)) return { ok: true, kind: want === got ? 'match' : 'close' };
+        if (closeEnough(want, got) || aliasHit(want, got)) {
+            return { ok: true, kind: want === got ? 'match' : 'close' };
+        }
         return { ok: false, kind: 'mismatch' };
     }
 
@@ -65,9 +109,11 @@
         return { ok: false, kind: k };
     }
 
-    function canSpeak() {
-        if (typeof window === 'undefined') return false;
-        return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+    function canSpeak(host) {
+        const env = host || (typeof window !== 'undefined' ? window : null);
+        if (!env) return false;
+        if (env.SpeechRecognition || env.webkitSpeechRecognition) return true;
+        return !!env.Capacitor;
     }
 
     global.BlockLegendSpeech = {
