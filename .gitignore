@@ -1,6 +1,7 @@
 node_modules/
 android/
 www/
+.tmp-apk-*/
 __pycache__/
 *.pyc
 *.apk

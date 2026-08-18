@@ -9,6 +9,7 @@
 - 气候词先锁定（沙漠 hot/warm/wind，星空 snow/cold/white，海洋 water/fish/boat/swim）
 - 拼写卡读音支架；Boss 三阶段出手，弹种剪影可辨
 - 词库仍是 597，不扩关、不新录音频
+- 网页版：https://nonomil.github.io/blocklegend/
 
 ## 0.8.2 · 2026-08-18
 

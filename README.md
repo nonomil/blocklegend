@@ -16,6 +16,14 @@
 
 详见 [CHANGELOG.md](CHANGELOG.md)。
 
+## 网页版
+
+推送 `main` 后发布到 GitHub Pages：
+
+https://nonomil.github.io/blocklegend/
+
+工作流：[.github/workflows/github-pages.yml](.github/workflows/github-pages.yml)
+
 ## 浏览器里玩
 
 ```powershell
