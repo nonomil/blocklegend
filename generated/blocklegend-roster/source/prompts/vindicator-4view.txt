@@ -1,0 +1,14 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel raid axeman matching public IllagerModel cuboids. Pale-gray 8x10x8 head with a long rectangular nose 2x4x2 and heavy dark brows. Dark olive-gray coat torso 8x12x6. 4x12x4 arms: right arm holds a blocky iron axe in FRONT of the chest, left arm hangs or grips the handle. 4x12x4 dark pants legs. Brown belt, iron buckle. NOT a pillager (no crossbow, no wine-red coat). NOT a villager. NOT a piglin.
+
+CRITICAL POSE — identical in all four views, never T-pose:
+- FRONT: axe as a flat iron rectangle + wood handle on the chest. Nose sticks out. Coat is olive-gray, not wine red.
+- RIGHT: arms + axe go toward the LEFT of this quadrant (forward). Head toward the LEFT.
+- BACK: coat back, no face, no nose. No T-pose.
+- LEFT: mirror of right. Head toward the RIGHT.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic, no 3/4, no top-down.
+Color palette: skin #c8c4c0, coat #4a4a3a, pants #2a2a30, belt #4a3020, buckle #b8b8c0, axe-head #8a9098, handle #6a4020, brows #2a2a2a, eyes #4a6a48.
+Text: none. Output: 1024x1024 PNG four-view sheet.

@@ -46,6 +46,7 @@ factory_map = {
     "dragon": "createDragonModel.js",
     "storm": "createStormModel.js",
     "husk": "createHuskModel.js",
+    "pillager": "createPillagerModel.js",
     "ravager": "createRavagerModel.js",
     "phantom": "createPhantomModel.js",
     "vex": "createVexModel.js",

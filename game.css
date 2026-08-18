@@ -1412,6 +1412,7 @@ button.bl-quiz-en,
     pointer-events: none;
 }
 .bl-touch[hidden] { display: none; }
+body.is-overlay .bl-touch { display: none; }
 .bl-dpad,
 .bl-touch-act { pointer-events: auto; }
 .bl-dpad {

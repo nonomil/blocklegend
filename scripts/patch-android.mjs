@@ -52,6 +52,15 @@ if (fs.existsSync(manifest)) {
     );
     fs.writeFileSync(manifest, text);
   }
+  if (!text.includes('windowSoftInputMode')) {
+    text = text.replace(
+      /<activity\b([^>]*)>/,
+      function (_, attrs) {
+        return '<activity' + attrs + ' android:windowSoftInputMode="adjustResize">';
+      }
+    );
+    fs.writeFileSync(manifest, text);
+  }
 }
 
 console.log('[patch-android] version', version, 'code', code);

@@ -50,7 +50,9 @@
     const KID_SAY = {
         hot: 'h-ot', water: 'wa-ter', snow: 'sn-oh', cold: 'c-old', white: 'wh-ite',
         sun: 's-un', wind: 'w-ind', warm: 'w-arm', fish: 'f-ish', boat: 'b-oat',
-        swim: 'sw-im', tree: 'tr-ee', apple: 'ap-ple', black: 'bl-ack'
+        swim: 'sw-im', tree: 'tr-ee', apple: 'ap-ple', black: 'bl-ack',
+        light: 'l-ight', star: 'st-ar', cloud: 'cl-oud', flower: 'flow-er',
+        green: 'gr-een', jump: 'j-ump'
     };
 
     function hyphenateWord(text) {
@@ -993,6 +995,7 @@
         slime: ['slime'],
         cube: ['mob'],
         husk: ['husk'],
+        pillager: ['pillager'],
         ravager: ['ravager'],
         phantom: ['phantom'],
         vex: ['vex'],
@@ -1069,6 +1072,7 @@
         slime: '史莱姆',
         cube: '方块兽',
         husk: '尸壳',
+        pillager: '掠夺者',
         ravager: '劫掠兽',
         phantom: '幻翼',
         vex: '恼鬼',

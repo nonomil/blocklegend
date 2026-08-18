@@ -13,7 +13,7 @@
         { id: 'break-boss', title: '用 3 个词击破 Boss 护盾', hint: '对 Boss 答对，蓝罩变红' }
     ];
     const LEVEL2 = [
-        { id: 'find-fox', title: '按英语线索找到狐狸', hint: '听 left / right / behind，走到狐狸旁边' },
+        { id: 'find-fox', title: '在密林按英语线索找到狐狸', hint: '听 right / behind，走到狐狸旁边' },
         { id: 'pick-flower', title: '采一朵会发光的花', hint: '对准花或树叶，看英文名字' },
         { id: 'learn-six', title: '熟悉 10 个不同的词', hint: '答对 10 个不一样的词，重复不算' },
         { id: 'break-boss', title: '对镜子狐狸喊出方位破盾', hint: '说 left / right / behind' }
@@ -24,10 +24,10 @@
         { id: 'break-boss', title: '拼写钥匙词击破守卫', hint: '拼对才能削罩' }
     ];
     const LEVEL4 = [
-        { id: 'look', kind: 'skeleton', title: '在暮色里找到骷髅', hint: '对准 skeleton，看英文' },
+        { id: 'look', kind: 'skeleton', title: '在雪原找到骷髅', hint: '对准 skeleton，看英文' },
         { id: 'kill', kind: 'phantom', title: '答对并打掉一只幻翼', hint: '对准 phantom，答对再打' },
         { id: 'learn', need: 16, title: '熟悉 16 个不同的夜间词', hint: '答对 16 个不一样的词，重复不算' },
-        { id: 'break-boss', title: '对末影龙说对词破罩', hint: '对准 Boss 答对，蓝罩变红' }
+        { id: 'break-boss', title: '对幻翼说对词破罩', hint: '对准 Boss 答对，蓝罩变红' }
     ];
     const LEVEL5 = [
         { id: 'look', kind: 'witch', title: '在深暗找到女巫', hint: '对准 witch，看英文' },
@@ -60,7 +60,7 @@
         { id: 'break-boss', title: '拼写击破潮汐守卫', hint: '对准 Boss 拼对破罩' }
     ];
     const LEVEL10 = [
-        { id: 'look', kind: 'slime', title: '在蘑菇谷找到史莱姆', hint: '对准 slime' },
+        { id: 'look', kind: 'slime', title: '在晶簇林找到史莱姆', hint: '对准 slime' },
         { id: 'look', kind: 'bee', title: '看见一只蜜蜂', hint: '对准 bee' },
         { id: 'learn', need: 16, title: '熟悉 16 个不同的颜色词', hint: '答对 16 个不一样的词，重复不算' },
         { id: 'break-boss', title: '喊方位击破镜子狐狸', hint: '对准 Boss 答对破罩' }

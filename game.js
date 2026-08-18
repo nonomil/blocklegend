@@ -23,7 +23,8 @@
         'ender-pearl': 8, 'gold-nugget': 6, 'glow-dust': 5,
         'iron-ingot': 6, saddle: 8, 'phantom-membrane': 6, 'vex-wing': 6,
         'trident-shard': 7, snowball: 2, 'shulker-shell': 8, prismarine: 7,
-        'puffer-spine': 4, 'spore-cap': 5, 'ember-core': 6, 'sculk-thread': 6, 'shadow-hood': 7
+        'puffer-spine': 4, 'spore-cap': 5, 'ember-core': 6, 'sculk-thread': 6, 'shadow-hood': 7,
+        'crossbow-bolt': 6
     };
     const DROP_COLOR = {
         'oak-log': 0x6b4a28, 'stick': 0x8a6234, 'dirt': 0x8a6a3c, 'cobble': 0x7a7a80, 'plank': 0xe0b46a
@@ -31,15 +32,15 @@
     const CHAPTERS = [
         '',
         '第一层 · 初生神域 · Genesis',
-        '第二层 · 樱花林地 · Cherry',
+        '第二层 · 密林猎场 · Forest',
         '第三层 · 沙海荒原 · Desert',
-        '第四层 · 暮色河谷 · Duskvale',
-        '第五层 · 晶簇森林 · Crystal',
+        '第四层 · 雪原寒径 · Snow',
+        '第五层 · 深暗地穴 · Deep Dark',
         '第六层 · 下界熔岩 · Nether',
-        '第七层 · 密林猎场 · Forest',
-        '第八层 · 雪原寒径 · Snow',
+        '第七层 · 石丘矿场 · Quarry',
+        '第八层 · 星空回廊 · Astral',
         '第九层 · 潮汐群岛 · Ocean',
-        '第十层 · 蘑菇谷地 · Mushroom',
+        '第十层 · 晶簇森林 · Crystal',
         '第十一层 · 火山裂谷 · Volcano',
         '第十二层 · 末地虚空 · End'
     ];
@@ -365,10 +366,11 @@
         }
         const keys = document.getElementById('cast-keyboard');
         if (keys) {
-            keys.addEventListener('click', function (e) {
+            keys.addEventListener('pointerdown', function (e) {
                 const btn = e.target.closest('[data-key], [data-action]');
                 if (!btn || !session.casting) return;
                 e.preventDefault();
+                e.stopPropagation();
                 const action = btn.getAttribute('data-action');
                 if (action === 'backspace') {
                     session.castBuf = String(session.castBuf || '').slice(0, -1);
@@ -390,10 +392,11 @@
         }
         const quizKeys = document.getElementById('quiz-keyboard');
         if (quizKeys) {
-            quizKeys.addEventListener('click', function (e) {
+            quizKeys.addEventListener('pointerdown', function (e) {
                 const btn = e.target.closest('[data-key], [data-action]');
                 if (!btn || !session.quiz) return;
                 e.preventDefault();
+                e.stopPropagation();
                 applyQuizKey(btn.getAttribute('data-action'), btn.getAttribute('data-key'));
             });
         }
@@ -414,6 +417,12 @@
             quizForm.addEventListener('submit', function (e) {
                 e.preventDefault();
                 submitTypedQuiz();
+            });
+        }
+        const quizInput = document.getElementById('quiz-input');
+        if (quizInput) {
+            quizInput.addEventListener('input', function () {
+                if (session.quiz) refreshQuizKeyPaint();
             });
         }
         document.addEventListener('keydown', function (e) {
@@ -580,6 +589,7 @@
         if (el) el.classList.toggle('is-hidden', !on);
         session.paused = overlayOpen();
         if (engine && engine.setUiMode) engine.setUiMode(session.paused);
+        syncTouchHud();
         if (!on && id === 'quiz-layer' && !session.paused && engine && engine.resumeLook) {
             engine.resumeLook();
         }
@@ -878,6 +888,13 @@
         return false;
     }
 
+    function syncTouchHud() {
+        const root = document.getElementById('touch-pad');
+        document.body.classList.toggle('is-overlay', overlayOpen());
+        if (!root || !wantTouchPad()) return;
+        root.hidden = overlayOpen();
+    }
+
     function bindTouchPad() {
         const root = document.getElementById('touch-pad');
         const dpad = document.getElementById('touch-dpad');
@@ -889,6 +906,7 @@
         let padId = null;
 
         function paintDirs(state) {
+            if (engine.setMoveAxis) engine.setMoveAxis(state ? state.x : 0, state ? state.y : 0);
             dirs.forEach(function (dir) {
                 engine.setHeld(dir, !!(state && state[dir]));
                 const btn = dpad && dpad.querySelector('[data-dir="' + dir + '"]');
@@ -899,14 +917,21 @@
         function dirFromEvent(ev) {
             if (!dpad) return null;
             const box = dpad.getBoundingClientRect();
-            const x = ev.clientX - (box.left + box.width / 2);
-            const y = ev.clientY - (box.top + box.height / 2);
-            const dead = Math.max(16, box.width * 0.12);
+            const rx = (ev.clientX - (box.left + box.width / 2)) / Math.max(1, box.width / 2);
+            const ry = (ev.clientY - (box.top + box.height / 2)) / Math.max(1, box.height / 2);
+            const mag = Math.hypot(rx, ry);
+            const dead = 0.18;
+            if (mag < dead) return { x: 0, y: 0, fwd: false, back: false, left: false, right: false };
+            const scale = Math.min(1, mag);
+            const nx = (rx / mag) * scale;
+            const ny = (ry / mag) * scale;
             return {
-                fwd: y < -dead,
-                back: y > dead,
-                left: x < -dead,
-                right: x > dead
+                x: nx,
+                y: -ny,
+                fwd: ny < -0.22,
+                back: ny > 0.22,
+                left: nx < -0.22,
+                right: nx > 0.22
             };
         }
 
@@ -965,6 +990,7 @@
         bindHold(attack, beginMine, endMine);
         bindHold(place, usePlace, function () {});
         root.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+        syncTouchHud();
     }
 
     function bindCombatInput(canvas) {
@@ -1141,7 +1167,7 @@
             mob.parked = true;
         });
         session.boss = L.createBoss(session.level);
-        ['wither', 'dragon', 'storm', 'warden', 'ghast', 'ravager', 'blaze'].forEach(function (bossId, i) {
+        ['wither', 'dragon', 'storm', 'warden', 'ghast', 'ravager', 'blaze', 'night-phantom'].forEach(function (bossId, i) {
             const open = openMobSpot(p.x - 16, p.z + 18 + i * 4);
             const spawnKind = (L.bossSpawnKind && L.bossSpawnKind(bossId)) || 'husk';
             const mob = spawnMonster(spawnKind, open.x, open.z, { boss: true, bossId: bossId });
@@ -2109,8 +2135,8 @@
             if (typeBox) typeBox.classList.remove('is-hidden');
             if (input) {
                 input.value = '';
-                input.readOnly = !!wantTouchPad();
-                if (!wantTouchPad()) setTimeout(function () { input.focus(); }, 30);
+                input.readOnly = false;
+                setTimeout(function () { input.focus(); }, 30);
             }
         } else {
             box.classList.remove('is-hidden');
@@ -2118,7 +2144,8 @@
             if (input && bossType) {
                 input.value = '';
                 input.placeholder = 'type the English word';
-                input.readOnly = !!wantTouchPad();
+                input.readOnly = false;
+                setTimeout(function () { input.focus(); }, 30);
             }
             (quiz.choices || []).forEach(function (choice, i) {
                 const btn = document.createElement('button');
@@ -2289,7 +2316,26 @@
         } else if (ch != null && ch !== '') {
             input.value = String(input.value || '') + ch;
         }
-        paintQuizKeyboard();
+        refreshQuizKeyPaint();
+    }
+
+    function refreshQuizKeyPaint() {
+        const box = document.getElementById('quiz-keyboard');
+        const input = document.getElementById('quiz-input');
+        if (!box || !session.quiz) return;
+        if (!box.querySelector('.bl-key')) {
+            paintQuizKeyboard();
+            return;
+        }
+        const typed = String((input && input.value) || '').toLowerCase();
+        const aim = String((session.quiz.word && session.quiz.word.text) || session.quiz.answer || '').toLowerCase();
+        const next = aim.charAt(typed.length);
+        const btns = box.querySelectorAll('[data-key]');
+        for (let i = 0; i < btns.length; i += 1) {
+            const ch = btns[i].getAttribute('data-key');
+            btns[i].classList.toggle('is-next', ch === next);
+            btns[i].classList.toggle('is-done', typed.indexOf(ch) >= 0);
+        }
     }
 
     function liveCastTargets() {

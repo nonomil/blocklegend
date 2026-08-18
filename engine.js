@@ -14,8 +14,10 @@
     const WORLD_SIZE = 384;     // 世界边长（格）→ 24×24 区块
     const CHUNK = 16;           // 区块边长
     const VIEW_CHUNKS = 4;      // 玩家周围半径（区块）
+    const MOBILE_VIEW_CHUNKS = 2; // 手机/APK：5×5 区块，少卡
     const BOOT_CHUNKS = 1;      // 首屏只建 3×3
     const PIXEL_RATIO_CAP = 1.5;
+    const MOBILE_PIXEL_RATIO = 1;
     const EYE_HEIGHT = 1.62;
     const MOVE_SPEED = 4.2;     // 格/秒
     const JUMP_VY = 7.2;        // 格/秒
@@ -2144,11 +2146,20 @@
     }
 
     /* ---------- 引擎工厂 ---------- */
+    function isLiteClient() {
+        if (global.Capacitor) return true;
+        if (global.matchMedia && global.matchMedia('(pointer: coarse)').matches) return true;
+        return false;
+    }
+
     function create(canvas, options) {
         const opts = options || {};
         let world = opts.world || createWorld(opts.seed || 7, opts);
+        const lite = isLiteClient();
+        const viewChunks = lite ? MOBILE_VIEW_CHUNKS : VIEW_CHUNKS;
+        const pixelCap = lite ? MOBILE_PIXEL_RATIO : PIXEL_RATIO_CAP;
         const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, PIXEL_RATIO_CAP));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, pixelCap));
         renderer.shadowMap.enabled = false;
 
         const scene = new THREE.Scene();
@@ -2419,9 +2430,16 @@
             if (i >= 0) chunkMeshes.splice(i, 1);
         }
 
+        let lastStreamKey = '';
+        let streamFilled = false;
         function streamChunks(budget) {
+            const cx = Math.floor(player.x / CHUNK) * CHUNK;
+            const cz = Math.floor(player.z / CHUNK) * CHUNK;
+            const here = cx + ',' + cz;
+            if (streamFilled && here === lastStreamKey) return;
+            lastStreamKey = here;
             const want = {};
-            const keys = chunksAround(player.x, player.z, world.size, CHUNK, VIEW_CHUNKS);
+            const keys = chunksAround(player.x, player.z, world.size, CHUNK, viewChunks);
             keys.forEach(function (k) { want[k] = true; });
             Object.keys(chunkMap).forEach(function (k) {
                 if (!want[k]) dropChunk(k);
@@ -2441,6 +2459,7 @@
                 ensureChunk(Number(parts[0]), Number(parts[1]));
                 built += 1;
             }
+            streamFilled = built === 0;
         }
 
         chunksAround(player.x, player.z, world.size, CHUNK, BOOT_CHUNKS).forEach(function (key) {
@@ -2450,6 +2469,8 @@
 
         function reloadWorld(next) {
             world = next || createWorld(7);
+            lastStreamKey = '';
+            streamFilled = false;
             Object.keys(chunkMap).forEach(dropChunk);
             player.x = Math.floor(world.size / 2) + 0.5;
             player.z = Math.floor(world.size / 2) + 0.5;
@@ -2488,11 +2509,20 @@
 
         function updatePhysics(dt, input) {
             // 朝向移动（yaw: 0 朝 -Z，与相机一致）
-            const dirX = Math.sin(look.yaw) * (input.back ? 1 : 0) - Math.sin(look.yaw) * (input.fwd ? 1 : 0);
-            const dirZ = Math.cos(look.yaw) * (input.back ? 1 : 0) - Math.cos(look.yaw) * (input.fwd ? 1 : 0);
-            // strafe: 右向量 = (cos(yaw), 0, -sin(yaw))
-            const rgtX = Math.cos(look.yaw) * (input.right ? 1 : 0) - Math.cos(look.yaw) * (input.left ? 1 : 0);
-            const rgtZ = -Math.sin(look.yaw) * (input.right ? 1 : 0) + Math.sin(look.yaw) * (input.left ? 1 : 0);
+            const ax = analog.x, ay = analog.y;
+            const useStick = Math.abs(ax) + Math.abs(ay) > 0.001;
+            const dirX = useStick
+                ? (-Math.sin(look.yaw) * ay)
+                : (Math.sin(look.yaw) * (input.back ? 1 : 0) - Math.sin(look.yaw) * (input.fwd ? 1 : 0));
+            const dirZ = useStick
+                ? (-Math.cos(look.yaw) * ay)
+                : (Math.cos(look.yaw) * (input.back ? 1 : 0) - Math.cos(look.yaw) * (input.fwd ? 1 : 0));
+            const rgtX = useStick
+                ? (Math.cos(look.yaw) * ax)
+                : (Math.cos(look.yaw) * (input.right ? 1 : 0) - Math.cos(look.yaw) * (input.left ? 1 : 0));
+            const rgtZ = useStick
+                ? (-Math.sin(look.yaw) * ax)
+                : (-Math.sin(look.yaw) * (input.right ? 1 : 0) + Math.sin(look.yaw) * (input.left ? 1 : 0));
             let mx = dirX + rgtX, mz = dirZ + rgtZ;
             const len = Math.hypot(mx, mz);
             if (len > 0) {
@@ -2543,6 +2573,7 @@
         /* ---------- 输入 ---------- */
         const input = { fwd: false, back: false, left: false, right: false, jump: false };
         const held = { fwd: false, back: false, left: false, right: false, jump: false };
+        const analog = { x: 0, y: 0 };
         let moveLocked = false;
         function refreshKeys() {
             if (moveLocked) {
@@ -2564,6 +2595,10 @@
             held[part] = !!on;
             refreshKeys();
         }
+        function setMoveAxis(x, y) {
+            analog.x = moveLocked ? 0 : Math.max(-1, Math.min(1, Number(x) || 0));
+            analog.y = moveLocked ? 0 : Math.max(-1, Math.min(1, Number(y) || 0));
+        }
 
         let pointerLocked = false;
         let lookFrozen = false;
@@ -2584,7 +2619,7 @@
         }
         function resumeLook() {
             lookFrozen = false;
-            if (canvas.requestPointerLock) canvas.requestPointerLock();
+            if (!lite && canvas.requestPointerLock) canvas.requestPointerLock();
             syncLookTip();
         }
         function setCastMode(on) {
@@ -2596,6 +2631,8 @@
                 input.left = false;
                 input.right = false;
                 input.jump = false;
+                analog.x = 0;
+                analog.y = 0;
             } else {
                 refreshKeys();
             }
@@ -2611,7 +2648,7 @@
                 refreshKeys();
             });
             canvas.addEventListener('click', function () {
-                if (lookFrozen) return;
+                if (lookFrozen || lite) return;
                 if (!pointerLocked && canvas.requestPointerLock) canvas.requestPointerLock();
             });
             document.addEventListener('pointerlockchange', function () {
@@ -2757,7 +2794,8 @@
             setUiMode: setUiMode,
             resumeLook: resumeLook,
             setCastMode: setCastMode,
-            setHeld: setHeld
+            setHeld: setHeld,
+            setMoveAxis: setMoveAxis
         };
         return api;
     }

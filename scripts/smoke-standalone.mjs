@@ -21,6 +21,14 @@ const html = fs.readFileSync('index.html', 'utf8');
 assert.match(html, /\.\/shared\/workbench-bridge\.js/);
 assert.doesNotMatch(html, /\.\.\/shared\/workbench-bridge\.js/);
 assert.match(html, /words\.js\?v=20260818-bl-learn5/);
+assert.match(html, /interactive-widget=resizes-content/);
+const game = fs.readFileSync('game.js', 'utf8');
+assert.match(game, /function refreshQuizKeyPaint/);
+assert.doesNotMatch(game, /input\.readOnly = !!wantTouchPad\(\)/);
+const engine = fs.readFileSync('engine.js', 'utf8');
+assert.match(engine, /MOBILE_VIEW_CHUNKS = 2/);
+assert.match(engine, /function setMoveAxis/);
+assert.match(fs.readFileSync('scripts/patch-android.mjs', 'utf8'), /windowSoftInputMode/);
 
 const phases = fs.readFileSync('review-boss-phases.html', 'utf8');
 assert.match(phases, /\.\/generated\/blocklegend-roster\/boss-phases\/keyed\//);

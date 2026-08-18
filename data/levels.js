@@ -21,30 +21,30 @@
             unlock: { coins: 0, recallWords: 0 }
         },
         {
-            level: 2, waves: 4, bossHp: 110, bossShield: 4, climate: 'cherry', worldSeed: 21,
+            level: 2, waves: 4, bossHp: 110, bossShield: 4, climate: 'forest', worldSeed: 21,
             bossId: 'mirror-fox', bossMechanic: 'direction-callout', missionType: 'find-and-guide',
-            waveKinds: ['slime', 'fox', 'creeper'], targetWords: 50, reviewRatio: 0.4,
+            waveKinds: ['slime', 'fox', 'creeper', 'spider'], targetWords: 50, reviewRatio: 0.4,
             wordThemes: ['动物', '自然', '方位'],
-            climateWords: ['fox', 'right'],
-            focusWords: ['fox', 'flower', 'left', 'right', 'behind', 'tree'],
+            climateWords: ['fox', 'right', 'flower'],
+            focusWords: ['fox', 'flower', 'right', 'behind', 'tree', 'spider'],
             unlock: { coins: 50, recallWords: 5 }
         },
         {
             level: 3, waves: 4, bossHp: 140, bossShield: 4, climate: 'desert', worldSeed: 33,
             bossId: 'key-guardian', bossMechanic: 'spell-key', missionType: 'collect-key',
-            waveKinds: ['zombie', 'husk', 'drowned', 'ravager'], targetWords: 50, reviewRatio: 0.4,
+            waveKinds: ['zombie', 'husk', 'drowned', 'ravager', 'pillager'], targetWords: 50, reviewRatio: 0.4,
             wordThemes: ['物品', '自然', '动作'],
             climateWords: ['hot', 'warm', 'wind'],
-            focusWords: ['sand', 'stone', 'key', 'door', 'chest', 'open', 'husk'],
+            focusWords: ['sand', 'stone', 'key', 'door', 'chest', 'open', 'husk', 'pillager'],
             unlock: { coins: 150, recallWords: 5 }
         },
         {
-            level: 4, waves: 4, bossHp: 170, bossShield: 5, climate: 'duskvale', worldSeed: 47,
-            bossId: 'dragon', bossMechanic: 'action-potion', missionType: 'night-escort',
-            waveKinds: ['skeleton', 'enderman', 'phantom', 'vex', 'shadow_stalker'], targetWords: 50, reviewRatio: 0.5,
+            level: 4, waves: 4, bossHp: 170, bossShield: 5, climate: 'snow', worldSeed: 47,
+            bossId: 'night-phantom', bossMechanic: 'action-potion', missionType: 'night-escort',
+            waveKinds: ['skeleton', 'enderman', 'phantom', 'vex', 'shadow_stalker', 'snowgolem'], targetWords: 50, reviewRatio: 0.5,
             wordThemes: ['动作', '生活', '动物'],
-            climateWords: ['night', 'moon'],
-            focusWords: ['run', 'jump', 'torch', 'night', 'wolf', 'help', 'light', 'phantom', 'shadow stalker'],
+            climateWords: ['night', 'moon', 'snow', 'cold', 'white'],
+            focusWords: ['run', 'jump', 'torch', 'night', 'wolf', 'help', 'snow', 'phantom', 'shadow stalker', 'snow golem'],
             unlock: { coins: 300, recallWords: 5 }
         },
         {
@@ -52,8 +52,8 @@
             bossId: 'warden', bossMechanic: 'listen-pair', missionType: 'deep-listen',
             waveKinds: ['spider', 'witch', 'shulker', 'warden', 'golem', 'sculk_worm'], targetWords: 50, reviewRatio: 0.5,
             wordThemes: ['描述', '颜色', '自然'],
-            climateWords: ['star', 'cloud'],
-            focusWords: ['blue', 'red', 'hard', 'soft', 'bright', 'dark', 'shulker', 'sculk worm'],
+            climateWords: ['black', 'light'],
+            focusWords: ['black', 'light', 'blue', 'red', 'shulker', 'sculk worm'],
             unlock: { coins: 500, recallWords: 5 }
         },
         {
@@ -68,7 +68,7 @@
         {
             level: 7, waves: 4, bossHp: 260, bossShield: 6, climate: 'quarry', worldSeed: 83,
             bossId: 'ravager', bossMechanic: 'speak-break', missionType: 'quarry-dig',
-            waveKinds: ['husk', 'creeper', 'golem', 'spider'], targetWords: 50, reviewRatio: 0.5,
+            waveKinds: ['husk', 'creeper', 'golem', 'spider', 'pillager'], targetWords: 50, reviewRatio: 0.5,
             wordThemes: ['动物', '自然', '物品'],
             climateWords: ['door'],
             focusWords: ['stone', 'dark', 'spider', 'run', 'help'],
@@ -79,8 +79,8 @@
             bossId: 'storm', bossMechanic: 'listen-pair', missionType: 'star-trail',
             waveKinds: ['phantom', 'vex', 'skeleton', 'husk'], targetWords: 50, reviewRatio: 0.55,
             wordThemes: ['自然', '描述', '动作'],
-            climateWords: ['snow', 'cold', 'white'],
-            focusWords: ['dark', 'light', 'white', 'run', 'help'],
+            climateWords: ['star', 'cloud'],
+            focusWords: ['star', 'cloud', 'run', 'help'],
             unlock: { coins: 1500, recallWords: 6 }
         },
         {
@@ -93,12 +93,12 @@
             unlock: { coins: 2000, recallWords: 7 }
         },
         {
-            level: 10, waves: 4, bossHp: 320, bossShield: 7, climate: 'mushroom', worldSeed: 127,
+            level: 10, waves: 4, bossHp: 320, bossShield: 7, climate: 'crystal', worldSeed: 127,
             bossId: 'mirror-fox', bossMechanic: 'direction-callout', missionType: 'spore-guide',
             waveKinds: ['slime', 'cube', 'spider', 'witch', 'spore_bug'], targetWords: 50, reviewRatio: 0.6,
             wordThemes: ['颜色', '自然', '动物'],
-            climateWords: ['jump'],
-            focusWords: ['red', 'soft', 'mushroom', 'jump', 'left', 'right', 'spore bug'],
+            climateWords: ['jump', 'green'],
+            focusWords: ['green', 'jump', 'right', 'spore bug'],
             unlock: { coins: 2600, recallWords: 7 }
         },
         {
@@ -138,6 +138,7 @@
         if (id === 'storm') return 'storm';
         if (id === 'mirror-fox') return 'fox';
         if (id === 'key-guardian') return 'guardian';
+        if (id === 'night-phantom') return 'phantom';
         if (id === 'warden' || id === 'ghast' || id === 'ravager' || id === 'blaze') return id;
         return 'boss';
     }
@@ -151,6 +152,7 @@
         if (id === 'ghast') return '恶魂';
         if (id === 'ravager') return '劫掠兽';
         if (id === 'blaze') return '烈焰人';
+        if (id === 'night-phantom') return '幻翼';
         return '凋灵';
     }
 
@@ -243,6 +245,14 @@
                 { id: 'rush', intervalMs: 2000, count: 1, label: '闪身' },
                 { id: 'charge', intervalMs: 1400, count: 1, label: '连扑' }
             ]
+        },
+        'night-phantom': {
+            thresholds: [0.6, 0.3],
+            skills: [
+                { id: 'dive', intervalMs: 2600, count: 1, label: '俯冲' },
+                { id: 'fan_shot', intervalMs: 2000, count: 3, label: '夜息扇' },
+                { id: 'track_shot', intervalMs: 1400, count: 3, label: '追踪翼' }
+            ]
         }
     };
 
@@ -259,12 +269,14 @@
         dragon: { glow: [0x6a2a88, 0xaa00ff, 0xff66cc], scale: [1, 1.1, 1.2] },
         storm: { glow: [0xaa00ff, 0xcc66ff, 0xfff0a0], scale: [1, 1.1, 1.24] },
         fox: { glow: [0xe07a28, 0xffb060, 0xfff0c8], scale: [1, 1.06, 1.14] },
-        guardian: { glow: [0x4aa090, 0xffe060, 0xfff6a0], scale: [1, 1.08, 1.16] }
+        guardian: { glow: [0x4aa090, 0xffe060, 0xfff6a0], scale: [1, 1.08, 1.16] },
+        phantom: { glow: [0x3a4a78, 0x6a80c8, 0xc8d8ff], scale: [1, 1.12, 1.22] }
     };
 
     function formIdOf(id) {
         if (id === 'key-guardian') return 'guardian';
         if (id === 'mirror-fox') return 'fox';
+        if (id === 'night-phantom') return 'phantom';
         return id || 'wither';
     }
 

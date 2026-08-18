@@ -10,11 +10,34 @@
   ],
   "gate": "prj/assets/generated/blocklegend-roster/PIPELINE.md",
   "planned": [
-    {"id": "pillager", "en": "pillager", "zh": "掠夺者", "group": "hostile", "note": "IllagerModel 8x10x8 头 / 8x12x6 身。先出四视图，用户过目再编译。"},
-    {"id": "vindicator", "en": "vindicator", "zh": "卫道士", "group": "hostile", "note": "同 Illager 盒，斧。pillager 过目后再出图。"},
-    {"id": "bed", "en": "bed", "zh": "床", "group": "prop", "note": "引擎已用 createBed 体素床。四视图待换肤。"},
-    {"id": "wordhouse", "en": "word house", "zh": "单词屋", "group": "prop", "note": "建筑四视图。未开工。"},
-    {"id": "traderhouse", "en": "trader house", "zh": "商人屋", "group": "prop", "note": "建筑四视图。未开工。"}
+    {
+      "id": "vindicator",
+      "en": "vindicator",
+      "zh": "卫道士",
+      "group": "hostile",
+      "note": "同 Illager 盒，铁斧。四视图已出，等人过目再编译。"
+    },
+    {
+      "id": "bed",
+      "en": "bed",
+      "zh": "床",
+      "group": "prop",
+      "note": "引擎已用 createBed 体素床。四视图待换肤。"
+    },
+    {
+      "id": "wordhouse",
+      "en": "word house",
+      "zh": "单词屋",
+      "group": "prop",
+      "note": "建筑四视图。未开工。"
+    },
+    {
+      "id": "traderhouse",
+      "en": "trader house",
+      "zh": "商人屋",
+      "group": "prop",
+      "note": "建筑四视图。未开工。"
+    }
   ],
   "characters": [
     {
@@ -344,6 +367,14 @@
       "id": "shadow_stalker",
       "en": "shadow stalker",
       "zh": "影行者",
+      "group": "hostile",
+      "rename": false,
+      "status": "verified_atlas"
+    },
+    {
+      "id": "pillager",
+      "en": "pillager",
+      "zh": "掠夺者",
       "group": "hostile",
       "rename": false,
       "status": "verified_atlas"

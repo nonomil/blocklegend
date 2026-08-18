@@ -48,7 +48,8 @@
         spore_bug: { kind: 'spore_bug', hp: 28, coins: 6, contact: 1, speed: 1.08, loot: 'spore-cap', color: 0xb4543a, hitRadius: 0.5 },
         fire_spirit: { kind: 'fire_spirit', hp: 32, coins: 7, contact: 2, speed: 1.2, loot: 'ember-core', color: 0xe07020, hitRadius: 0.45 },
         sculk_worm: { kind: 'sculk_worm', hp: 38, coins: 7, contact: 2, speed: 0.82, loot: 'sculk-thread', color: 0x1a3a40, hitRadius: 0.55 },
-        shadow_stalker: { kind: 'shadow_stalker', hp: 44, coins: 8, contact: 2, speed: 1.18, loot: 'shadow-hood', color: 0x1c1c24, hitRadius: 0.45 }
+        shadow_stalker: { kind: 'shadow_stalker', hp: 44, coins: 8, contact: 2, speed: 1.18, loot: 'shadow-hood', color: 0x1c1c24, hitRadius: 0.45 },
+        pillager: { kind: 'pillager', hp: 42, coins: 8, contact: 2, speed: 1.0, loot: 'crossbow-bolt', color: 0x5a2a3a, hitRadius: 0.5 }
     };
     const MONSTER_KINDS = Object.keys(MONSTERS);
     const BEHAVIOR = {
@@ -56,7 +57,7 @@
         magma: 'chase', creeper: 'chase', zombie: 'chase', spider: 'chase',
         piglin: 'chase', ravager: 'chase', drowned: 'chase', vex: 'chase', pufferfish: 'chase',
         spore_bug: 'chase', fire_spirit: 'chase', sculk_worm: 'chase', shadow_stalker: 'chase',
-        blaze: 'ranged', ghast: 'ranged', skeleton: 'ranged', phantom: 'ranged', snowgolem: 'ranged', guardian: 'ranged',
+        blaze: 'ranged', ghast: 'ranged', skeleton: 'ranged', phantom: 'ranged', snowgolem: 'ranged', guardian: 'ranged', pillager: 'ranged',
         warden: 'shield', enderman: 'shield', golem: 'shield', shulker: 'shield',
         witch: 'summon'
     };

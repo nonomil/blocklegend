@@ -242,6 +242,11 @@
             g.add(rig);
             anim.rig = rig;
             height = 2;
+        } else if (kind === 'pillager' && window.BlockLegendPillagerModel) {
+            const rig = window.BlockLegendPillagerModel.create(THREE);
+            g.add(rig);
+            anim.rig = rig;
+            height = 2;
         } else if (kind === 'zombie' && window.BlockLegendZombieModel) {
             const rig = window.BlockLegendZombieModel.create(THREE);
             g.add(rig);
@@ -259,9 +264,14 @@
             anim.rig = rig;
         } else if (kind === 'phantom' && window.BlockLegendPhantomModel) {
             const rig = window.BlockLegendPhantomModel.create(THREE);
+            if (o.boss) {
+                rig.scale.setScalar(1.7);
+                height = 1.6;
+            } else {
+                height = 0.7;
+            }
             g.add(rig);
             anim.rig = rig;
-            height = 0.7;
         } else if (kind === 'vex' && window.BlockLegendVexModel) {
             const rig = window.BlockLegendVexModel.create(THREE);
             g.add(rig);
