@@ -1,0 +1,19 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel desert walker. Head cube 8x8x8 sand-tan. Brown rag torso 8x12x4. Dark-brown pants legs 4x12x4 hanging down. BOTH ARMS are 4x4x12 HORIZONTAL boxes attached at the chest and pointing STRAIGHT AT THE CAMERA in the front view. Same cuboids as a rotting walker, but sand-colored skin, never green, never teal shirt.
+
+CRITICAL POSE — identical in all four views, never T-pose, never hanging arms:
+- FRONT: arms are two small 4x4 squares sitting on the chest, because you are looking down the length of the arms. No arms sticking left or right.
+- RIGHT: one long horizontal arm box goes from the chest toward the LEFT of this quadrant (forward).
+- BACK: two small 4x4 squares on the chest again (arm ends pointing away). No T-pose.
+- LEFT: one long horizontal arm box goes from the chest toward the RIGHT of this quadrant (forward).
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
+
+Composition/framing: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. TRUE orthographic. No 3/4. No top-down.
+
+Color palette: skin #c4a06a, shirt #6b5340, pants #4a3a28, eyes #2a2010.
+
+Text: none. Output: 1024x1024 PNG four-view sheet.

@@ -1,13 +1,13 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel orange fox: long body, pointed ears, cream snout, bushy tail, four short legs. Clean 2x2 orthographic turnaround.
+Primary request: One original voxel fox matching public FoxModel cuboids. Low orange body 6x6x12. Head 6x5x6 on the front with cream snout and two pointed ears. Bushy tail 3x3x8 behind. Four short 2x5x2 legs. Horizontal quadruped, not a biped.
 
 Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
 
 Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
 
-Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic, full body.
+Composition/framing: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. TRUE orthographic. NEVER a top-down view.
 
-Color palette: fur #d9782b, belly/snout #f7e6ce.
+Color palette: fur #d9782b, snout #f7e6ce, eyes #141010.
 
 Text: none. Output: 1024x1024 PNG four-view sheet.

@@ -1,0 +1,14 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel raid scout matching public IllagerModel cuboids. Pale-gray 8x10x8 head with a long rectangular nose 2x4x2 and heavy dark brows. Dark wine coat torso 8x12x6 (wider than a zombie). Hanging 4x12x4 arms holding a wooden crossbow box in FRONT of the chest. 4x12x4 dark pants legs. Brown belt and iron buckle. NOT a villager, NOT a piglin, NOT green.
+
+CRITICAL POSE — identical in all four views, never T-pose:
+- FRONT: two small 4x4 arm ends on the chest, crossbow as a flat wood rectangle facing the camera. Nose sticks out.
+- RIGHT: long horizontal arms + crossbow go toward the LEFT of this quadrant (forward). Head toward the LEFT.
+- BACK: coat back, no face, no nose. Two 4x4 arm ends. No T-pose.
+- LEFT: mirror of right. Head toward the RIGHT.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic, no 3/4, no top-down.
+Color palette: skin #c8c4c0, coat #5a2a3a, pants #2a2a38, belt #4a3020, buckle #b8b8c0, wood #8a5a30, brows #2a2a2a, eyes #4a6a48.
+Text: none. Output: 1024x1024 PNG four-view sheet.

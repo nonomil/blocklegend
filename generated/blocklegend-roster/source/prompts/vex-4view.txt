@@ -1,0 +1,14 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel tiny flying nuisance matching public VexModel. SMALL pale-blue child-size figure. Head cube 8x8x8. Short robe body 6x8x4. Thin hanging arms 2x8x2. TWO thin wing slabs on the back, left and right. A thin iron sword in the right hand hanging down. Not a fairy. Not an angel. Not a full-size villager. Floating, no legs.
+
+How each view MUST look:
+- FRONT (top-left): pale face with two dark eyes, robe, two thin arms, wings peeking at the sides. Sword as a thin strip on the right.
+- RIGHT (top-right): thin side. One wing as a vertical slab behind the back. Sword visible. Head toward the LEFT.
+- BACK (bottom-left): no face. Two wing slabs. Robe back.
+- LEFT (bottom-right): mirror of right. Head toward the RIGHT.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic, no 3/4, no top-down.
+Color palette: robe #7aa0c8, skin #9ec0e0, wings #d8e8f4, sword #c0c8d0, eyes #141010.
+Text: none. Output: 1024x1024 PNG four-view sheet.

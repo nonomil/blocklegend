@@ -1,0 +1,14 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel night flyer matching public PhantomModel cuboids. Flat dark-blue body slab 7x3x9. Small head slab 5x3x4 at the FRONT with two glowing lime-green eyes. TWO wide thin wing slabs, one left and one right, each about 16x2x9, spread HORIZONTAL like a manta. Thin tail slab 3x2x10 pointing BACK. Flying pose, wings level, not folded, not a bird, not a bat with upright body.
+
+How each view MUST look:
+- FRONT (top-left): thin horizontal bar (body thickness) with two green eyes; wings stick LEFT and RIGHT as long thin slabs. Tail hidden behind.
+- RIGHT (top-right): long side silhouette: head/eyes on the LEFT, body, then tail to the RIGHT. You see ONE wing as a thin edge (almost a line) because the wing is a horizontal slab.
+- BACK (bottom-left): no face. Wings left and right. Tail pointing at camera as a small square. Not top-down.
+- LEFT (bottom-right): mirror of right. Head on the RIGHT.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic, no 3/4, no top-down.
+Color palette: body #3a4458, head #2a3344, wings #4a5568, tail #2a3344, eyes #7cff6a.
+Text: none. Output: 1024x1024 PNG four-view sheet.

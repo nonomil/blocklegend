@@ -1,0 +1,14 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel PUFFED pufferfish matching the public large Pufferfish model. A fat ORANGE cube 12x12x12 with a paler belly band, two dark square eyes, a small dark mouth, tiny side fins left and right, and a few short spike nubs on top. Fully inflated balloon-fish. Not the tiny unpuffed 4x4 form. Not a tropical fish. Not a goldfish. Not a slime.
+
+How each view MUST look:
+- FRONT (top-left): orange cube face, two eyes, mouth, left and right fins as small stubs, top spike nubs.
+- RIGHT (top-right): cube side, one fin as a small stub, front/eyes toward the LEFT, belly band visible.
+- BACK (bottom-left): no face. Orange cube back, side fins, top nubs.
+- LEFT (bottom-right): mirror of right. Front toward the RIGHT.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic, no 3/4, no top-down.
+Color palette: body #f0a030, belly #f6d090, fins #e08828, spikes #d87820, eyes #141010, mouth #3a2010.
+Text: none. Output: 1024x1024 PNG four-view sheet.

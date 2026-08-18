@@ -1,25 +1,19 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel rotting humanoid, same identity as a teal-shirted shambling walker, shown as a clean 2x2 orthographic turnaround.
+Primary request: One original voxel rotting walker. Head cube 8x8x8 olive-gray. Teal shirt torso 8x12x4. Brown pants legs 4x12x4 hanging down. BOTH ARMS are 4x4x12 HORIZONTAL boxes attached at the chest and pointing STRAIGHT AT THE CAMERA in the front view.
 
-Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow blob, no environment.
+CRITICAL POSE — identical in all four views, never T-pose, never hanging arms:
+- FRONT: arms are two small 4x4 squares sitting on the chest, because you are looking down the length of the arms. No arms sticking left or right.
+- RIGHT: one long horizontal arm box goes from the chest toward the LEFT of this quadrant (forward).
+- BACK: two small 4x4 squares on the chest again (arm ends pointing away). No T-pose.
+- LEFT: one long horizontal arm box goes from the chest toward the RIGHT of this quadrant (forward).
 
-Subject: axis-aligned box humanoid. 8x8x8 olive-gray head, 8x12x4 teal shirt torso, brown pants legs. Both arms stretched straight FORWARD like horizontal boxes, not hanging. Dark sunken eyes, torn shirt pixels. Nearest-neighbor, not smooth.
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
 
-Style/medium: Minecraft-like voxel boxes only, no bevel, no rounded corners, no PBR, 16-bit pixel faces, flat Lambert lighting.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
 
-Composition/framing: 2x2 grid, equal cell size, same scale, same baseline, full body in every cell.
-Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
-Orthographic camera, no perspective, no 3/4 cheat. Arms reach toward the camera in FRONT.
-
-Lighting/mood: soft top-left studio light, readable planes, no HDRI.
+Composition/framing: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. TRUE orthographic.
 
 Color palette: skin #6e7c6e, shirt #2f8f8a, pants #3a2a1c, eyes #1c2018.
 
-Text (verbatim): none. No labels, no letters, no watermarks.
-
-Transparency: solid studio background, not checkerboard.
-
-Constraints: one character only, original palette, keep silhouette recognizable as a box zombie with forward arms.
-
-Output: 1024x1024 PNG four-view sheet.
+Text: none. Output: 1024x1024 PNG four-view sheet.

@@ -1,13 +1,14 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel crying ghost: large pale 16-cube body, two sad black eyes, small red mouth, four hanging tentacles. Clean 2x2 orthographic turnaround.
+Primary request: One original voxel crying cube. One pale 16x16x16 cube. Exactly NINE straight vertical tentacle boxes in a 3x3 GRID under the cube. Each tentacle is a thin 2x2 post hanging STRAIGHT down. Not a fan. Not a V. Not four tentacles. Not zigzag.
+
+How each view MUST look:
+- FRONT (top-left): cube face with two black rectangular eyes, pale-blue tear tracks, small gray frown. Under the cube you see ONLY the FRONT ROW of 3 tentacles. The other 6 are hidden behind.
+- RIGHT (top-right): cube side, no face. Under the cube you see ONLY 3 tentacles in a straight line from front to back (the right column of the 3x3).
+- BACK (bottom-left): blank pale cube. Under it, ONLY the BACK ROW of 3 tentacles.
+- LEFT (bottom-right): mirror of right. 3 tentacles in a line.
 
 Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
-
-Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
-
-Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic, full body.
-
-Color palette: body #f2efe8, tentacle #e8e0d8, eyes #141010, mouth #c62828.
-
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic.
+Color palette: body #f2efe8, tentacles #e8e0d8, eyes #141010, tears #90caf9, mouth #5a4a4a.
 Text: none. Output: 1024x1024 PNG four-view sheet.

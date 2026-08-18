@@ -1,8 +1,15 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel three-headed bone statue: black central skull plus two smaller side skulls, dark rib body, red eyes. Clean 2x2 orthographic turnaround.
+Primary request: One original voxel three-headed floating bone boss matching public WitherBossModel cuboids. FLOATING in air, NO pedestal, NO statue base, NO legs. Center skull 8x8x8. Two smaller side skulls 6x6x6 sitting on a wide horizontal SHOULDER bar 20x3x3. Below: ribcage box 12x10x4, then a thin hanging TAIL 3x8x3. White square eyes and mouths painted ON the three skulls (not extra cubes).
 
-Scene/backdrop: flat warm gray studio #c8c4bc. Style: Minecraft-like voxel boxes only.
-Composition: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
-Color palette: skull #1a1a1e, body #2a2a2e, eyes #c62828.
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground plane.
+
+Subject identity: front is widest (three heads). Side is thin (1-block thick T silhouette: head, shoulder, ribs, tail). Back shows three skull backs and spine. TRUE orthographic.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
+
+Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Same scale. Leave empty air under the tail; do not plant it on a plinth.
+
+Color palette: skull #1a1a1e, ribs #3a3a40, shoulder/tail #2a2a2e, eyes #f4f4f4.
+
 Text: none. Output: 1024x1024 PNG four-view sheet.

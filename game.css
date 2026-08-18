@@ -26,8 +26,8 @@ html, body.bl-body {
 .bl-topbar {
     position: absolute;
     top: 10px;
-    right: 12px;
-    z-index: 3;
+    right: calc(var(--bl-touch-size, 100px) + 28px);
+    z-index: 5;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -141,15 +141,17 @@ html, body.bl-body {
 .bl-voice-fallback-choices {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 8px;
 }
 .bl-voice-fallback-choices button {
+    min-height: 48px;
     border: 2px solid #1a1208;
     background: #fff8e8;
     color: #3d2a16;
-    padding: 6px 8px;
-    font-size: 13px;
+    padding: 10px 12px;
+    font-size: 16px;
     cursor: pointer;
+    border-radius: 10px;
 }
 .bl-say {
     display: block;
@@ -693,9 +695,10 @@ html, body.bl-body {
 .bl-cast-hud {
     position: absolute;
     left: 50%;
-    bottom: 118px;
+    top: max(72px, calc(env(safe-area-inset-top) + 56px));
+    bottom: auto;
     transform: translateX(-50%);
-    width: min(440px, 92vw);
+    width: min(720px, 96vw);
     z-index: 4;
     pointer-events: none;
     text-align: center;
@@ -752,30 +755,44 @@ html, body.bl-body {
 }
 .bl-cast-ghost em { color: #8a7a60; font-style: normal; }
 .bl-cast-hud.is-casting { pointer-events: auto; }
-.bl-cast-keyboard {
-    margin-top: 8px;
+.bl-cast-keyboard,
+.bl-letter-keyboard {
+    margin-top: 10px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
     align-items: center;
 }
-.bl-cast-keyboard.is-hidden { display: none; }
-.bl-keys { display: flex; gap: 3px; }
+.bl-cast-keyboard.is-hidden,
+.bl-letter-keyboard.is-hidden { display: none; }
+.bl-keys {
+    display: flex;
+    gap: clamp(4px, 0.8vw, 8px);
+    justify-content: center;
+}
 .bl-key {
-    min-width: 22px;
-    height: 26px;
-    border: 1px solid #1a1208;
+    min-width: clamp(36px, 8vw, 56px);
+    height: clamp(44px, 8vw, 56px);
+    border: 2px solid #1a1208;
     background: #3d2a16;
     color: #fff6d2;
     box-shadow: inset 0 0 0 1px #c4a574;
-    font-size: 12px;
+    font-size: clamp(16px, 3.4vw, 22px);
+    font-weight: 700;
     cursor: pointer;
-    padding: 0 4px;
+    padding: 0 6px;
+    border-radius: 10px;
 }
 .bl-key.is-next { background: #6b4a28; color: #ffe27a; }
 .bl-key.is-done { opacity: .45; }
 .bl-keys-actions { margin-top: 2px; }
-.bl-key.is-action { min-width: 44px; font-size: 11px; }
+.bl-key.is-action {
+    min-width: clamp(64px, 16vw, 96px);
+    font-size: clamp(14px, 2.8vw, 18px);
+}
+.bl-letter-keyboard .bl-key {
+    background: #5a3d22;
+}
 
 .bl-hurt {
     position: absolute;
@@ -858,10 +875,11 @@ html, body.bl-body {
 }
 .bl-layer.is-hidden { display: none; }
 .bl-quiz-layer {
-    background: rgba(8, 12, 18, .22);
-    align-items: flex-end;
-    padding: 0 0 92px;
-    pointer-events: auto;
+    background: transparent;
+    align-items: flex-start;
+    justify-content: center;
+    padding: max(10px, env(safe-area-inset-top)) 12px 0;
+    pointer-events: none;
     cursor: default;
 }
 .bl-quiz-layer .bl-quiz { pointer-events: auto; }
@@ -939,11 +957,15 @@ html, body.bl-body {
     border-radius: 0;
 }
 .bl-quiz {
+    width: min(680px, calc(100vw - var(--bl-touch-size, 100px) - 36px));
+    max-height: min(68vh, 620px);
+    overflow: auto;
     text-align: center;
     background-color: #fff8ec;
     background-image: none;
     color: #1a1208;
-    border-radius: 12px;
+    border-radius: 16px;
+    padding: 12px 14px 14px;
 }
 .bl-quiz-kicker {
     margin: 0 0 2px;
@@ -971,8 +993,8 @@ button.bl-quiz-en,
 }
 .bl-quiz-img {
     display: block;
-    width: 200px;
-    height: 200px;
+    width: 140px;
+    height: 140px;
     object-fit: contain;
     margin: 0 auto 8px;
     image-rendering: auto;
@@ -992,18 +1014,19 @@ button.bl-quiz-en,
 .bl-quiz-choices {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    margin-top: 4px;
+    gap: 10px;
+    margin-top: 8px;
 }
 .bl-quiz-choices.is-hidden { display: none; }
 .bl-quiz-choices button {
-    min-height: 32px;
+    min-height: 56px;
     border: 2px solid #1a1208;
     background: #5a3d22;
     box-shadow: inset 0 0 0 1px #c4a574;
-    border-radius: 0;
-    padding: 5px 4px;
-    font-size: 13px;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 18px;
+    font-weight: 700;
     cursor: pointer;
     color: #fff6d2;
 }
@@ -1023,9 +1046,10 @@ button.bl-quiz-en,
 .bl-quiz-mic.is-hidden { display: none; }
 .bl-quiz .bl-btn.is-ghost {
     display: inline-block;
-    margin: 6px 4px 0;
-    min-height: 40px;
-    padding: 8px 14px;
+    margin: 8px 4px 0;
+    min-height: 48px;
+    padding: 10px 18px;
+    font-size: 16px;
     background: #fff;
     color: #1a1208;
 }
@@ -1037,21 +1061,32 @@ button.bl-quiz-en,
 }
 .bl-quiz-type {
     display: flex;
-    gap: 6px;
+    flex-direction: column;
+    gap: 8px;
     margin-top: 8px;
+}
+.bl-quiz-type-row {
+    display: flex;
+    gap: 8px;
 }
 #quiz-input {
     flex: 1;
-    min-height: 36px;
+    min-height: 56px;
     border: 2px solid #1a1208;
     background: #fff6d2;
     color: #2a1c10;
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 700;
-    padding: 4px 8px;
+    padding: 8px 12px;
     font-family: inherit;
+    border-radius: 10px;
 }
-#quiz-submit { min-width: 72px; }
+#quiz-submit {
+    min-width: 88px;
+    min-height: 56px;
+    font-size: 18px;
+    border-radius: 10px;
+}
 .bl-quiz-time {
     margin-top: 12px;
     height: 6px;
@@ -1366,7 +1401,10 @@ button.bl-quiz-en,
 .bl-craft-btn:hover { background: #6b4a28; }
 .bl-craft-btn.is-off { opacity: .45; cursor: not-allowed; }
 
-/* 我的世界平板：左方向键 + 右三键，半透明 */
+/* 对齐 Mario Minecraft APK：单键约 100px */
+:root {
+    --bl-touch-size: clamp(84px, 11vw, 100px);
+}
 .bl-touch {
     position: absolute;
     inset: 0;
@@ -1380,20 +1418,21 @@ button.bl-quiz-en,
     position: absolute;
     left: max(16px, env(safe-area-inset-left));
     bottom: max(22px, env(safe-area-inset-bottom));
-    width: 168px;
-    height: 168px;
+    width: calc(var(--bl-touch-size) * 3 + 24px);
+    height: calc(var(--bl-touch-size) * 3 + 24px);
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr 1fr;
-    gap: 4px;
+    grid-template-columns: repeat(3, var(--bl-touch-size));
+    grid-template-rows: repeat(3, var(--bl-touch-size));
+    gap: 12px;
 }
 .bl-dpad-btn {
     margin: 0;
     padding: 0;
-    border: 2px solid rgba(255, 255, 255, .32);
-    background: rgba(8, 10, 14, .34);
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .28);
-    border-radius: 10px;
+    width: var(--bl-touch-size);
+    height: var(--bl-touch-size);
+    border: 2px solid rgba(255, 255, 255, .5);
+    background: rgba(255, 255, 255, .16);
+    border-radius: 999px;
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
     appearance: none;
@@ -1408,16 +1447,17 @@ button.bl-quiz-en,
     width: 0;
     height: 0;
     margin: 0 auto;
-    border: 10px solid transparent;
+    border: 14px solid transparent;
 }
-.bl-dpad-btn.is-up::after { border-bottom-color: rgba(255, 255, 255, .78); border-top-width: 0; }
-.bl-dpad-btn.is-down::after { border-top-color: rgba(255, 255, 255, .78); border-bottom-width: 0; }
-.bl-dpad-btn.is-left::after { border-right-color: rgba(255, 255, 255, .78); border-left-width: 0; margin-left: 14px; }
-.bl-dpad-btn.is-right::after { border-left-color: rgba(255, 255, 255, .78); border-right-width: 0; margin-right: 14px; }
+.bl-dpad-btn.is-up::after { border-bottom-color: rgba(255, 255, 255, .9); border-top-width: 0; }
+.bl-dpad-btn.is-down::after { border-top-color: rgba(255, 255, 255, .9); border-bottom-width: 0; }
+.bl-dpad-btn.is-left::after { border-right-color: rgba(255, 255, 255, .9); border-left-width: 0; margin-left: 18px; }
+.bl-dpad-btn.is-right::after { border-left-color: rgba(255, 255, 255, .9); border-right-width: 0; margin-right: 18px; }
 .bl-dpad-btn.is-held,
 .bl-touch-btn.is-held {
     background: rgba(255, 255, 255, .30);
-    border-color: rgba(255, 255, 255, .62);
+    border-color: rgba(255, 255, 255, .72);
+    transform: scale(.92);
 }
 .bl-touch-act {
     position: absolute;
@@ -1429,15 +1469,15 @@ button.bl-quiz-en,
     gap: 12px;
 }
 .bl-touch-btn {
-    width: 68px;
-    height: 68px;
+    width: var(--bl-touch-size);
+    height: var(--bl-touch-size);
     margin: 0;
     padding: 0;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, .34);
-    background: rgba(8, 10, 14, .34);
-    color: rgba(255, 255, 255, .88);
-    font-size: 20px;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, .5);
+    background: rgba(255, 255, 255, .16);
+    color: rgba(255, 255, 255, .92);
+    font-size: 28px;
     font-weight: 700;
     letter-spacing: 1px;
     text-shadow: 0 1px 2px rgba(0, 0, 0, .55);
@@ -1446,8 +1486,16 @@ button.bl-quiz-en,
     appearance: none;
 }
 .bl-touch-btn.is-jump {
-    width: 78px;
-    height: 78px;
+    width: var(--bl-touch-size);
+    height: var(--bl-touch-size);
+    font-size: 30px;
+}
+.bl-touch-btn.is-craft {
+    position: absolute;
+    top: max(10px, env(safe-area-inset-top));
+    right: max(16px, env(safe-area-inset-right));
+    z-index: 5;
+    pointer-events: auto;
     font-size: 22px;
 }
 
@@ -1459,8 +1507,7 @@ button.bl-quiz-en,
     .bl-look-zh { font-size: 16px; }
     .bl-learn { width: 42vw; bottom: 78px; }
     .bl-hint { max-width: 40vw; }
-    .bl-cast-hud { bottom: 96px; }
-    .bl-dpad { width: 136px; height: 136px; }
-    .bl-touch-btn { width: 58px; height: 58px; font-size: 17px; }
-    .bl-touch-btn.is-jump { width: 66px; height: 66px; }
+    .bl-cast-hud { top: max(64px, calc(env(safe-area-inset-top) + 48px)); width: min(96vw, 720px); }
+    .bl-quiz { width: min(94vw, 680px); }
+    .bl-key { min-width: clamp(28px, 8.4vw, 48px); height: 48px; }
 }

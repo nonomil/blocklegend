@@ -1,0 +1,14 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel snowman matching public SnowGolemModel PLUS thin stick arms. Lower snow box 10x8x10. Upper snow box 8x8x8. Orange pumpkin head cube 8x8x8 with two carved square eyes and a small mouth. Tiny brown stem. TWO thin brown stick arms 2x8x2 sticking out of the upper snow sides, slightly down. Three tiny dark square buttons on the front of the upper snow only. Standing, not sitting.
+
+How each view MUST look:
+- FRONT (top-left): pumpkin face, two stick arms left and right, buttons on the upper snow, wider snow base.
+- RIGHT (top-right): pumpkin side, one stick arm toward the camera as a thin vertical/down box. Head toward the LEFT.
+- BACK (bottom-left): blank pumpkin, no face, no buttons. Two stick arm ends.
+- LEFT (bottom-right): mirror of right. Head toward the RIGHT.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic, no 3/4, no top-down.
+Color palette: snow #f2f6fa, pumpkin #e07020, stem #3a2a14, sticks #6a4a28, buttons #2a2a2a, carves #141010.
+Text: none. Output: 1024x1024 PNG four-view sheet.

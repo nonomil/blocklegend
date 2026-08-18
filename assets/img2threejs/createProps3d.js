@@ -91,13 +91,30 @@
     function createBed(THREE) {
         const g = new THREE.Group();
         g.name = 'bed';
-        const frame = box(THREE, 0.95, 0.16, 0.58, 0x6d4c41);
-        const pillow = box(THREE, 0.28, 0.1, 0.42, 0xf5f5f5);
-        const blanket = box(THREE, 0.62, 0.1, 0.52, 0xc62828);
-        frame.position.y = 0.12;
-        pillow.position.set(-0.28, 0.24, 0);
-        blanket.position.set(0.14, 0.24, 0);
-        g.add(frame); g.add(pillow); g.add(blanket);
+        const wood = 0x6d4c41;
+        const dark = 0x4e342e;
+        const frame = box(THREE, 0.98, 0.12, 0.62, wood);
+        const mattress = box(THREE, 0.92, 0.08, 0.56, 0xc62828);
+        const pillow = box(THREE, 0.26, 0.08, 0.42, 0xf5f5f5);
+        const board = box(THREE, 0.08, 0.36, 0.64, dark);
+        frame.position.y = 0.16;
+        mattress.position.y = 0.26;
+        pillow.position.set(-0.30, 0.34, 0);
+        board.position.set(-0.48, 0.28, 0);
+        function addLeg(name, x, z) {
+            const leg = box(THREE, 0.08, 0.12, 0.08, dark);
+            leg.name = name;
+            leg.position.set(x, 0.06, z);
+            g.add(leg);
+        }
+        addLeg('legFL', -0.42, 0.24);
+        addLeg('legFR', -0.42, -0.24);
+        addLeg('legBL', 0.42, 0.24);
+        addLeg('legBR', 0.42, -0.24);
+        g.add(frame);
+        g.add(mattress);
+        g.add(pillow);
+        g.add(board);
         return g;
     }
 
@@ -246,6 +263,21 @@
         g.add(hood);
         g.add(trim);
         g.add(backpack);
+        return g;
+    }
+
+    function createTeacher(THREE) {
+        const g = createVillager(THREE);
+        g.name = 'teacher';
+        const coat = pbox(THREE, 9.4, 14, 7.4, 0x2e7d4f);
+        put(coat, 0, 19, 0);
+        const sash = pbox(THREE, 9.6, 1.6, 7.6, 0xf4e4a4);
+        put(sash, 0, 16, 0);
+        const book = named(pbox(THREE, 4, 1.2, 5, 0xc62828), 'book');
+        put(book, 0, 18, 6);
+        g.add(coat);
+        g.add(sash);
+        g.add(book);
         return g;
     }
 
@@ -510,6 +542,7 @@
         createBed: createBed,
         createVillager: createVillager,
         createTrader: createTrader,
+        createTeacher: createTeacher,
         createPig: createPig,
         createCow: createCow,
         createSheep: createSheep,

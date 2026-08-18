@@ -69,7 +69,7 @@
             mesh.name = part.name;
             nodes[part.name] = mesh;
 
-            var isLimb = /^(leg|arm)[LR]$/.test(part.name) || /^leg[FB][LR]$/.test(part.name);
+            var isLimb = /^(leg|arm)[LR]$/.test(part.name) || /^leg[FMHB][LR]$/.test(part.name);
             var isWing = /^wing[LR]$/.test(part.name);
             var swingArms = opts.swingArms !== false;
             if (isLimb && (part.name.charAt(0) === 'l' || swingArms)) {
@@ -79,7 +79,8 @@
                 mesh.position.set(0, -h / 2, 0);
                 pivot.add(mesh);
                 root.add(pivot);
-                var isBack = part.name.indexOf('B') === 3;
+                var slot = part.name.charAt(3);
+                var isBack = slot === 'B' || slot === 'H';
                 var sideSign = part.name.slice(-1) === 'L' ? 1 : -1;
                 swingers.push({ pivot: pivot, sign: sideSign * (isBack ? -1 : 1), arm: part.name.charAt(0) === 'a' });
             } else if (isWing) {

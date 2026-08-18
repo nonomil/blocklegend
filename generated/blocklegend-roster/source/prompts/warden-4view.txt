@@ -1,13 +1,11 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel deep-dark listener: bulky dark-teal body, glowing cyan chest heart, pink visor slit, long hanging arms. Clean 2x2 orthographic turnaround.
+Primary request: One original voxel deep-dark listener matching public WardenModel. About THREE blocks TALL, not a chibi. Wide torso 16x20x11. Wide head 16x10x10 with NO eyes, NO visor, NO mouth, NO face. Two glowing cyan TENDRILS grow from the SIDES of the head and go UP like antennae, not decorative horns sitting on the crown. Very LONG arms 8x28x6 hanging past the knees. Short thick legs. Cyan soul-heart painted on the chest only.
 
 Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
-
 Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
 
-Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic, full body.
+Composition/framing: 2x2 elevations. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. TRUE orthographic. Same tall silhouette in every view. NEVER a squat child-sized body.
 
-Color palette: body #0d1f2b, head #3f3e53, chest #63d8d1, visor #f48fb1.
-
+Color palette: hide #0d1f2b, head #1a2a32, tendrils #3de0e8, chest #63d8d1.
 Text: none. Output: 1024x1024 PNG four-view sheet.

@@ -16,7 +16,7 @@
     function createWardenModel(THREE, options) {
         if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.warden) {
             const fv = global.BlockLegendFourView.build(THREE, 'warden', Object.assign({
-                emissive: { match: 'visor', color: 0x146060 }
+                emissive: { match: 'tendril', color: 0x146060 }
             }, options || {}));
             if (fv) { return fv; }
         }

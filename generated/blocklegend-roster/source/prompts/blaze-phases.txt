@@ -1,0 +1,12 @@
+Use case: game-character-sheet
+Asset type: boss phase variants, front view only
+Primary request: One horizontal 1x3 sheet of the SAME voxel Blaze. Yellow cube core with two black square eyes, twelve orange rods in three rings. No text.
+
+Left phase 1: rods slow, cool orange, small core.
+Middle phase 2: rods brighter, a low orange ring of cubes around the feet area (fire ring), same core.
+Right phase 3: core brighter white-yellow, two tiny extra yellow cubes as minion sparks beside the core.
+
+Scene: flat warm gray #c8c4bc, no ground shadow.
+Style: Minecraft-like voxel boxes only, no bevel, no PBR.
+Text: none.
+Output: 16:9 PNG three-phase front sheet.

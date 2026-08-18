@@ -1,0 +1,14 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One ORIGINAL voxel shadow stalker. Not an Enderman, not a Warden. A shorter, hooded hunter: HEAD 7x7x7 charcoal cube, BODY 6x10x4, two long 3x12x3 ARMS, two 3x8x3 LEGS. One violet horizontal eye slit on the front of the head. Hood brim 8x2x8 on top. Cuboids only. Standing on the studio floor.
+
+How each view MUST look:
+- FRONT (top-left): hooded head with one violet eye slit. Narrow body. Two long arms. Two legs.
+- RIGHT (top-right): figure facing LEFT. Thin profile, hood brim, arm hanging, two legs.
+- BACK (bottom-left): hood and body back, NO eye slit.
+- LEFT (bottom-right): mirror of right. Faces RIGHT.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic, no 3/4, no top-down.
+Color palette: body #1c1c24, hood #14141c, eye #a060ff, legs #12121a.
+Text: none. Output: 1024x1024 PNG four-view sheet.

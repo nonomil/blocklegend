@@ -1,8 +1,11 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel thunder speaker: slate-blue robe, glowing cyan eyes, dark cape. Clean 2x2 orthographic turnaround.
+Primary request: One original voxel wither-storm. NOT a mage, NOT a robe, NOT a cloudy fog. Built from LARGE BOXES only: one dark 22x18x16 body cube, one orange COMMAND-BLOCK cube stuck on the chest, THREE skull heads on top (center bigger, one left, one right), each with ONE purple slit eye and a mandible jaw. FIVE straight hanging tentacle posts under the body.
 
-Scene/backdrop: flat warm gray studio #c8c4bc. Style: Minecraft-like voxel boxes only.
-Composition: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
-Color palette: body #3a3a58, head #4a4a6a, eyes #80deea, cape #1a1a30.
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no organic blobs, no PBR.
+
+Composition/framing: 2x2. Top-left FRONT (three faces + command block), top-right RIGHT profile, bottom-left BACK (no faces), bottom-right LEFT. TRUE orthographic. NEVER a top-down view.
+
+Color palette: body #1a1020, heads #141018, command #c45a20, eyes #aa00ff, tentacles #2a1830.
 Text: none. Output: 1024x1024 PNG four-view sheet.

@@ -214,24 +214,109 @@
             height = 0.85;
         } else if (kind === 'blaze' && window.BlockLegendBlazeModel) {
             const rig = window.BlockLegendBlazeModel.create(THREE);
+            if (o.boss) {
+                rig.scale.setScalar(1.7);
+                height = 2.9;
+            } else {
+                height = 1.7;
+            }
             g.add(rig);
             anim.rig = rig;
-            height = 1.7;
         } else if (kind === 'ghast' && window.BlockLegendGhastModel) {
             const rig = window.BlockLegendGhastModel.create(THREE);
+            if (o.boss) {
+                rig.scale.setScalar(1.6);
+                height = 3.4;
+            } else {
+                height = 2.15;
+            }
             g.add(rig);
             anim.rig = rig;
-            height = 2.15;
         } else if (kind === 'creeper' && window.BlockLegendCreeperModel) {
             const rig = window.BlockLegendCreeperModel.create(THREE);
             g.add(rig);
             anim.rig = rig;
             height = 1.7;
-        } else if ((kind === 'zombie' || kind === 'husk') && window.BlockLegendZombieModel) {
+        } else if (kind === 'husk' && window.BlockLegendHuskModel) {
+            const rig = window.BlockLegendHuskModel.create(THREE);
+            g.add(rig);
+            anim.rig = rig;
+            height = 2;
+        } else if (kind === 'zombie' && window.BlockLegendZombieModel) {
             const rig = window.BlockLegendZombieModel.create(THREE);
             g.add(rig);
             anim.rig = rig;
             height = 2;
+        } else if (kind === 'ravager' && window.BlockLegendRavagerModel) {
+            const rig = window.BlockLegendRavagerModel.create(THREE);
+            if (o.boss) {
+                rig.scale.setScalar(1.55);
+                height = 3.4;
+            } else {
+                height = 2.2;
+            }
+            g.add(rig);
+            anim.rig = rig;
+        } else if (kind === 'phantom' && window.BlockLegendPhantomModel) {
+            const rig = window.BlockLegendPhantomModel.create(THREE);
+            g.add(rig);
+            anim.rig = rig;
+            height = 0.7;
+        } else if (kind === 'vex' && window.BlockLegendVexModel) {
+            const rig = window.BlockLegendVexModel.create(THREE);
+            g.add(rig);
+            anim.rig = rig;
+            height = 0.9;
+        } else if (kind === 'drowned' && window.BlockLegendDrownedModel) {
+            const rig = window.BlockLegendDrownedModel.create(THREE);
+            g.add(rig);
+            anim.rig = rig;
+            height = 2;
+        } else if (kind === 'snowgolem' && window.BlockLegendSnowGolemModel) {
+            const rig = window.BlockLegendSnowGolemModel.create(THREE);
+            g.add(rig);
+            anim.rig = rig;
+            height = 1.7;
+        } else if (kind === 'shulker' && window.BlockLegendShulkerModel) {
+            const rig = window.BlockLegendShulkerModel.create(THREE);
+            g.add(rig);
+            anim.rig = rig;
+            height = 1.0;
+        } else if (kind === 'guardian' && window.BlockLegendGuardianModel) {
+            const rig = window.BlockLegendGuardianModel.create(THREE);
+            if (o.boss) {
+                rig.scale.setScalar(1.85);
+                height = 1.85;
+            } else {
+                height = 1.0;
+            }
+            g.add(rig);
+            anim.rig = rig;
+        } else if (kind === 'spore_bug' && window.BlockLegendSporeBugModel) {
+            const rig = window.BlockLegendSporeBugModel.create(THREE);
+            g.add(rig);
+            anim.rig = rig;
+            height = 0.75;
+        } else if (kind === 'fire_spirit' && window.BlockLegendFireSpiritModel) {
+            const rig = window.BlockLegendFireSpiritModel.create(THREE);
+            g.add(rig);
+            anim.rig = rig;
+            height = 1.35;
+        } else if (kind === 'sculk_worm' && window.BlockLegendSculkWormModel) {
+            const rig = window.BlockLegendSculkWormModel.create(THREE);
+            g.add(rig);
+            anim.rig = rig;
+            height = 0.7;
+        } else if (kind === 'shadow_stalker' && window.BlockLegendShadowStalkerModel) {
+            const rig = window.BlockLegendShadowStalkerModel.create(THREE);
+            g.add(rig);
+            anim.rig = rig;
+            height = 1.7;
+        } else if (kind === 'pufferfish' && window.BlockLegendPufferfishModel) {
+            const rig = window.BlockLegendPufferfishModel.create(THREE);
+            g.add(rig);
+            anim.rig = rig;
+            height = 0.85;
         } else if (kind === 'skeleton' && window.BlockLegendSkeletonModel) {
             const rig = window.BlockLegendSkeletonModel.create(THREE);
             g.add(rig);
@@ -264,9 +349,14 @@
             height = 2.35;
         } else if (kind === 'warden' && window.BlockLegendWardenModel) {
             const rig = window.BlockLegendWardenModel.create(THREE);
+            if (o.boss) {
+                rig.scale.setScalar(1.45);
+                height = 3.5;
+            } else {
+                height = 2.4;
+            }
             g.add(rig);
             anim.rig = rig;
-            height = 2.4;
         } else if (kind === 'merchant') {
             if (window.BlockLegendProps3d && window.BlockLegendProps3d.createTrader) {
                 const rig = window.BlockLegendProps3d.createTrader(THREE);
@@ -281,8 +371,8 @@
                 top.position.y = height + 0.12;
                 g.add(brim); g.add(top);
             }
-        } else if (kind === 'boss') {
-            const bossId = (o && o.bossId) || 'wither';
+        } else if (kind === 'boss' || kind === 'dragon' || kind === 'storm' || kind === 'wither') {
+            const bossId = (o && o.bossId) || (kind === 'boss' ? 'wither' : kind);
             const factory = bossId === 'dragon' && window.BlockLegendDragonModel
                 ? window.BlockLegendDragonModel
                 : bossId === 'storm' && window.BlockLegendStormModel
@@ -731,6 +821,67 @@
         return g;
     }
 
+    function skillShotMesh(kind, color, halo) {
+        const g = new THREE.Group();
+        const c = color == null ? 0xff6a2a : color;
+        const h = halo == null ? 0xffc04a : halo;
+        if (kind === 'skull') {
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.28, 0.3), new THREE.MeshBasicMaterial({ color: c }));
+            const eyeL = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.04), new THREE.MeshBasicMaterial({ color: h }));
+            const eyeR = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.07, 0.04), new THREE.MeshBasicMaterial({ color: h }));
+            const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 0.12), new THREE.MeshBasicMaterial({ color: c }));
+            eyeL.position.set(-0.07, 0.04, 0.16);
+            eyeR.position.set(0.07, 0.04, 0.16);
+            jaw.position.set(0, -0.16, 0.06);
+            g.add(head);
+            g.add(eyeL);
+            g.add(eyeR);
+            g.add(jaw);
+            g.userData.kind = 'skull';
+        } else if (kind === 'fire') {
+            const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 0), new THREE.MeshBasicMaterial({ color: c }));
+            const wrap = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 0), new THREE.MeshBasicMaterial({ color: h, transparent: true, opacity: 0.45 }));
+            const tip = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.22, 5), new THREE.MeshBasicMaterial({ color: h }));
+            tip.position.y = 0.22;
+            g.add(core);
+            g.add(wrap);
+            g.add(tip);
+            g.userData.spin = { core: core, halo: wrap };
+            g.userData.kind = 'fire';
+        } else if (kind === 'sonic') {
+            const disc = new THREE.Mesh(
+                new THREE.TorusGeometry(0.24, 0.045, 6, 14),
+                new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.85 })
+            );
+            const inner = new THREE.Mesh(
+                new THREE.TorusGeometry(0.12, 0.03, 6, 12),
+                new THREE.MeshBasicMaterial({ color: h, transparent: true, opacity: 0.7 })
+            );
+            disc.rotation.x = Math.PI / 2;
+            inner.rotation.x = Math.PI / 2;
+            g.add(disc);
+            g.add(inner);
+            g.userData.spin = { core: disc, halo: inner };
+            g.userData.kind = 'sonic';
+        } else {
+            const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.42), new THREE.MeshBasicMaterial({ color: c }));
+            const tip = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.14), new THREE.MeshBasicMaterial({ color: h }));
+            tip.position.z = 0.22;
+            g.add(shaft);
+            g.add(tip);
+        }
+        return g;
+    }
+
+    function skillRingMesh(color) {
+        const ring = new THREE.Mesh(
+            new THREE.TorusGeometry(1, 0.06, 8, 28),
+            new THREE.MeshBasicMaterial({ color: color == null ? 0xff7a20 : color, transparent: true, opacity: 0.7, depthWrite: false })
+        );
+        ring.rotation.x = Math.PI / 2;
+        return ring;
+    }
+
     function coinMesh() {
         const coin = new THREE.Mesh(
             new THREE.CylinderGeometry(0.16, 0.16, 0.05, 10),
@@ -764,6 +915,11 @@
             } else if (e.kind === 'death') {
                 const s = Math.max(0.01, e.life / (e.maxLife || 0.28));
                 e.obj.scale.set(s, s * (0.85 + s * 0.15), s);
+            } else if (e.kind === 'ring') {
+                const t = 1 - e.life / (e.maxLife || 0.7);
+                const s = (e.r0 || 1) + t * (e.grow || 3);
+                e.obj.scale.set(s, 1, s);
+                if (e.obj.material) e.obj.material.opacity = Math.max(0, 0.75 * (1 - t));
             }
             keep.push(e);
         });
@@ -779,6 +935,8 @@
         spawnBurst: spawnBurst,
         beginDeath: beginDeath,
         boltMesh: boltMesh,
+        skillShotMesh: skillShotMesh,
+        skillRingMesh: skillRingMesh,
         arrowMesh: arrowMesh,
         coinMesh: coinMesh,
         stepFx: stepFx

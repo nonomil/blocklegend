@@ -1,8 +1,13 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel lava cube: dark orange 16-cube with glowing yellow core and yellow eyes. Clean 2x2 orthographic turnaround.
+Primary request: One original voxel lava cube. Each quadrant is a FLAT square face of a 16x16x16 cube. Dark red-orange rind with a glowing yellow core visible as a smaller inner square. Two glowing yellow square eyes on the FRONT face only. Back and sides have NO eyes.
 
-Scene/backdrop: flat warm gray studio #c8c4bc. Style: Minecraft-like voxel boxes only.
-Composition: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
-Color palette: body #d84315, core #ffca28.
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
+
+Composition/framing: 2x2 elevation views only. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. TRUE orthographic. Each view is a FLAT square. NEVER show the top face. NEVER 3/4. NEVER perspective. NEVER a diamond.
+
+Color palette: rind #d84315, core #ffca28, eyes #ffca28.
+
 Text: none. Output: 1024x1024 PNG four-view sheet.

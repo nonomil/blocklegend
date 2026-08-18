@@ -1,0 +1,12 @@
+Use case: game-character-sheet
+Asset type: boss phase variants, front view only
+Primary request: One horizontal 1x3 sheet of the SAME voxel Ghast. Large white cube body, three thin hanging tentacle posts. No text.
+
+Left phase 1: closed sad mouth, two black square eyes, faint blue tear pixels.
+Middle phase 2: mouth open as a dark square, orange glow in the mouth (charging fireball), same tentacles.
+Right phase 3: wrinkled frowning face, more orange fire cubes near the mouth, tentacles slightly spread.
+
+Scene: flat warm gray #c8c4bc, no ground shadow.
+Style: Minecraft-like voxel boxes only, no bevel, no PBR.
+Text: none.
+Output: 16:9 PNG three-phase front sheet.

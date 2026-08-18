@@ -1,0 +1,14 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel raid beast matching public RavagerModel cuboids. Huge gray-brown quadruped. Long body box 20x16x26. Thick neck 10x10x10. Big head 16x16x14 at the FRONT with two short dark horns on top and a blunt snout. Four thick pillar legs 8x16x8. Low jaw slab under the snout. NOT a cow. NOT a pig. NOT a golem. Standing on four legs, head toward +Z (front).
+
+How each view MUST look:
+- FRONT (top-left): face with two dark eyes, snout, horns; you see the TWO FRONT legs as thick vertical pillars. Body is hidden behind the head.
+- RIGHT (top-right): long body from left (head/snout) to right (hindquarters). Two legs in a line, front and back. Horns and snout point LEFT.
+- BACK (bottom-left): rump only, no face. Two hind legs. No top-down. No saddle close-up that hides the body.
+- LEFT (bottom-right): mirror of right. Snout points RIGHT.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic, no 3/4, no top-down.
+Color palette: hide #5a4a3c, belly #3a3028, head #6a5848, snout #4a3a30, horns #3a3028, eyes #141010.
+Text: none. Output: 1024x1024 PNG four-view sheet.

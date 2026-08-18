@@ -1,15 +1,13 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel gold-tusk hog warrior, shown as a clean 2x2 orthographic turnaround.
+Primary request: One original voxel gold-tusk hogman matching public PiglinModel cuboids. Pink-tan 8x8x8 head with a snout, two floppy ears, two cream tusks. Brown tunic torso 8x12x4. Hanging 4x12x4 arms, 4x12x4 legs. Humanoid hog, not a quadruped pig.
 
-Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow blob.
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
 
-Subject: axis-aligned box humanoid. Pink-brown pig snout head, floppy ears, two small ivory tusks. Brown robe torso, hanging arms, dark pants. Pixel cloth, nearest-neighbor.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
 
-Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR, 16-bit pixel faces.
+Composition/framing: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. TRUE orthographic.
 
-Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic, full body.
-
-Color palette: skin #d89a8a, robe #7a3f2c, tusk #f4efe4, pants #4a2a1c.
+Color palette: skin #d89a8a, tunic #7a3f2c, pants #4a2a1c, tusks #f4efe4.
 
 Text: none. Output: 1024x1024 PNG four-view sheet.

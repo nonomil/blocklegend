@@ -1,0 +1,12 @@
+Use case: game-character-sheet
+Asset type: boss phase variants, front view only
+Primary request: One horizontal 1x3 sheet of the SAME voxel Wither Storm. Dark 22x18 body cube, orange command-block on chest, three skull heads with purple slit eyes, four hanging tentacle posts. No text.
+
+Left phase 1: sparse thin purple arcs near the heads.
+Middle phase 2: denser purple lightning cubes around the body.
+Right phase 3: gold-white lightning bolts striking downward from the body, eyes brighter.
+
+Scene: flat warm gray #c8c4bc, no ground shadow.
+Style: Minecraft-like voxel boxes only, no bevel, no PBR.
+Text: none.
+Output: 16:9 PNG three-phase front sheet.

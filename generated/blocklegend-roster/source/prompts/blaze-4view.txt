@@ -1,13 +1,14 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel flame spirit: floating yellow cube head with black eyes, surrounded by a ring of vertical orange fire rods, no legs. Clean 2x2 orthographic turnaround.
+Primary request: One original voxel blaze. One yellow-orange 8x8x8 HEAD cube with two black square eyes on the FRONT only. Exactly TWELVE orange RODS, each 2x8x2, floating in THREE RINGS of four around the head. Rods are straight vertical posts, not flames, not a fireball.
+
+CRITICAL LAYOUT:
+- Top-left FRONT: see the face (two eyes) and rods around it.
+- Top-right RIGHT: SIDE profile. The head is a square with NO full face. You see head depth and rods in front/back of it. NEVER the back of the head here.
+- Bottom-left BACK: head with NO eyes. Same rod rings.
+- Bottom-right LEFT: mirror of the right profile.
 
 Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
-
-Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
-
-Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic, full body.
-
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic.
 Color palette: head #ffb74d, rods #ff7043, eyes #141010.
-
 Text: none. Output: 1024x1024 PNG four-view sheet.

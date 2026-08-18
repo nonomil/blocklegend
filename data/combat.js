@@ -36,15 +36,28 @@
         enderman: { kind: 'enderman', hp: 50, coins: 10, contact: 2, speed: 1.22, loot: 'ender-pearl', color: 0x14141c, hitRadius: 0.45 },
         piglin: { kind: 'piglin', hp: 42, coins: 8, contact: 2, speed: 1.0, loot: 'gold-nugget', color: 0xe8a878, hitRadius: 0.5 },
         witch: { kind: 'witch', hp: 38, coins: 9, contact: 2, speed: 0.86, loot: 'glow-dust', color: 0x5a2a78, hitRadius: 0.5 },
-        golem: { kind: 'golem', hp: 64, coins: 12, contact: 3, speed: 0.62, loot: 'iron-ingot', color: 0xb8c4c8, hitRadius: 0.7 }
+        golem: { kind: 'golem', hp: 64, coins: 12, contact: 3, speed: 0.62, loot: 'iron-ingot', color: 0xb8c4c8, hitRadius: 0.7 },
+        ravager: { kind: 'ravager', hp: 68, coins: 12, contact: 3, speed: 0.72, loot: 'saddle', color: 0x6a5a48, hitRadius: 0.85 },
+        phantom: { kind: 'phantom', hp: 34, coins: 8, contact: 2, speed: 1.18, loot: 'phantom-membrane', color: 0x3a4a78, hitRadius: 0.7 },
+        vex: { kind: 'vex', hp: 26, coins: 7, contact: 1, speed: 1.45, loot: 'vex-wing', color: 0x8ad4e8, hitRadius: 0.4 },
+        drowned: { kind: 'drowned', hp: 46, coins: 8, contact: 2, speed: 1.08, loot: 'trident-shard', color: 0x3a7a6a, hitRadius: 0.5 },
+        snowgolem: { kind: 'snowgolem', hp: 36, coins: 6, contact: 1, speed: 0.78, loot: 'snowball', color: 0xf4f0ea, hitRadius: 0.5 },
+        shulker: { kind: 'shulker', hp: 48, coins: 9, contact: 2, speed: 0.42, loot: 'shulker-shell', color: 0x8a5a9a, hitRadius: 0.55 },
+        guardian: { kind: 'guardian', hp: 54, coins: 10, contact: 2, speed: 0.68, loot: 'prismarine', color: 0x4aa090, hitRadius: 0.7 },
+        pufferfish: { kind: 'pufferfish', hp: 22, coins: 5, contact: 2, speed: 0.9, loot: 'puffer-spine', color: 0xf2a04a, hitRadius: 0.45 },
+        spore_bug: { kind: 'spore_bug', hp: 28, coins: 6, contact: 1, speed: 1.08, loot: 'spore-cap', color: 0xb4543a, hitRadius: 0.5 },
+        fire_spirit: { kind: 'fire_spirit', hp: 32, coins: 7, contact: 2, speed: 1.2, loot: 'ember-core', color: 0xe07020, hitRadius: 0.45 },
+        sculk_worm: { kind: 'sculk_worm', hp: 38, coins: 7, contact: 2, speed: 0.82, loot: 'sculk-thread', color: 0x1a3a40, hitRadius: 0.55 },
+        shadow_stalker: { kind: 'shadow_stalker', hp: 44, coins: 8, contact: 2, speed: 1.18, loot: 'shadow-hood', color: 0x1c1c24, hitRadius: 0.45 }
     };
     const MONSTER_KINDS = Object.keys(MONSTERS);
     const BEHAVIOR = {
         slime: 'chase', cube: 'chase', husk: 'chase', fox: 'chase',
         magma: 'chase', creeper: 'chase', zombie: 'chase', spider: 'chase',
-        piglin: 'chase',
-        blaze: 'ranged', ghast: 'ranged', skeleton: 'ranged',
-        warden: 'shield', enderman: 'shield', golem: 'shield',
+        piglin: 'chase', ravager: 'chase', drowned: 'chase', vex: 'chase', pufferfish: 'chase',
+        spore_bug: 'chase', fire_spirit: 'chase', sculk_worm: 'chase', shadow_stalker: 'chase',
+        blaze: 'ranged', ghast: 'ranged', skeleton: 'ranged', phantom: 'ranged', snowgolem: 'ranged', guardian: 'ranged',
+        warden: 'shield', enderman: 'shield', golem: 'shield', shulker: 'shield',
         witch: 'summon'
     };
 
@@ -161,7 +174,11 @@
             { dx: f.x * 10.0, dz: f.z * 10.0 },
             { dx: f.x * 11.2 + right.x * -2.4, dz: f.z * 11.2 + right.z * -2.4 },
             { dx: f.x * 11.2 + right.x * 2.4, dz: f.z * 11.2 + right.z * 2.4 },
-            { dx: f.x * 12.4, dz: f.z * 12.4 }
+            { dx: f.x * 12.4, dz: f.z * 12.4 },
+            { dx: f.x * 13.2 + right.x * -3.2, dz: f.z * 13.2 + right.z * -3.2 },
+            { dx: f.x * 13.2 + right.x * 3.2, dz: f.z * 13.2 + right.z * 3.2 },
+            { dx: f.x * 14.4 + right.x * -4.2, dz: f.z * 14.4 + right.z * -4.2 },
+            { dx: f.x * 14.4 + right.x * 4.2, dz: f.z * 14.4 + right.z * 4.2 }
         ];
         return rows.slice(0, Math.max(1, Number(n) || 3));
     }

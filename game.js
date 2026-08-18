@@ -20,7 +20,10 @@
         gold_sword: 9, gold_pick: 9, gold_axe: 9, gold_shovel: 8,
         diamond_sword: 14, diamond_pick: 14, diamond_axe: 14, diamond_shovel: 13,
         door: 6, fence: 3, ladder: 3, bowl: 2, boat: 7, shears: 5, bucket: 5, fishing_rod: 7,
-        'ender-pearl': 8, 'gold-nugget': 6, 'glow-dust': 5
+        'ender-pearl': 8, 'gold-nugget': 6, 'glow-dust': 5,
+        'iron-ingot': 6, saddle: 8, 'phantom-membrane': 6, 'vex-wing': 6,
+        'trident-shard': 7, snowball: 2, 'shulker-shell': 8, prismarine: 7,
+        'puffer-spine': 4, 'spore-cap': 5, 'ember-core': 6, 'sculk-thread': 6, 'shadow-hood': 7
     };
     const DROP_COLOR = {
         'oak-log': 0x6b4a28, 'stick': 0x8a6234, 'dirt': 0x8a6a3c, 'cobble': 0x7a7a80, 'plank': 0xe0b46a
@@ -32,7 +35,13 @@
         '第三层 · 沙海荒原 · Desert',
         '第四层 · 暮色河谷 · Duskvale',
         '第五层 · 晶簇森林 · Crystal',
-        '第六层 · 下界熔岩 · Nether'
+        '第六层 · 下界熔岩 · Nether',
+        '第七层 · 密林猎场 · Forest',
+        '第八层 · 雪原寒径 · Snow',
+        '第九层 · 潮汐群岛 · Ocean',
+        '第十层 · 蘑菇谷地 · Mushroom',
+        '第十一层 · 火山裂谷 · Volcano',
+        '第十二层 · 末地虚空 · End'
     ];
     const bridge = window.WorkbenchGameBridge;
     const ENG = window.BlockLegendEngine;
@@ -67,6 +76,12 @@
         lastCrit: false,
         monsters: [],
         bolts: [],
+        bossShots: [],
+        bossSkillAt: 0,
+        bossDashUntil: 0,
+        bossCryUntil: 0,
+        bossSummoned: false,
+        bossHits: 0,
         pickups: [],
         fx: [],
         wave: 0,
@@ -105,7 +120,12 @@
         craftSize: 3,
         quest: null,
         quizRetry: false,
-        wordCorrect: 0
+        wordCorrect: 0,
+        familiarIds: [],
+        choiceOnly: {},
+        seenByWord: {},
+        themeAwarded: {},
+        waveTheme: ''
     };
 
     function emptyProgress() {
@@ -184,7 +204,9 @@
             },
             spawnBossId: function (bossId, x, z) {
                 const p = engine.player;
-                return spawnMonster('husk', x != null ? x : p.x + 4, z != null ? z : p.z + 3, { boss: true, bossId: bossId || 'wither' });
+                const id = bossId || 'wither';
+                const spawnKind = (L.bossSpawnKind && L.bossSpawnKind(id)) || 'husk';
+                return spawnMonster(spawnKind, x != null ? x : p.x + 4, z != null ? z : p.z + 3, { boss: true, bossId: id });
             },
             placeProp: function (kind, x, y, z) {
                 return engine.placeProp ? engine.placeProp(kind, x, y, z) : { ok: false };
@@ -242,6 +264,8 @@
             if (!document.fullscreenElement) (r.requestFullscreen || function () {}).call(r);
             else if (document.exitFullscreen) document.exitFullscreen();
         });
+        const craftOpen = document.getElementById('craft-btn');
+        if (craftOpen) craftOpen.addEventListener('click', function () { toggleCraft(); });
         document.getElementById('help-btn').addEventListener('click', function () {
             showHelpPage(0);
             toggleLayer('help-layer', true);
@@ -364,6 +388,15 @@
                 if (ch) appendCast(ch);
             });
         }
+        const quizKeys = document.getElementById('quiz-keyboard');
+        if (quizKeys) {
+            quizKeys.addEventListener('click', function (e) {
+                const btn = e.target.closest('[data-key], [data-action]');
+                if (!btn || !session.quiz) return;
+                e.preventDefault();
+                applyQuizKey(btn.getAttribute('data-action'), btn.getAttribute('data-key'));
+            });
+        }
         const lookSpeak = document.getElementById('look-speak');
         if (lookSpeak) lookSpeak.addEventListener('click', function (e) {
             e.preventDefault();
@@ -395,6 +428,16 @@
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         submitTypedQuiz();
+                        return;
+                    }
+                    if (!inType && e.key === 'Backspace') {
+                        e.preventDefault();
+                        applyQuizKey('backspace');
+                        return;
+                    }
+                    if (!inType && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                        e.preventDefault();
+                        applyQuizKey('', e.key);
                     }
                     return;
                 }
@@ -959,6 +1002,12 @@
         session.quizTurn = 0;
         session.quizRetry = false;
         session.wordCorrect = 0;
+        session.familiarIds = [];
+        session.choiceOnly = {};
+        session.seenByWord = {};
+        session.themeAwarded = {};
+        session.waveTheme = '';
+        session.missByWord = {};
         setCasting(false);
         const cfg = L.levelOf(session.level);
         session.wavesLeft = cfg.waves;
@@ -968,7 +1017,7 @@
             engine.reloadWorld(ENG.createWorld(cfg.worldSeed || (7 + session.level * 13), {
                 climate: cfg.climate || 'plains',
                 level: session.level,
-                words: (pool || []).slice(0, 8)
+                words: W.layoutWorldWords ? W.layoutWorldWords(pool || [], sessionReviewKeys()) : (pool || [])
             }));
             if (session.merchant && session.merchant.mesh) engine.scene.remove(session.merchant.mesh);
             spawnMerchant();
@@ -994,13 +1043,73 @@
         });
     }
 
+    function sessionReviewKeys() {
+        const keys = [];
+        function push(key) {
+            const k = String(key || '').trim();
+            if (k && keys.indexOf(k) < 0) keys.push(k);
+        }
+        sessionMissed().forEach(push);
+        Object.keys(session.choiceOnly || {}).forEach(push);
+        (progress.reviewWords || []).forEach(push);
+        return keys;
+    }
+
+    function noteFamiliarWord(word, channel) {
+        const id = wordKey(word);
+        const text = String((word && word.text) || '').toLowerCase();
+        if (id && W.noteId) session.familiarIds = W.noteId(session.familiarIds || [], id);
+        else if (id && (session.familiarIds || []).indexOf(id) < 0) {
+            session.familiarIds = (session.familiarIds || []).concat([id]);
+        }
+        session.wordCorrect = (session.familiarIds || []).length;
+        if (!session.choiceOnly) session.choiceOnly = {};
+        if (text) {
+            if (!channel || channel === 'choice') session.choiceOnly[text] = 1;
+            else delete session.choiceOnly[text];
+        }
+        noteQuest({ type: 'word-correct', count: session.wordCorrect, unique: true });
+        grantThemeAwards(word);
+        rebindFarWordCubes();
+    }
+
+    function rebindFarWordCubes() {
+        if (!engine || !engine.world || !engine.world.wordCells || !W.rebindWorldReviewWords) return;
+        const n = Number(engine.world.size) || 384;
+        W.rebindWorldReviewWords(engine.world.wordCells, pool || bank, sessionReviewKeys(), {
+            cx: Math.floor(n / 2),
+            cz: Math.floor(n / 2)
+        });
+    }
+
+    function grantThemeAwards() {
+        if (!W.dueThemeAwards) return;
+        const due = W.dueThemeAwards(pool, session.familiarIds, session.themeAwarded);
+        if (!due.length) return;
+        if (!session.themeAwarded) session.themeAwarded = {};
+        due.forEach(function (pack) {
+            session.themeAwarded[pack.theme] = Math.max(Number(session.themeAwarded[pack.theme]) || 0, pack.need);
+            session.coins = (Number(session.coins) || 0) + (Number(pack.coins) || 0);
+            Object.keys(pack.loot || {}).forEach(function (id) {
+                session.bag = C.addLoot(session.bag, id, pack.loot[id]);
+            });
+            toast(pack.theme + ' ×' + pack.need + ' · +' + pack.coins + ' 金币和合成材料');
+            if (sfx && sfx.reward) sfx.reward();
+        });
+        syncHud();
+        paintBagCounts();
+    }
+
     function refreshPool() {
         const cfg = L.levelOf(session.level);
         const src = (bank && bank.length) ? bank : (W.FALLBACK_BANK || []);
-        const focusN = Number(cfg && cfg.targetWords) || 0;
+        const chapter = W.poolForLevel(src, session.level, { themes: (cfg && cfg.wordThemes) || [] });
+        const focusN = Math.max(chapter.length, Number(cfg && cfg.targetWords) || 0);
         pool = (focusN && W.focusPool)
             ? W.focusPool(src, session.level, {
                 size: focusN,
+                coverChapter: true,
+                themes: (cfg && cfg.wordThemes) || [],
                 prefer: (cfg && cfg.focusWords) || [],
                 reviewRatio: (cfg && cfg.reviewRatio) || 0,
                 review: progress.reviewWords || [],
@@ -1008,7 +1117,7 @@
                 mastery: readMastery(),
                 today: todayStr()
             })
-            : W.poolForLevel(src, session.level);
+            : chapter;
         if (!pool.length) pool = src.slice();
     }
 
@@ -1032,9 +1141,10 @@
             mob.parked = true;
         });
         session.boss = L.createBoss(session.level);
-        ['wither', 'dragon', 'storm'].forEach(function (bossId, i) {
+        ['wither', 'dragon', 'storm', 'warden', 'ghast', 'ravager', 'blaze'].forEach(function (bossId, i) {
             const open = openMobSpot(p.x - 16, p.z + 18 + i * 4);
-            const mob = spawnMonster('husk', open.x, open.z, { boss: true, bossId: bossId });
+            const spawnKind = (L.bossSpawnKind && L.bossSpawnKind(bossId)) || 'husk';
+            const mob = spawnMonster(spawnKind, open.x, open.z, { boss: true, bossId: bossId });
             mob.parked = true;
         });
         if (engine.placeProp) {
@@ -1051,6 +1161,13 @@
     function clearEntities() {
         session.monsters.forEach(function (m) { if (m.mesh) engine.scene.remove(m.mesh); });
         session.bolts.forEach(function (b) { if (b.mesh) engine.scene.remove(b.mesh); });
+        (session.bossShots || []).forEach(function (b) { if (b.mesh) engine.scene.remove(b.mesh); });
+        session.bossShots = [];
+        session.bossSkillAt = 0;
+        session.bossDashUntil = 0;
+        session.bossCryUntil = 0;
+        session.bossSummoned = false;
+        session.bossHits = 0;
         session.pickups.forEach(function (p) { if (p.mesh) engine.scene.remove(p.mesh); });
         session.fx.forEach(function (e) { engine.scene.remove(e.obj); });
         session.monsters = [];
@@ -1096,7 +1213,8 @@
             bossId: isBoss ? ((extra && extra.bossId) || 'wither') : '',
             height: model.height || 1.6,
             hitRadius: isBoss ? 1.2 : (spec.hitRadius || 0.45),
-            bossHits: 0
+            bossHits: 0,
+            reviewFirst: !!(extra && extra.reviewFirst)
         };
         bindMobWord(mob);
         if (mob.isBoss) {
@@ -1139,18 +1257,29 @@
         const p = engine.player;
         const cfg = L.levelOf(session.level);
         const kinds = (session.wave === 1)
-            ? ['slime', 'slime']
+            ? ((L.firstWaveKinds && L.firstWaveKinds(session.level)) || ['slime', 'slime'])
             : ((cfg && cfg.waveKinds) || ['slime', 'cube', 'slime']);
-        const count = kinds.length + (session.wave > 1 ? 1 : 0);
+        const count = session.wave === 1
+            ? 2
+            : Math.min(6, Math.max((kinds.length || 3) + 2, 6));
         const offs = C.waveOffsets ? C.waveOffsets(engine.look.yaw, count) : [
             { dx: 0, dz: -4 }, { dx: -2.2, dz: -5.2 }, { dx: 2.2, dz: -5.2 }
         ];
+        const liveUsed = session.monsters.map(function (m) {
+            return m && m.word ? (m.word.id || m.word.text) : '';
+        }).filter(Boolean);
+        session.waveTheme = (W.pickWaveTheme && W.pickWaveTheme(pool, liveUsed.concat(sessionReviewKeys()), (cfg && cfg.wordThemes) || [])) || '';
+        const reviewN = session.wave > 1 ? Math.min(3, sessionReviewKeys().length) : 0;
         offs.forEach(function (s, i) {
             const kind = kinds[Math.min(i, kinds.length - 1)] || 'slime';
             const open = openMobSpot(p.x + s.dx, p.z + s.dz);
-            spawnMonster(kind, open.x, open.z);
+            spawnMonster(kind, open.x, open.z, { reviewFirst: i < reviewN });
         });
-        if (session.wave === 1) toast('漏字史莱姆在正前方，对准它再砍');
+        if (session.wave === 1) {
+            toast((kinds[0] === 'slime' && kinds[1] === 'slime')
+                ? '史莱姆在正前方，对准它再砍'
+                : '前方有怪物，对准它再砍');
+        } else if (session.waveTheme) toast('这一波 · ' + session.waveTheme + ' 词');
     }
 
     function spawnBoss() {
@@ -1159,11 +1288,22 @@
         const open = openMobSpot(p.x + 16, p.z + 4);
         const cfg = L.levelOf(session.level);
         const bossId = (cfg && cfg.bossId) || 'wither';
-        session.bossMob = spawnMonster('husk', open.x, open.z, { boss: true, bossId: bossId });
+        const spawnKind = (L.bossSpawnKind && L.bossSpawnKind(bossId)) || 'husk';
+        session.bossMob = spawnMonster(spawnKind, open.x, open.z, {
+            boss: true,
+            bossId: bossId,
+            reviewFirst: true
+        });
         const hud = document.getElementById('boss-hud');
         if (hud) hud.classList.remove('is-hidden');
-        const bossName = L.bossTitle ? L.bossTitle(bossId) : '字母石像';
-        toast(bossName + '来了！砍它会掉血，答对单词破罩。');
+        const bossName = L.bossTitle ? L.bossTitle(bossId) : '凋灵';
+        session.bossSkillAt = 0;
+        session.bossDashUntil = 0;
+        session.bossCryUntil = 0;
+        session.bossSummoned = false;
+        session.bossHits = 0;
+        applyBossForm(session.bossMob, 1);
+        toast(bossName + '来了！蓝罩要用说或拼才能破，乱砍打不穿。');
         syncBossHud();
     }
 
@@ -1542,7 +1682,12 @@
                 return;
             }
             session.pending = { wordBlock: { cell: cell, key: key } };
-            fillQuizCard(nextLearnQuiz(cell), '单词方块 · 答对才算学会');
+            const cubeQuiz = nextLearnQuiz(cell);
+            fillQuizCard(cubeQuiz, cubeQuiz.mode === 'spell'
+                ? '单词方块 · 拼出来'
+                : cubeQuiz.mode === 'enpick'
+                    ? '单词方块 · 跟读或选英文'
+                    : '单词方块 · 答对才算学会');
             return;
         }
         if (T.placeKindOf(result.drop)) session.placeLoot = result.drop;
@@ -1597,8 +1742,8 @@
         const origin = eyeOrigin();
         const dir = T.lookDir(engine.look.yaw, engine.look.pitch);
         let best = null, bestDot = 0.7, bestDist = 6;
-        function consider(row, type, kind, y) {
-            const aim = lookAim(origin, dir, row.x, y, row.z, 6, 0.7);
+        function consider(row, type, kind, y, maxDist, minDot) {
+            const aim = lookAim(origin, dir, row.x, y, row.z, maxDist || 6, minDot == null ? 0.7 : minDot);
             if (!aim) return;
             if (aim.dot > bestDot && aim.dist < bestDist) {
                 best = { type: type, kind: kind, row: row };
@@ -1610,14 +1755,39 @@
             consider(a, 'animal', a.kind, engine.world.surfaceAt(Math.floor(a.x), Math.floor(a.z)) + 0.4);
         });
         (engine.world.villagers || []).forEach(function (v) {
-            consider(v, 'npc', v.role === 'trader' ? 'trader' : 'villager', engine.world.surfaceAt(Math.floor(v.x), Math.floor(v.z)) + 1.1);
+            const npcKind = v.role === 'trader' ? 'trader' : v.role === 'teacher' ? 'teacher' : 'villager';
+            consider(v, 'npc', npcKind, engine.world.surfaceAt(Math.floor(v.x), Math.floor(v.z)) + 1.1);
         });
         (engine.world.golems || []).forEach(function (g) {
-            consider(g, 'animal', 'golem', engine.world.surfaceAt(Math.floor(g.x), Math.floor(g.z)) + 1.4);
+            consider(g, 'animal', g.kind === 'snowgolem' ? 'snowgolem' : 'golem', engine.world.surfaceAt(Math.floor(g.x), Math.floor(g.z)) + 1.4);
         });
         (engine.world.placedProps || []).forEach(function (p) {
             const row = { x: p.x + 0.5, z: p.z + 0.5, y: p.y, prop: p };
             consider(row, 'prop', p.kind, p.y + 0.4);
+        });
+        (engine.world.beds || []).forEach(function (b) {
+            const y0 = b.y != null ? b.y : engine.world.surfaceAt(Math.floor(b.x), Math.floor(b.z));
+            consider({ x: b.x + 0.5, z: b.z + 0.5, y: y0 }, 'prop', 'bed', y0 + 0.28);
+        });
+        (engine.world.houses || []).forEach(function (h) {
+            const doorX = h.x + Math.floor((h.w || 4) / 2) + 0.5;
+            const doorZ = h.z + (h.d || 4) - 0.15;
+            const y0 = h.y0 != null ? h.y0 : engine.world.surfaceAt(Math.floor(h.x), Math.floor(h.z));
+            consider({ x: doorX, z: doorZ, y: y0 }, 'prop', 'house', y0 + 1.15);
+        });
+        (engine.world.trees || []).forEach(function (t) {
+            const y0 = engine.world.surfaceAt(t.x, t.z);
+            consider({ x: t.x + 0.5, z: t.z + 0.5, y: y0 }, 'prop', 'tree', y0 + 1.5, 4.2, 0.84);
+        });
+        (engine.world.flowers || []).forEach(function (f) {
+            const y0 = f.y != null ? f.y : engine.world.surfaceAt(f.x, f.z);
+            consider({ x: f.x + 0.5, z: f.z + 0.5, y: y0 }, 'prop', 'flower', y0 + 0.25, 5, 0.8);
+        });
+        (engine.world.plants || []).forEach(function (p) {
+            if (p.kind === 'wheat') {
+                const y0 = p.y != null ? p.y : engine.world.surfaceAt(p.x, p.z);
+                consider({ x: p.x + 0.5, z: p.z + 0.5, y: y0 }, 'prop', 'wheat', y0 + 0.3, 5, 0.8);
+            }
         });
         if (best && best.row && best.row.prop) best.prop = best.row.prop;
         return best;
@@ -1627,7 +1797,11 @@
         const sub = lookSubject();
         if (!sub) return false;
         if (sub.type === 'npc') {
-            openTrade();
+            if (sub.kind === 'trader' || sub.kind === 'merchant') {
+                openTrade();
+                return true;
+            }
+            toast((W.labelFor(sub.kind, bank).en || sub.kind) + ' · ' + (W.labelFor(sub.kind, bank).zh || ''));
             return true;
         }
         if (sub.type === 'prop' && sub.prop && sub.prop.mesh && sub.prop.mesh.userData.toggle) {
@@ -1684,7 +1858,7 @@
 
     function paintSayStrip() {
         const el = document.getElementById('say-strip');
-        if (el) el.textContent = W.sayStrip(pool, 8);
+        if (el) el.textContent = W.sayStrip(pool, 12);
         const mine = document.getElementById('my-english');
         if (mine) {
             const n = W.countFamiliar
@@ -1779,7 +1953,7 @@
             session.lookKey = key;
             session.lookSince = now;
             session.lookSpoken = false;
-            if (sub.kind === 'log') noteQuest({ type: 'look', kind: 'log' });
+            if (sub.kind) noteQuest({ type: 'look', kind: sub.kind });
             if (sub.mob && sub.mob.word) noteWordShown(sub.mob.word);
             if (session.voice && session.voice.lock && session.voice.lock.mob !== sub.mob) {
                 hideVoiceFallback();
@@ -1848,7 +2022,8 @@
             firstHit: !mob.asked,
             quizPassed: !!mob.quizPassed,
             lastQuizWrong: !!mob.lastQuizWrong,
-            hitsSinceQuiz: Number(mob.hitsSinceQuiz) || 0
+            hitsSinceQuiz: Number(mob.hitsSinceQuiz) || 0,
+            bossShielded: !!(mob.isBoss && session.boss && session.boss.state === 'shielded')
         })) {
             openQuiz(mob, kind);
             return;
@@ -1882,13 +2057,16 @@
                 : mode === 'picture' ? '看图选词'
                     : mode === 'phrase' ? '写出英文句子'
                         : mode === 'enpick' ? (word.zh || '看中文，选英文')
-                            : '____')
+                            : mode === 'enphrase' ? (word.zh || '中文句子，选英文')
+                                : mode === 'letters' ? (quiz.blank || '____')
+                                    : '____')
             : (mode === 'sentence' ? (quiz.phrase || word.text) : word.text);
         const zhHint = document.getElementById('quiz-zh');
         if (zhHint) {
-            const ipa = word.phonetic ? (' /' + word.phonetic + '/') : '';
-            if (mode === 'enpick') zhHint.textContent = ipa.trim();
-            else if (mode === 'spell' || mode === 'fill') zhHint.textContent = (word.zh || '') + ipa;
+            const ipaRaw = W.phoneticOf ? W.phoneticOf(word) : (word.phonetic || '');
+            const ipa = ipaRaw ? (' /' + ipaRaw + '/') : '';
+            if (mode === 'enpick' || mode === 'enphrase') zhHint.textContent = ipa.trim();
+            else if (mode === 'spell' || mode === 'fill' || mode === 'letters') zhHint.textContent = (word.zh || '') + ipa;
             else if (mode === 'choice' || mode === 'listen' || mode === 'sentence') zhHint.textContent = ipa.trim();
             else zhHint.textContent = '';
         }
@@ -1909,8 +2087,8 @@
         const phraseZh = document.getElementById('quiz-phrase-zh');
         const phraseText = mode === 'fill'
             ? (quiz.blank || '')
-            : (mode === 'sentence' || mode === 'listen' ? '' : (quiz.phrase || word.phrase || ''));
-        const phraseZhText = (mode === 'sentence' || mode === 'choice' || mode === 'listen')
+            : (mode === 'sentence' || mode === 'listen' || mode === 'enphrase' || mode === 'letters' ? '' : (quiz.phrase || word.phrase || ''));
+        const phraseZhText = (mode === 'sentence' || mode === 'choice' || mode === 'listen' || mode === 'letters')
             ? ''
             : (quiz.phraseZh || word.phraseZh || '');
         if (phrase) {
@@ -1931,7 +2109,8 @@
             if (typeBox) typeBox.classList.remove('is-hidden');
             if (input) {
                 input.value = '';
-                setTimeout(function () { input.focus(); }, 30);
+                input.readOnly = !!wantTouchPad();
+                if (!wantTouchPad()) setTimeout(function () { input.focus(); }, 30);
             }
         } else {
             box.classList.remove('is-hidden');
@@ -1939,6 +2118,7 @@
             if (input && bossType) {
                 input.value = '';
                 input.placeholder = 'type the English word';
+                input.readOnly = !!wantTouchPad();
             }
             (quiz.choices || []).forEach(function (choice, i) {
                 const btn = document.createElement('button');
@@ -1949,6 +2129,7 @@
                 box.appendChild(btn);
             });
         }
+        paintQuizKeyboard();
         session.quiz = quiz;
         session.quizRetry = false;
         session.quizEndsAt = nowMs() + (quiz.limitMs || W.QUIZ_MS);
@@ -1989,6 +2170,7 @@
         if (!key) return;
         if (!session.missByWord) session.missByWord = {};
         session.missByWord[key] = correct ? 0 : missStreakOf(word) + 1;
+        rebindFarWordCubes();
     }
 
     function nextLearnQuiz(word, extra) {
@@ -1999,6 +2181,7 @@
         return W.makeQuiz(word, bank, Object.assign({
             turn: session.quizTurn,
             missStreak: missStreakOf(word),
+            seen: Number((session.seenByWord || {})[key]) || 0,
             stage: W.masteryStage ? W.masteryStage(rec, todayStr()) : 'new'
         }, extra || {}));
     }
@@ -2010,13 +2193,25 @@
             return;
         }
         session.pending = { mob: mob, kind: kind };
-        const quiz = nextLearnQuiz(word);
+        const bossShielded = !!(mob.isBoss && session.boss && session.boss.state === 'shielded');
+        const quiz = nextLearnQuiz(word, bossShielded && L.bossQuizMode
+            ? { mode: L.bossQuizMode(session.boss.mechanic, word) }
+            : null);
         const hard = W.needsHardMode(word, { missStreak: missStreakOf(word) });
-        const kick = quiz.mode === 'enpick'
-            ? '看中文，选英文'
+        const seen = Number((session.seenByWord || {})[String((word && word.text) || '').toLowerCase()]) || 0;
+        const kick = bossShielded && L.bossQuizKicker
+            ? L.bossQuizKicker(session.boss.mechanic)
+            : quiz.mode === 'spell'
+            ? (seen >= 1 ? '这个词再见了，拼出来' : '拼出单词')
+            : quiz.mode === 'enpick'
+            ? (seen >= 1 ? '跟读或选英文' : '看中文，选英文')
             : quiz.mode === 'sentence'
-                ? '选出这句话的意思'
-                : (hard ? '这个词错过几次了，拼出来' : (quiz.prompt || '先做题才能打'));
+                ? '英文句子，选中文'
+                : quiz.mode === 'enphrase'
+                    ? '中文句子，选英文'
+                    : quiz.mode === 'letters'
+                        ? '补全缺的字母'
+                        : (hard ? '这个词错过几次了，拼出来' : (quiz.prompt || '先做题才能打'));
         fillQuizCard(quiz, kick);
     }
 
@@ -2042,6 +2237,59 @@
         if (!session.quiz || !session.quiz.typed) return;
         const input = document.getElementById('quiz-input');
         attemptQuiz(input && input.value);
+    }
+
+    function letterKeyboardHtml(opts) {
+        opts = opts || {};
+        const next = String(opts.next || '').toLowerCase();
+        const typed = String(opts.typed || '').toLowerCase();
+        const rows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+        return rows.map(function (row) {
+            return '<div class="bl-keys">' + row.split('').map(function (ch) {
+                const cls = ch === next ? ' is-next' : (typed.indexOf(ch) >= 0 ? ' is-done' : '');
+                return '<button type="button" class="bl-key' + cls + '" data-key="' + ch + '">' + ch + '</button>';
+            }).join('') + '</div>';
+        }).join('') + '<div class="bl-keys bl-keys-actions">'
+            + '<button type="button" class="bl-key is-action" data-action="backspace">⌫</button>'
+            + '<button type="button" class="bl-key is-action" data-key=" ">空格</button>'
+            + '<button type="button" class="bl-key is-action" data-action="clear">清空</button>'
+            + '<button type="button" class="bl-key is-action" data-action="enter">确认</button>'
+            + '</div>';
+    }
+
+    function paintQuizKeyboard() {
+        const box = document.getElementById('quiz-keyboard');
+        const typeBox = document.getElementById('quiz-type');
+        if (!box) return;
+        const show = !!(session.quiz && typeBox && !typeBox.classList.contains('is-hidden'));
+        box.classList.toggle('is-hidden', !show);
+        if (!show) {
+            box.innerHTML = '';
+            return;
+        }
+        const input = document.getElementById('quiz-input');
+        const typed = String((input && input.value) || '');
+        const aim = String((session.quiz.word && session.quiz.word.text) || session.quiz.answer || '').toLowerCase();
+        box.innerHTML = letterKeyboardHtml({
+            typed: typed,
+            next: aim.charAt(typed.length)
+        });
+    }
+
+    function applyQuizKey(action, ch) {
+        const input = document.getElementById('quiz-input');
+        if (!input || !session.quiz) return;
+        if (action === 'backspace') {
+            input.value = String(input.value || '').slice(0, -1);
+        } else if (action === 'clear') {
+            input.value = '';
+        } else if (action === 'enter') {
+            submitTypedQuiz();
+            return;
+        } else if (ch != null && ch !== '') {
+            input.value = String(input.value || '') + ch;
+        }
+        paintQuizKeyboard();
     }
 
     function liveCastTargets() {
@@ -2084,7 +2332,10 @@
         mob.word = W.bindCastWord(src, used, {
             kind: kind,
             focus: (cfg && cfg.focusWords) || [],
-            prefer: mob.word && mob.word.text
+            prefer: mob.word && mob.word.text,
+            review: sessionReviewKeys(),
+            reviewFirst: !!mob.reviewFirst && !(mob.word && mob.word.text),
+            theme: (!mob.reviewFirst && session.waveTheme) || ''
         });
         if (!mob.word) {
             const label = W.labelFor(kind, bank);
@@ -2146,17 +2397,7 @@
         const aim = String((targets[0] && targets[0].word && targets[0].word.text) || '').toLowerCase();
         const typed = String(session.castBuf || '').toLowerCase();
         const next = aim.charAt(typed.length);
-        const rows = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
-        box.innerHTML = rows.map(function (row) {
-            return '<div class="bl-keys">' + row.split('').map(function (ch) {
-                const cls = ch === next ? ' is-next' : (typed.indexOf(ch) >= 0 ? ' is-done' : '');
-                return '<button type="button" class="bl-key' + cls + '" data-key="' + ch + '">' + ch + '</button>';
-            }).join('') + '</div>';
-        }).join('') + '<div class="bl-keys bl-keys-actions">'
-            + '<button type="button" class="bl-key is-action" data-action="backspace">⌫</button>'
-            + '<button type="button" class="bl-key is-action" data-action="clear">清空</button>'
-            + '<button type="button" class="bl-key is-action" data-action="enter">确认</button>'
-            + '</div>';
+        box.innerHTML = letterKeyboardHtml({ typed: typed, next: next });
     }
 
     function setCasting(on) {
@@ -2194,6 +2435,7 @@
         session.castBuf = '';
         if (word && word.id && progress.learnedIds.indexOf(word.id) === -1) progress.learnedIds.push(word.id);
         progress.rightCount = (Number(progress.rightCount) || 0) + 1;
+        noteFamiliarWord(word, 'spell');
         noteWordResult(word, true);
         if (word && word.text && global.WorkbenchGameBridge && global.WorkbenchGameBridge.recordWordAnswer) {
             global.WorkbenchGameBridge.recordWordAnswer(word.text, true);
@@ -2206,8 +2448,8 @@
             chipBossShield('spell', 1);
         }
         mob.asked = true;
-        mob.quizPassed = true;
         mob.lastQuizWrong = false;
+        mob.quizPassed = !(mob.isBoss && session.boss && session.boss.state === 'shielded');
         mob.voiceFails = 0;
         launchBoltToward(mob, { cosmetic: true });
         applyResolvedHit(mob, 'bolt', { answered: true, correct: true, channel: 'spell' });
@@ -2248,12 +2490,17 @@
         session.pending = null;
         session.quiz = null;
         toggleLayer('quiz-layer', false);
+        paintQuizKeyboard();
         if (rec.record) {
+            const seenKey = String((word && word.text) || '').toLowerCase();
+            if (seenKey) {
+                if (!session.seenByWord) session.seenByWord = {};
+                session.seenByWord[seenKey] = (Number(session.seenByWord[seenKey]) || 0) + 1;
+            }
             if (correct) {
                 progress.rightCount = (Number(progress.rightCount) || 0) + 1;
                 if (word && word.id && progress.learnedIds.indexOf(word.id) === -1) progress.learnedIds.push(word.id);
-                session.wordCorrect = (Number(session.wordCorrect) || 0) + 1;
-                noteQuest({ type: 'word-correct', count: session.wordCorrect });
+                noteFamiliarWord(word, rec.channel);
                 if (sfx && sfx.celebrate) sfx.celebrate();
             } else {
                 progress.wrongCount = (Number(progress.wrongCount) || 0) + 1;
@@ -2299,10 +2546,14 @@
         pending.mob.lastQuizWrong = !correct;
         pending.mob.hitsSinceQuiz = 0;
         pending.mob.voiceFails = 0;
-        if (correct) pending.mob.quizPassed = true;
         if (correct && rec.channel === 'speak') noteWordSpoken(word);
         if (correct && pending.mob.isBoss && session.boss) {
             chipBossShield(rec.channel, rec.channel === 'speak' ? 2 : 1);
+        }
+        const stillShield = !!(pending.mob.isBoss && session.boss && session.boss.state === 'shielded');
+        if (correct) pending.mob.quizPassed = !stillShield;
+        if (correct && stillShield) {
+            toast((L.bossQuizKicker && L.bossQuizKicker(session.boss.mechanic)) || '蓝罩还在 · 按提示说或拼');
         }
         if (!(correct && rec.comboKeep === false)) {
             session.combo = C.nextCombo({ answered: true, correct: correct, combo: session.combo });
@@ -2351,8 +2602,23 @@
         }
         const crit = !!(verdict.answered && verdict.correct);
         if (mob.isBoss && session.boss) {
-            const r = L.applyBossDamage(session.boss, dmg, { now: nowMs() });
+            const r = L.applyBossDamage(session.boss, dmg, { now: nowMs(), channel: verdict.channel });
             session.boss = r.boss;
+            if (r.blocked && !verdict.answered) {
+                toast((L.bossQuizKicker && L.bossQuizKicker(session.boss.mechanic)) || '蓝罩挡住了 · 说或拼才能破');
+            }
+            if (verdict.correct || (verdict.answered && !r.blocked)) {
+                session.bossHits = (Number(session.bossHits) || 0) + 1;
+                const kit = L.kitOf && L.kitOf(session.boss.id);
+                if (kit && kit.cryHits && session.bossHits % kit.cryHits === 0) {
+                    session.bossCryUntil = nowMs() + 5000;
+                    toast('它哭了 · 5 秒输出窗');
+                }
+            }
+            if (r.boss && r.boss.phaseChanged) {
+                toast((L.bossFormLine && L.bossFormLine(session.boss)) || ('进入阶段 ' + session.boss.phase));
+                applyBossForm(mob, session.boss.phase);
+            }
             mob.hp = session.boss.hp;
             session.lastDamage = r.dealt;
             session.lastCrit = crit;
@@ -2377,13 +2643,185 @@
 
     function chipBossShield(channel, fallbackChip) {
         if (!session.boss) return;
+        if (L.canChipShield && !L.canChipShield(session.boss.mechanic, channel)) return;
         const before = session.boss.state;
-        const chip = L.shieldChipOf ? L.shieldChipOf(channel, session.boss.shield) : fallbackChip;
+        const chip = L.shieldChipOf
+            ? L.shieldChipOf(channel, session.boss.shield, session.boss.mechanic)
+            : fallbackChip;
         session.boss = L.chipShield(session.boss, chip, { now: nowMs() }).boss;
         if (before !== 'broken' && session.boss.state === 'broken') {
             noteQuest({ type: 'boss-shield-break' });
             if (sfx && sfx.shieldBreak) sfx.shieldBreak();
         }
+    }
+
+    function fireBossShot(mob, opts) {
+        if (!mob || !engine || !MOBS) return;
+        const o = opts || {};
+        const p = engine.player;
+        const dx = p.x - mob.x;
+        const dz = p.z - mob.z;
+        const len = Math.hypot(dx, dz) || 1;
+        let ux = dx / len, uz = dz / len;
+        const ang = Number(o.angle) || 0;
+        if (ang) {
+            const c = Math.cos(ang), s = Math.sin(ang);
+            const nx = ux * c - uz * s;
+            uz = ux * s + uz * c;
+            ux = nx;
+        }
+        const speed = o.track ? 5.2 : (o.shot === 'sonic' ? 7.2 : 6.4);
+        const mesh = MOBS.skillShotMesh
+            ? MOBS.skillShotMesh(o.shot || 'bolt', o.color, o.halo)
+            : MOBS.boltMesh();
+        const y = (mob.y || 0) + (mob.height || 1.6) * 0.55;
+        mesh.position.set(mob.x, y, mob.z);
+        engine.scene.add(mesh);
+        session.bossShots = session.bossShots || [];
+        session.bossShots.push({
+            x: mob.x, z: mob.z, y: y,
+            vx: ux * speed, vz: uz * speed,
+            life: 2.8, mesh: mesh, track: !!o.track, dmg: Number(o.dmg) || 1
+        });
+    }
+
+    function playBossSkillPose(fx, now) {
+        session.bossAnim = {
+            lean: (fx && fx.lean) || 'forward',
+            until: now + 520
+        };
+    }
+
+    function spawnBossRing(mob, fx) {
+        if (!MOBS.skillRingMesh || !engine) return;
+        const ring = MOBS.skillRingMesh(fx.color);
+        const y = (mob.y || 0) + 0.12;
+        ring.position.set(mob.x, y, mob.z);
+        engine.scene.add(ring);
+        session.fx.push({
+            kind: 'ring', obj: ring, life: 0.7, maxLife: 0.7,
+            r0: fx.radius || 1.6, grow: fx.grow || 3.4
+        });
+    }
+
+    function playBossSkill(mob, act, now) {
+        const fx = L.bossSkillFx ? L.bossSkillFx(act.skill, act.phase, session.boss.id) : { kind: 'shot', color: 0xff6a2a };
+        playBossSkillPose(fx, now);
+        if (MOBS.spawnBurst) {
+            MOBS.spawnBurst(engine.scene, session.fx, mob.x, mob.y + 1.1, mob.z, fx.color, fx.burst || 8);
+        }
+        if (fx.kind === 'dash') {
+            session.bossDashUntil = now + (fx.dashMs || 900);
+            toast(act.label);
+            return;
+        }
+        if (fx.kind === 'ring') {
+            spawnBossRing(mob, fx);
+            const dist = Math.hypot(engine.player.x - mob.x, engine.player.z - mob.z);
+            if (dist < (fx.radius || 2) + 1.4) {
+                const hit = C.applyContact({ hp: engine.player.hp, lastHitAt: session.lastHitAt }, { contact: 2 }, now);
+                if (hit.hit) {
+                    engine.player.hp = hit.hp;
+                    session.lastHitAt = hit.lastHitAt;
+                    hurtFlash();
+                    toast(act.label + '！HP ' + Math.ceil(engine.player.hp));
+                    if (engine.player.hp <= 0) respawn();
+                    return;
+                }
+            }
+            toast(act.label);
+            return;
+        }
+        if (fx.kind === 'summon') {
+            if (session.bossSummoned) return;
+            session.bossSummoned = true;
+            const kind = act.minion || 'blaze';
+            spawnMonster(kind, mob.x + 2.4, mob.z + 1.2);
+            spawnMonster(kind, mob.x - 2.2, mob.z + 1.6);
+            toast(act.label);
+            return;
+        }
+        const n = Number(act.count) || 1;
+        if (fx.ring) spawnBossRing(mob, { color: fx.color, radius: 1.2, grow: 2.4 });
+        if (n <= 1) fireBossShot(mob, fx);
+        else {
+            for (let i = 0; i < n; i += 1) {
+                fireBossShot(mob, Object.assign({}, fx, { angle: (i - (n - 1) / 2) * 0.32 }));
+            }
+        }
+    }
+
+    function tickBossCombat(now) {
+        if (!session.boss || !session.bossMob || session.boss.dead || session.bossMob.hp <= 0) return;
+        if (!L.nextBossAction) return;
+        const mob = session.bossMob;
+        const act = L.nextBossAction(session.boss, {
+            now: now,
+            lastAt: session.bossSkillAt || 0,
+            cryUntil: session.bossCryUntil || 0
+        });
+        if (session.boss.phase !== act.phase) session.boss.phase = act.phase;
+        if (!act.ready) return;
+        session.bossSkillAt = now;
+        playBossSkill(mob, act, now);
+    }
+
+    function moveBossShots(dt) {
+        if (!session.bossShots || !session.bossShots.length) return;
+        const p = engine.player;
+        const keep = [];
+        session.bossShots.forEach(function (b) {
+            b.life -= dt;
+            if (b.track) {
+                const dx = p.x - b.x, dz = p.z - b.z;
+                const len = Math.hypot(dx, dz) || 1;
+                b.vx += (dx / len) * 4.2 * dt;
+                b.vz += (dz / len) * 4.2 * dt;
+                const spd = Math.hypot(b.vx, b.vz) || 1;
+                if (spd > 6.2) {
+                    b.vx = b.vx / spd * 6.2;
+                    b.vz = b.vz / spd * 6.2;
+                }
+            }
+            b.x += b.vx * dt;
+            b.z += b.vz * dt;
+            if (b.mesh) {
+                b.mesh.position.set(b.x, b.y, b.z);
+                b.mesh.rotation.y = Math.atan2(b.vx, b.vz);
+            }
+            if (Math.hypot(p.x - b.x, p.z - b.z) < 0.7) {
+                const hit = C.applyContact({ hp: p.hp, lastHitAt: session.lastHitAt }, { contact: b.dmg || 1 }, nowMs());
+                if (hit.hit) {
+                    p.hp = hit.hp;
+                    session.lastHitAt = hit.lastHitAt;
+                    hurtFlash();
+                    if (sfx && sfx.hurt) sfx.hurt();
+                    toast('中弹了！HP ' + Math.ceil(p.hp));
+                    if (p.hp <= 0) respawn();
+                }
+                if (b.mesh) engine.scene.remove(b.mesh);
+                return;
+            }
+            if (b.life <= 0) {
+                if (b.mesh) engine.scene.remove(b.mesh);
+                return;
+            }
+            keep.push(b);
+        });
+        session.bossShots = keep;
+    }
+
+    function applyBossForm(mob, phase) {
+        if (!mob || !mob.mesh || !L.bossFormOf) return;
+        const form = L.bossFormOf((session.boss && session.boss.id) || mob.bossId, phase);
+        mob.mesh.scale.setScalar(form.scale);
+        mob.mesh.traverse(function (n) {
+            const name = String(n.name || '').toLowerCase();
+            if (!n.material || !n.material.emissive) return;
+            if (name.indexOf('eye') < 0 && name.indexOf('core') < 0 && name.indexOf('heart') < 0 && name.indexOf('glow') < 0 && name.indexOf('mouth') < 0) return;
+            n.material.emissive.setHex(form.glow);
+            if (n.material.color) n.material.color.setHex(form.glow);
+        });
     }
 
     function paintBossShield() {
@@ -2896,8 +3334,8 @@
         }
         mob.voiceFails = 0;
         mob.asked = true;
-        mob.quizPassed = true;
         mob.lastQuizWrong = false;
+        mob.quizPassed = !(mob.isBoss && session.boss && session.boss.state === 'shielded');
         session.combo = C.nextCombo({ answered: true, correct: true, combo: session.combo });
         applyResolvedHit(mob, 'melee', { answered: true, correct: true, channel: 'speak' });
         hideVoiceFallback();
@@ -2951,6 +3389,11 @@
             return;
         }
         if (ok) {
+            if (lock.mob && lock.mob.isBoss && session.boss && L.canChipShield
+                && !L.canChipShield(session.boss.mechanic, 'speak')) {
+                toast('没有麦克风 · 按 T 拼出来破罩');
+                return;
+            }
             applySpeakHit(lock, lock.word.text);
         } else {
             toast('再按 V 或按 T 打字');
@@ -3153,7 +3596,9 @@
             stepMining(dt);
             updateLookCard(t);
             moveMonsters(dt, t);
+            tickBossCombat(t);
             moveBolts(dt);
+            moveBossShots(dt);
             collectPickups();
             // 脱战 4 秒缓慢回血
             if (engine.player.hp < engine.player.hpMax && t - (session.lastHitAt || 0) > 4000) {
@@ -3278,7 +3723,8 @@
                 const slow = C.torchSlow
                     ? C.torchSlow({ hasTorch: (session.bag.torch || 0) > 0, inCave: inCave })
                     : 1;
-                const step = Math.max(1.05, m.speed) * dt * slow;
+                const dash = (m.isBoss && session.bossDashUntil && nowMs() < session.bossDashUntil) ? 2.35 : 1;
+                const step = Math.max(1.05, m.speed) * dt * slow * dash;
                 const ux = dx / dist, uz = dz / dist;
                 const nx = m.x + ux * step;
                 const nz = m.z + uz * step;
@@ -3328,8 +3774,21 @@
             }
             const ground = engine.world.surfaceAt(Math.floor(m.x), Math.floor(m.z));
             m.y = flyer ? ground + (m.isBoss ? 1.6 : m.kind === 'ghast' ? 2.3 : 1.35) : ground;
+            if (m.isBoss && session.bossAnim && nowMs() < session.bossAnim.until) {
+                const lean = session.bossAnim.lean;
+                if (lean === 'up') m.y += 0.42;
+                if (lean === 'down') m.y -= 0.18;
+            }
             if (m.mesh) {
                 m.mesh.position.set(m.x, m.y, m.z);
+                if (m.isBoss && session.bossAnim && nowMs() < session.bossAnim.until) {
+                    const lean = session.bossAnim.lean;
+                    if (lean === 'forward' || lean === 'down') m.mesh.rotation.x = lean === 'down' ? 0.55 : 0.28;
+                    else if (lean === 'spin') m.mesh.rotation.y += dt * 8;
+                    else if (lean === 'up') m.mesh.rotation.x = -0.22;
+                } else if (m.isBoss) {
+                    m.mesh.rotation.x = 0;
+                }
                 const movedX = m.x - ox, movedZ = m.z - oz;
                 if (Math.hypot(movedX, movedZ) > 0.0008) {
                     m.mesh.rotation.y = Math.atan2(movedX, movedZ);
@@ -3555,9 +4014,15 @@
                 : ('蓝罩 ' + (session.boss.shield || 0));
         }
         const phase = document.getElementById('boss-phase');
-        if (phase && L.bossPhase) phase.textContent = L.bossPhase(session.boss);
+        if (phase) {
+            const form = L.bossFormLine ? L.bossFormLine(session.boss) : '';
+            const learn = L.bossPhase ? L.bossPhase(session.boss) : '';
+            phase.textContent = session.boss.state === 'shielded'
+                ? ((form ? form + ' · ' : '') + learn)
+                : (form || learn);
+        }
         const nameEl = document.getElementById('boss-name');
-        if (nameEl) nameEl.textContent = (L.bossTitle && L.bossTitle(session.boss.id)) || '字母石像';
+        if (nameEl) nameEl.textContent = (L.bossTitle && L.bossTitle(session.boss.id)) || '凋灵';
     }
 
     function readMastery() {

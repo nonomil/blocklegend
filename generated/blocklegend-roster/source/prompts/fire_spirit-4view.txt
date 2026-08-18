@@ -1,0 +1,14 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One ORIGINAL voxel fire spirit. Not a Blaze, not a ghost. A floating orange 6x8x6 CORE cube, a taller 4x6x4 yellow FLAME cuboid on top, two small 2x5x2 ember ARM rods at the sides. No legs. Hovering above the studio floor with a small gap. Cuboids only.
+
+How each view MUST look:
+- FRONT (top-left): orange core with two white-yellow square eyes. Yellow flame block on top. Thin ember rods left and right.
+- RIGHT (top-right): spirit facing LEFT. Flame on top, one rod in front and one behind the core.
+- BACK (bottom-left): orange core, yellow flame, NO eyes, two rods.
+- LEFT (bottom-right): mirror of right. Faces RIGHT.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic, no 3/4, no top-down.
+Color palette: core #e07020, flame #f4d060, arms #ff8a30, eyes #fff4c8.
+Text: none. Output: 1024x1024 PNG four-view sheet.

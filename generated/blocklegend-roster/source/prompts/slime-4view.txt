@@ -1,12 +1,12 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel jelly cube: translucent green 16-cube with darker inner cube, two black square eyes, small mouth. Clean 2x2 orthographic turnaround.
+Primary request: One original voxel jelly cube matching public SlimeModel cuboids. One large translucent green 16x16x16 outer cube. Darker green inner cube visible inside. Two black square eyes and a small mouth painted on the FRONT face only. Back and sides are plain jelly.
 
 Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
 
 Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
 
-Composition/framing: 2x2 grid. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. Orthographic.
+Composition/framing: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. TRUE orthographic.
 
 Color palette: outer #7ed957, inner #5bb83a, eyes #141010.
 

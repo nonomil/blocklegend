@@ -1,0 +1,12 @@
+Use case: game-character-sheet
+Asset type: boss phase variants, front view only
+Primary request: One horizontal 1x3 sheet of the SAME voxel Ravager. Low-shoulder brown quadruped, blocky horns, dark snout, four pillar legs. No text.
+
+Left phase 1: head lowered, standing still.
+Middle phase 2: body leaned forward, small brown dust cubes at the front hooves (charging).
+Right phase 3: front hooves up for stomp, a low brown shock-ring of cubes on the ground.
+
+Scene: flat warm gray #c8c4bc, no ground shadow.
+Style: Minecraft-like voxel boxes only, no bevel, no PBR.
+Text: none.
+Output: 16:9 PNG three-phase front sheet.

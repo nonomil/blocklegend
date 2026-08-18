@@ -1,0 +1,14 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel ocean sentry matching public GuardianModel, reduced to cuboids. TEAL cube body 12x12x12. ONE large yellow square EYE with a dark pupil on the FRONT face only. Four dark-teal SPIKES: one up, one down, one left, one right. A thin two-box TAIL pointing BACK. Floating, no legs. Regular cyan-teal guardian. Never elder-brown. Never a fish with a mouth. Never a squid.
+
+How each view MUST look:
+- FRONT (top-left): teal cube, big yellow eye in the center, left and right spikes sticking out, top spike up, tail hidden.
+- RIGHT (top-right): cube side, NO big eye (or only a thin edge). Tail goes toward the RIGHT (back). Head/front toward the LEFT. One side spike as a thin stub.
+- BACK (bottom-left): no eye. Tail pointing at the camera as a small square. Spikes left and right.
+- LEFT (bottom-right): mirror of right. Front toward the RIGHT. Tail toward the LEFT.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic, no 3/4, no top-down.
+Color palette: body #3d8a7a, spikes #2a6a5c, tail #2f7466, eye #f4e060, pupil #141010.
+Text: none. Output: 1024x1024 PNG four-view sheet.

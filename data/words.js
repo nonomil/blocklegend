@@ -47,6 +47,34 @@
         return i < 0 ? 99 : i;
     }
 
+    const KID_SAY = {
+        hot: 'h-ot', water: 'wa-ter', snow: 'sn-oh', cold: 'c-old', white: 'wh-ite',
+        sun: 's-un', wind: 'w-ind', warm: 'w-arm', fish: 'f-ish', boat: 'b-oat',
+        swim: 'sw-im', tree: 'tr-ee', apple: 'ap-ple', black: 'bl-ack'
+    };
+
+    function hyphenateWord(text) {
+        const t = String(text || '').toLowerCase().replace(/[^a-z]/g, '');
+        if (!t) return '';
+        if (t.length <= 4) return t.split('').join('-');
+        const suf = ['tion', 'ing', 'er', 'ly', 'ed', 'es'];
+        for (let i = 0; i < suf.length; i += 1) {
+            const s = suf[i];
+            if (t.length > s.length + 2 && t.slice(-s.length) === s) {
+                return t.slice(0, -s.length) + '-' + s;
+            }
+        }
+        const mid = Math.ceil(t.length / 2);
+        return t.slice(0, mid) + '-' + t.slice(mid);
+    }
+
+    function phoneticOf(word) {
+        const w = word || {};
+        if (w.phonetic) return String(w.phonetic);
+        const t = String(w.text || '').trim().toLowerCase();
+        return KID_SAY[t] || hyphenateWord(t);
+    }
+
     function cardsToBank(catalog, base) {
         const root = String(base || PACK_BASE).replace(/\/$/, '');
         const cards = (catalog && catalog.cards) || [];
@@ -61,7 +89,7 @@
                 level: card.curriculumLevel || 'L1',
                 phrase: card.example || card.phrase || '',
                 phraseZh: card.exampleZh || card.phraseTranslation || '',
-                phonetic: card.phonetic || '',
+                phonetic: card.phonetic || phoneticOf({ text: card.word }),
                 distractors: Array.isArray(card.distractors) ? card.distractors.slice() : [],
                 media: { image: image, audio: audio }
             };
@@ -89,16 +117,176 @@
         });
     }
 
-    function poolForLevel(bank, level) {
+    function chapterCount(opts) {
+        const fromOpts = Number(opts && opts.chapters);
+        if (fromOpts > 0) return Math.floor(fromOpts);
+        const L = global.BlockLegendLevels;
+        const fromLevels = L && Number(L.LEVEL_TOTAL);
+        if (fromLevels > 0) return Math.floor(fromLevels);
+        return 12;
+    }
+
+    function themesForLevel(level, opts) {
+        if (opts && Array.isArray(opts.themes) && opts.themes.length) return opts.themes;
+        const L = global.BlockLegendLevels;
+        const row = L && L.levelOf && L.levelOf(level);
+        return (row && Array.isArray(row.wordThemes) && row.wordThemes.length) ? row.wordThemes : [];
+    }
+
+    function seedsOf(level) {
+        const Lvl = global.BlockLegendLevels;
+        const row = Lvl && Lvl.levelOf && Lvl.levelOf(level);
+        const keys = [];
+        (row && row.climateWords || []).forEach(function (k) {
+            const t = normAnswer(k);
+            if (t && keys.indexOf(t) < 0) keys.push(t);
+        });
+        return keys;
+    }
+
+    function claimListed(list, keys, usedIds, out, limit) {
+        (keys || []).forEach(function (key) {
+            if (out.length >= limit) return;
+            const hit = findBankWord(list, key);
+            if (!hit) return;
+            const id = hit.id || hit.text;
+            if (!id || usedIds[id]) return;
+            usedIds[id] = true;
+            out.push(hit);
+        });
+    }
+
+    function fillListed(list, usedIds, out, limit, ok) {
+        (list || []).forEach(function (w) {
+            if (out.length >= limit) return;
+            if (!w || !ok(w)) return;
+            const id = w.id || w.text;
+            if (!id || usedIds[id]) return;
+            usedIds[id] = true;
+            out.push(w);
+        });
+    }
+
+    function buildChapters(list, chapters) {
+        const used = {};
+        const packs = [];
+        for (let lv = 1; lv <= chapters; lv += 1) {
+            const want = lv === chapters ? list.length : Math.ceil(list.length / chapters);
+            const out = [];
+            claimListed(list, seedsOf(lv), used, out, want);
+            packs.push({ out: out, want: want, themes: themesForLevel(lv, {}) });
+        }
+        for (let lv = 1; lv <= chapters; lv += 1) {
+            const rec = packs[lv - 1];
+            (rec.themes || []).forEach(function (theme) {
+                fillListed(list, used, rec.out, rec.want, function (w) { return w.theme === theme; });
+            });
+            if (lv < chapters) fillListed(list, used, rec.out, rec.want, function () { return true; });
+        }
+        fillListed(list, used, packs[chapters - 1].out, list.length, function () { return true; });
+        return packs.map(function (p) { return p.out; });
+    }
+
+    function takeThemedChapter(list, lv, chapters, themes, usedIds) {
+        const remain = (list || []).filter(function (w) {
+            return w && !usedIds[w.id || w.text];
+        });
+        const want = lv === chapters ? remain.length : Math.ceil((list || []).length / chapters);
+        const out = [];
+        function take(ok) {
+            remain.forEach(function (w) {
+                if (out.length >= want) return;
+                const id = w.id || w.text;
+                if (!id || usedIds[id] || !ok(w)) return;
+                usedIds[id] = true;
+                out.push(w);
+            });
+        }
+        (themes || []).forEach(function (theme) {
+            take(function (w) { return w.theme === theme; });
+        });
+        take(function () { return true; });
+        return out;
+    }
+
+    function poolForLevel(bank, level, opts) {
         const list = (Array.isArray(bank) ? bank.slice() : []).sort(function (a, b) {
             const d = catRank(a.theme) - catRank(b.theme);
             return d !== 0 ? d : byId(a, b);
         });
         if (!list.length) return [];
-        const lv = Math.max(1, Math.min(6, Number(level) || 1));
-        const size = Math.ceil(list.length / 6);
-        const start = (lv - 1) * size;
-        return list.slice(start, lv === 6 ? list.length : start + size);
+        const chapters = chapterCount(opts);
+        const lv = Math.max(1, Math.min(chapters, Number(level) || 1));
+        const hasTable = !!(global.BlockLegendLevels && global.BlockLegendLevels.levelOf);
+        if (hasTable) {
+            return buildChapters(list, chapters)[lv - 1] || [];
+        }
+        const themes = themesForLevel(lv, opts);
+        if (!themes.length) {
+            const size = Math.ceil(list.length / chapters);
+            const start = (lv - 1) * size;
+            return list.slice(start, lv === chapters ? list.length : start + size);
+        }
+        const used = {};
+        for (let i = 1; i < lv; i += 1) {
+            takeThemedChapter(list, i, chapters, themesForLevel(i, {}), used);
+        }
+        return takeThemedChapter(list, lv, chapters, themes, used);
+    }
+
+    function pickWaveTheme(pool, usedKeys, preferred) {
+        const used = {};
+        (usedKeys || []).forEach(function (k) { used[normAnswer(k)] = true; });
+        const counts = {};
+        (pool || []).forEach(function (w) {
+            if (!w || !w.theme) return;
+            if (used[normAnswer(w.text)] || used[normAnswer(w.id)]) return;
+            counts[w.theme] = (counts[w.theme] || 0) + 1;
+        });
+        const wants = (preferred || []).filter(function (t) { return (counts[t] || 0) > 0; });
+        if (wants.length) return wants[0];
+        let best = '';
+        let n = 0;
+        Object.keys(counts).forEach(function (t) {
+            if (counts[t] > n) {
+                best = t;
+                n = counts[t];
+            }
+        });
+        return best;
+    }
+
+    function dueThemeAwards(pool, familiarIds, awarded) {
+        const done = awarded || {};
+        const hits = {};
+        const map = {};
+        (pool || []).forEach(function (w) {
+            if (w && (w.id || w.text)) map[String(w.id || w.text)] = w;
+            if (w && w.text) map[String(w.text).toLowerCase()] = w;
+        });
+        (familiarIds || []).forEach(function (id) {
+            const w = map[String(id)] || map[String(id).toLowerCase()];
+            const theme = w && w.theme;
+            if (!theme) return;
+            hits[theme] = (hits[theme] || 0) + 1;
+        });
+        const out = [];
+        Object.keys(hits).forEach(function (theme) {
+            const have = hits[theme];
+            const already = Number(done[theme]) || 0;
+            THEME_STEPS.forEach(function (need) {
+                if (have >= need && already < need) {
+                    const pack = THEME_PACKS[need] || THEME_PACKS[4];
+                    out.push({
+                        theme: theme,
+                        need: need,
+                        coins: pack.coins,
+                        loot: pack.loot
+                    });
+                }
+            });
+        });
+        return out;
     }
 
     function uniqueZh(list) {
@@ -168,9 +356,16 @@
         };
     }
 
-    const QUIZ_MODES = ['choice', 'enpick', 'listen', 'picture', 'fill', 'spell', 'phrase', 'sentence'];
+    const QUIZ_MODES = ['choice', 'enpick', 'listen', 'picture', 'fill', 'spell', 'letters', 'phrase', 'sentence', 'enphrase'];
+    const THEME_STEPS = [4, 8, 12];
+    const THEME_PACKS = {
+        4: { coins: 8, loot: { 'oak-log': 2, stick: 2 } },
+        8: { coins: 12, loot: { plank: 2, coal: 2 } },
+        12: { coins: 16, loot: { torch: 3, iron_ore: 1 } }
+    };
     const HARD_MISS = 3;
     const PHRASE_EVERY = 4;
+    const SHORT_SPELL = 5;
 
     function normAnswer(s) {
         return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
@@ -196,9 +391,11 @@
         if (w.media && w.media.image) modes.push('picture');
         if (blankPhrase(w)) modes.push('fill');
         if ((w.text || '').length >= 2 && (w.text || '').length <= 12) modes.push('spell');
+        if ((w.text || '').length >= 3 && (w.text || '').length <= 12) modes.push('letters');
         if ((w.phrase || '').length >= 4 && w.phraseZh) {
             modes.push('phrase');
             modes.push('sentence');
+            modes.push('enphrase');
         }
         return modes;
     }
@@ -246,6 +443,23 @@
         return 'choice';
     }
 
+    function isShortWord(word) {
+        const t = String((word && word.text) || '').replace(/\s+/g, '');
+        return t.length > 0 && t.length <= SHORT_SPELL;
+    }
+
+    function recallProduceMode(word) {
+        const modes = availableModes(word);
+        function first(ids) {
+            for (let i = 0; i < ids.length; i += 1) {
+                if (modes.indexOf(ids[i]) >= 0) return ids[i];
+            }
+            return 'enpick';
+        }
+        if (isShortWord(word)) return first(['spell', 'letters', 'enpick']);
+        return first(['enpick', 'letters', 'spell']);
+    }
+
     function pickQuizMode(word, opts) {
         const o = opts || {};
         if (o.mode && QUIZ_MODES.indexOf(o.mode) >= 0) return o.mode;
@@ -254,6 +468,11 @@
             if (modes.indexOf('spell') >= 0) return 'spell';
             if (modes.indexOf('fill') >= 0) return 'fill';
             return 'choice';
+        }
+        if (o.seen != null) {
+            const n = Math.max(0, Number(o.seen) || 0);
+            if (n <= 0) return 'choice';
+            return recallProduceMode(word);
         }
         if (o.stage && o.stage !== 'new') return modeForStage(o.stage, word);
         const turn = Number(o.turn) || 0;
@@ -294,6 +513,50 @@
             out.push(zh);
         });
         return out;
+    }
+
+    function uniquePhraseEn(list) {
+        const seen = {};
+        const out = [];
+        (list || []).forEach(function (w) {
+            const en = w && w.phrase;
+            if (!en || seen[en]) return;
+            seen[en] = true;
+            out.push(en);
+        });
+        return out;
+    }
+
+    function letterBlank(text) {
+        const t = String(text || '').trim();
+        if (t.length < 3) {
+            return { blank: (t.charAt(0) || '') + '_', answer: t };
+        }
+        const hide = t.length >= 6 ? 2 : 1;
+        const start = Math.max(1, Math.floor((t.length - hide) / 2));
+        return {
+            blank: t.slice(0, start) + new Array(hide + 1).join('_') + t.slice(start + hide),
+            answer: t
+        };
+    }
+
+    function enphraseQuiz(word, bank) {
+        const src = word || {};
+        const answer = src.phrase || '';
+        const list = bank || [];
+        const picks = [];
+        uniquePhraseEn(list.filter(function (w) {
+            return w && w.theme === src.theme && w.phrase && w.phrase !== answer;
+        })).forEach(function (en) {
+            if (picks.length < 3) picks.push(en);
+        });
+        uniquePhraseEn(list).forEach(function (en) {
+            if (picks.length < 3 && en !== answer && picks.indexOf(en) < 0) picks.push(en);
+        });
+        return {
+            choices: shuffle(answer ? [answer].concat(picks.slice(0, 3)) : picks.slice(0, 4)),
+            fallback: picks.length < 3
+        };
     }
 
     function sentenceQuiz(word, bank) {
@@ -362,18 +625,35 @@
             quiz.limitMs = 22000;
         } else if (mode === 'sentence') {
             const sent = sentenceQuiz(src, bank);
-            quiz.prompt = '选出这句话的意思';
+            quiz.prompt = '英文句子，选中文';
             quiz.choices = sent.choices;
             quiz.answer = src.phraseZh || '';
             quiz.showPhrase = true;
             quiz.showPhraseZh = false;
             quiz.fallback = sent.fallback;
+        } else if (mode === 'enphrase') {
+            const sent = enphraseQuiz(src, bank);
+            quiz.prompt = '中文句子，选英文';
+            quiz.hidePromptWord = true;
+            quiz.choices = sent.choices;
+            quiz.answer = src.phrase || '';
+            quiz.showPhrase = false;
+            quiz.showPhraseZh = true;
+            quiz.fallback = sent.fallback;
+        } else if (mode === 'letters') {
+            const gap = letterBlank(src.text);
+            quiz.prompt = '补全缺的字母';
+            quiz.hidePromptWord = true;
+            quiz.typed = true;
+            quiz.blank = gap.blank;
+            quiz.answer = gap.answer;
+            quiz.limitMs = 18000;
         } else if (mode === 'enpick') {
             quiz.prompt = '看中文，选英文';
             quiz.hidePromptWord = true;
             quiz.choices = englishChoices(src, bank);
             quiz.answer = src.text;
-            quiz.showPhrase = !!(src.phrase);
+            quiz.showPhrase = Number(opts && opts.seen) >= 2 && !!(src.phrase);
             quiz.showPhraseZh = !!(src.phraseZh);
         } else if (mode === 'choice') {
             quiz.showPhrase = shouldJoinPhrase(src, opts);
@@ -393,10 +673,26 @@
             return list.find(function (w) { return normAnswer(w.text) === want; }) || null;
         }
         const preferred = findText(o.prefer);
+        if (preferred && !o.reviewFirst) return preferred;
+        if (o.reviewFirst) {
+            const reviewHits = (Array.isArray(o.review) ? o.review : []).map(findText).filter(function (hit) {
+                return hit && !used[hit.id || hit.text] && !isBlockFiller(hit.text);
+            });
+            if (reviewHits.length) return reviewHits[0];
+        }
         if (preferred) return preferred;
+        if (o.theme) {
+            const themed = list.filter(function (w) {
+                return w && w.theme === o.theme && !used[w.id || w.text] && !isBlockFiller(w.text);
+            });
+            if (themed.length) return themed[Math.floor(Math.random() * themed.length)];
+        }
         if (o.kind) {
             const label = labelFor(o.kind, list);
-            const word = label && label.word;
+            const known = !!KIND_ALIASES[o.kind];
+            const word = (label && label.word) || (known && label && label.en
+                ? { id: label.en, text: label.en, zh: label.zh || '', theme: '动物' }
+                : null);
             const id = word && (word.id || word.text);
             if (word && id && !used[id] && !isBlockFiller(word.text)) return word;
         }
@@ -428,14 +724,18 @@
     function checkQuiz(quiz, input) {
         const q = quiz || {};
         if (q.word && normAnswer(input) === normAnswer(q.word.text)) return true;
-        if (q.typed || q.mode === 'spell' || q.mode === 'fill') return normAnswer(input) === normAnswer(q.answer);
+        if (q.typed || q.mode === 'spell' || q.mode === 'fill' || q.mode === 'letters' || q.mode === 'enphrase') {
+            return normAnswer(input) === normAnswer(q.answer);
+        }
         return String(input) === String(q.answer);
     }
 
     function channelOf(quiz, input) {
         const q = quiz || {};
+        if (q.mode === 'listen') return 'listen';
+        if (q.mode === 'enpick' || q.mode === 'enphrase') return 'enpick';
         if (q.word && normAnswer(input) === normAnswer(q.word.text)) return 'spell';
-        if (q.typed || q.mode === 'spell' || q.mode === 'fill' || q.mode === 'phrase') return 'spell';
+        if (q.typed || q.mode === 'spell' || q.mode === 'fill' || q.mode === 'letters' || q.mode === 'phrase') return 'spell';
         return 'choice';
     }
 
@@ -518,11 +818,81 @@
         return keys;
     }
 
+    function layoutWorldWords(pool, reviewKeys) {
+        const keys = {};
+        (reviewKeys || []).forEach(function (key) {
+            const k = normAnswer(key);
+            if (k) keys[k] = true;
+        });
+        const near = [];
+        const far = [];
+        (pool || []).forEach(function (w) {
+            if (!w || !w.text) return;
+            if (keys[normAnswer(w.text)] || keys[normAnswer(w.id)]) far.push(w);
+            else near.push(w);
+        });
+        return near.concat(far);
+    }
+
+    function rebindWorldReviewWords(wordCells, pool, reviewKeys, opts) {
+        const cells = wordCells || {};
+        const o = opts || {};
+        const cx = Number(o.cx) || 0;
+        const cz = Number(o.cz) || 0;
+        const list = (pool || []).filter(function (w) { return w && w.text; });
+        function findText(text) {
+            const want = normAnswer(text);
+            if (!want) return null;
+            return list.find(function (w) {
+                return w && (normAnswer(w.text) === want || normAnswer(w.id) === want);
+            }) || null;
+        }
+        const wantKeys = [];
+        (reviewKeys || []).forEach(function (key) {
+            const k = normAnswer(key);
+            if (k && wantKeys.indexOf(k) < 0) wantKeys.push(k);
+        });
+        const occupied = {};
+        Object.keys(cells).forEach(function (cellKey) {
+            const w = cells[cellKey];
+            if (!w) return;
+            occupied[normAnswer(w.text)] = true;
+            occupied[normAnswer(w.id)] = true;
+        });
+        const need = wantKeys.map(findText).filter(function (hit) {
+            return hit && !occupied[normAnswer(hit.text)] && !occupied[normAnswer(hit.id)];
+        });
+        if (!need.length) return cells;
+        const slots = Object.keys(cells).map(function (cellKey) {
+            const parts = cellKey.split(',');
+            const w = cells[cellKey];
+            const isReview = !!(w && (wantKeys.indexOf(normAnswer(w.text)) >= 0 || wantKeys.indexOf(normAnswer(w.id)) >= 0));
+            return {
+                cellKey: cellKey,
+                dist: Math.hypot((Number(parts[0]) || 0) - cx, (Number(parts[2]) || 0) - cz),
+                isReview: isReview
+            };
+        }).filter(function (slot) { return !slot.isReview; }).sort(function (a, b) {
+            return b.dist - a.dist;
+        });
+        need.forEach(function (word, i) {
+            if (!slots[i]) return;
+            cells[slots[i].cellKey] = word;
+        });
+        return cells;
+    }
+
     function focusPool(bank, level, opts) {
         const o = opts || {};
-        const size = Math.max(1, Number(o.size) || 5);
         const prefer = o.prefer || [];
         const list = Array.isArray(bank) ? bank : [];
+        const chapter = poolForLevel(list, level, o);
+        const reviewRatio = Math.max(0, Number(o.reviewRatio) || 0);
+        let size = Math.max(1, Number(o.size) || chapter.length || 5);
+        if (o.coverChapter) {
+            const extra = Math.round(chapter.length * reviewRatio);
+            size = Math.max(size, chapter.length + extra);
+        }
         const out = [];
         const used = {};
         function add(hit, allowFiller) {
@@ -533,7 +903,9 @@
             used[id] = true;
             out.push(hit);
         }
-        const reviewN = Math.min(size, Math.round(size * Math.max(0, Number(o.reviewRatio) || 0)));
+        const reviewN = o.coverChapter
+            ? Math.max(0, size - chapter.length)
+            : Math.min(size, Math.round(size * reviewRatio));
         if (reviewN) {
             collectReviewKeys(o).forEach(function (key) {
                 if (out.length < reviewN) add(findBankWord(list, key), true);
@@ -542,7 +914,7 @@
         prefer.forEach(function (text) {
             add(findBankWord(list, text), false);
         });
-        shuffle(poolForLevel(list, level)).forEach(function (hit) { add(hit, false); });
+        (o.coverChapter ? chapter : shuffle(chapter)).forEach(function (hit) { add(hit, !!o.coverChapter); });
         if (out.length < size) shuffle(list).forEach(function (hit) { add(hit, false); });
         return shuffle(out).slice(0, size);
     }
@@ -560,6 +932,7 @@
     function shouldAsk(opts) {
         const o = opts || {};
         if (o.force) return true;
+        if (o.bossShielded) return true;
         if (o.quizPassed) return false;
         if (o.firstHit) return true;
         if (o.lastQuizWrong && (Number(o.hitsSinceQuiz) || 0) >= REASK_HITS) return true;
@@ -591,20 +964,27 @@
         gold: ['gold'],
         diamond: ['diamond'],
         villager: ['villager'],
-        trader: ['villager'],
+        trader: ['wandering trader', 'trader'],
+        teacher: ['teacher'],
+        house: ['home', 'house'],
+        wordhouse: ['home', 'word house'],
+        traderhouse: ['home', 'trader house'],
         pig: ['pig'],
         cow: ['cow'],
         sheep: ['sheep'],
         chicken: ['chicken'],
         wolf: ['wolf'],
+        bee: ['bee'],
         chest: ['chest'],
         furnace: ['furnace'],
         torch: ['torch'],
-        dragon: ['dragon'],
-        storm: ['storm'],
+        dragon: ['ender dragon', 'dragon'],
+        storm: ['wither storm', 'storm'],
         bed: ['bed'],
         wheat: ['wheat'],
-        golem: ['golem'],
+        tree: ['tree'],
+        flower: ['flower'],
+        golem: ['iron golem', 'golem'],
         gate: ['gate'],
         plank: ['plank'],
         table: ['crafting table', 'table'],
@@ -613,6 +993,18 @@
         slime: ['slime'],
         cube: ['mob'],
         husk: ['husk'],
+        ravager: ['ravager'],
+        phantom: ['phantom'],
+        vex: ['vex'],
+        drowned: ['drowned'],
+        snowgolem: ['snow golem', 'snowgolem'],
+        shulker: ['shulker'],
+        guardian: ['guardian'],
+        pufferfish: ['pufferfish'],
+        spore_bug: ['spore bug', 'spore_bug'],
+        fire_spirit: ['fire spirit', 'fire_spirit'],
+        sculk_worm: ['sculk worm', 'sculk_worm'],
+        shadow_stalker: ['shadow stalker', 'shadow_stalker'],
         creeper: ['creeper'],
         zombie: ['zombie'],
         skeleton: ['skeleton'],
@@ -621,7 +1013,7 @@
         piglin: ['piglin'],
         witch: ['witch'],
         fox: ['fox'],
-        magma: ['magma'],
+        magma: ['magma cube', 'magma'],
         blaze: ['blaze'],
         ghast: ['ghast'],
         warden: ['warden'],
@@ -649,28 +1041,47 @@
         diamond: '钻石矿',
         villager: '村民',
         trader: '流浪商人',
+        teacher: '老师',
+        house: '家',
+        wordhouse: '单词屋',
+        traderhouse: '商人屋',
         pig: '猪',
         cow: '牛',
         sheep: '羊',
         chicken: '鸡',
         wolf: '狼',
+        bee: '蜜蜂',
         chest: '箱子',
         furnace: '熔炉',
         torch: '火把',
-        dragon: '墨翼',
-        storm: '雷语',
+        dragon: '末影龙',
+        storm: '凋灵风暴',
         bed: '床',
         wheat: '小麦',
-        golem: '铁卫',
+        tree: '树',
+        flower: '花',
+        golem: '铁傀儡',
         gate: '单词闸门',
         plank: '木板',
         table: '合成台',
         log: '原木',
         leaf: '树叶',
-        slime: '漏字史莱姆',
+        slime: '史莱姆',
         cube: '方块兽',
-        husk: '沙行者',
-        creeper: '绿爆怪',
+        husk: '尸壳',
+        ravager: '劫掠兽',
+        phantom: '幻翼',
+        vex: '恼鬼',
+        drowned: '溺尸',
+        snowgolem: '雪傀儡',
+        shulker: '潜影贝',
+        guardian: '守卫者',
+        pufferfish: '河豚',
+        spore_bug: '孢子虫',
+        fire_spirit: '火灵',
+        sculk_worm: '幽匿虫',
+        shadow_stalker: '影行者',
+        creeper: '苦力怕',
         zombie: '僵尸',
         skeleton: '骷髅',
         spider: '蜘蛛',
@@ -681,8 +1092,9 @@
         magma: '岩浆怪',
         blaze: '烈焰人',
         ghast: '恶魂',
-        warden: '循声守卫',
-        boss: '字母石像',
+        warden: '监守者',
+        boss: '凋灵',
+        wither: '凋灵',
         merchant: '村民',
         word: '单词方块',
         bow: '弓',
@@ -819,6 +1231,7 @@
         FALLBACK_BANK: FALLBACK_BANK,
         cardsToBank: cardsToBank,
         loadCatalog: loadCatalog,
+        chapterCount: chapterCount,
         poolForLevel: poolForLevel,
         quizFor: quizFor,
         makeQuiz: makeQuiz,
@@ -828,8 +1241,18 @@
         noteId: noteId,
         unreadSpeakCount: unreadSpeakCount,
         resolveAttempt: resolveAttempt,
+        letterBlank: letterBlank,
+        pickWaveTheme: pickWaveTheme,
+        dueThemeAwards: dueThemeAwards,
+        THEME_STEPS: THEME_STEPS,
+        collectReviewKeys: collectReviewKeys,
+        layoutWorldWords: layoutWorldWords,
+        rebindWorldReviewWords: rebindWorldReviewWords,
         focusPool: focusPool,
         pickQuizMode: pickQuizMode,
+        phoneticOf: phoneticOf,
+        isShortWord: isShortWord,
+        SHORT_SPELL: SHORT_SPELL,
         availableModes: availableModes,
         QUIZ_MODES: QUIZ_MODES,
         HARD_MISS: HARD_MISS,

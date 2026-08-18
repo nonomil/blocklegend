@@ -1,0 +1,12 @@
+Use case: game-character-sheet
+Asset type: boss phase variants, front view only
+Primary request: One horizontal 1x3 sheet of the SAME voxel Guardian. Teal cube body, dark-teal cross spikes, one huge front eye. No text.
+
+Left phase 1: eye almost closed, a thin yellow slit only.
+Middle phase 2: eye half open yellow, a short yellow beam cube starting from the pupil.
+Right phase 3: eye fully open, longer yellow laser beam cubes shooting forward.
+
+Scene: flat warm gray #c8c4bc, no ground shadow.
+Style: Minecraft-like voxel boxes only, no bevel, no PBR.
+Text: none.
+Output: 16:9 PNG three-phase front sheet.

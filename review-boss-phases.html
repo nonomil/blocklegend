@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>方块传奇 · Boss 三阶段图</title>
+    <style>
+        html, body { margin: 0; background: #14171c; color: #f4f0e6; font-family: sans-serif; }
+        h1 { margin: 16px 20px 6px; font-size: 22px; }
+        .sub { margin: 0 20px 16px; opacity: .7; font-size: 13px; }
+        .grid { display: grid; gap: 16px; padding: 0 20px 32px; }
+        figure { margin: 0; background: #1d222b; border-radius: 12px; overflow: hidden; }
+        img { display: block; width: 100%; background: #0b0d11; }
+        figcaption { padding: 10px 12px 12px; font-size: 14px; }
+        figcaption b { display: block; margin-bottom: 4px; }
+        figcaption span { opacity: .65; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>Boss 三阶段对照</h1>
+    <p class="sub">左=阶段1 · 中=阶段2 · 右=阶段3。过目后才编译进 atlas。发光色已接到战斗换阶段。</p>
+    <div class="grid" id="grid"></div>
+    <script>
+        const rows = [
+            ['wither', '凋灵', '白眼 → 红眼护盾圈 → 金眼弹更密'],
+            ['ghast', '恶魂', '闭口泪 → 开口蓄火 → 皱脸连射'],
+            ['blaze', '烈焰人', '慢杆 → 火环 → 分身小核'],
+            ['warden', '监守者', '青光潜行 → 砸地尘 → 音波圈'],
+            ['ravager', '劫掠兽', '低头跟 → 前冲尘 → 践踏圈'],
+            ['dragon', '末影龙', '高空绕 → 俯冲 → 贴地横扫'],
+            ['storm', '凋灵风暴', '电弧疏 → 电弧密 → 落雷'],
+            ['fox', '镜子狐狸', '绕走 → 闪身 → 连扑'],
+            ['guardian', '钥匙守卫', '眼闭 → 激光蓄 → 眼开连射']
+        ];
+        const box = document.getElementById('grid');
+        rows.forEach(function (row) {
+            const fig = document.createElement('figure');
+            fig.innerHTML = '<img src="./generated/blocklegend-roster/boss-phases/keyed/' + row[0] + '-phases.png" alt="' + row[1] + '">'
+                + '<figcaption><b>' + row[1] + '</b><span>' + row[2] + '</span></figcaption>';
+            box.appendChild(fig);
+        });
+    </script>
+</body>
+</html>

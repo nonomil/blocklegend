@@ -9,7 +9,7 @@
     function createStormModel(THREE, options) {
         if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.storm) {
             const fv = global.BlockLegendFourView.build(THREE, 'storm', Object.assign({
-                emissive: { match: 'eye', color: 0x146060 }
+                emissive: { match: 'command', color: 0x441000 }
             }, options || {}));
             if (fv) { return fv; }
         }

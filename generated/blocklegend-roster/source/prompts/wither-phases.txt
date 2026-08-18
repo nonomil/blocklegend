@@ -1,0 +1,12 @@
+Use case: game-character-sheet
+Asset type: boss phase variants, front view only
+Primary request: One horizontal 1x3 sheet of the SAME voxel Wither. Three-headed T silhouette: center skull 8x8x8, two side skulls 6x6x6 on a wide shoulder bar, ribcage, thin hanging tail. NO legs, NO pedestal. Three copies identical pose and scale.
+
+Left phase 1: white square eyes, calm hover, no aura.
+Middle phase 2: red square eyes, thin translucent red shield ring around ribs.
+Right phase 3: gold-white blazing eyes, denser black skulls, tiny black cube projectiles near heads.
+
+Scene: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style: Minecraft-like voxel boxes only, no bevel, no PBR.
+Text: none. No letters, numbers, labels, watermarks.
+Output: 16:9 PNG three-phase front sheet.

@@ -43,6 +43,15 @@ export async function applyStandalonePaths(root) {
           "'./generated/blocklegend-roster/four-view/'"
         ]
       ]
+    },
+    {
+      rel: 'review-boss-phases.html',
+      from: [
+        [
+          '../../assets/generated/blocklegend-roster/boss-phases/keyed/',
+          './generated/blocklegend-roster/boss-phases/keyed/'
+        ]
+      ]
     }
   ];
 

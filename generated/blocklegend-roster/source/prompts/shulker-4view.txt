@@ -1,0 +1,14 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One original voxel end-city shell creature matching public ShulkerModel. A PURPLE 16x16 box made of two cuboids: a thicker base 16x8x16 and a thinner lid 16x4x16 sitting slightly OPEN so a small 6x6x6 pale-lilac HEAD peeks from the front gap with two yellow square eyes. Closed enough to stay boxy. Not a wooden chest. Not a shulker-box item with a latch. No legs. No arms. Sitting on the studio floor.
+
+How each view MUST look:
+- FRONT (top-left): purple box, a horizontal dark gap under the lid, the small head and two yellow eyes in that gap.
+- RIGHT (top-right): box side. Lid seam as a horizontal line. Head peeks toward the LEFT (forward).
+- BACK (bottom-left): purple box back, lid seam, NO face, NO head.
+- LEFT (bottom-right): mirror of right. Head peeks toward the RIGHT.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic, no 3/4, no top-down.
+Color palette: base #7a4aa0, lid #6a3a90, head #c8a0e0, eyes #f4e070.
+Text: none. Output: 1024x1024 PNG four-view sheet.

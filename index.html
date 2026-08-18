@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>方块传奇 · 学英语大冒险</title>
-    <link rel="stylesheet" href="./game.css?v=20260818-bl-touch1">
+    <link rel="stylesheet" href="./game.css?v=20260818-bl-quiz3">
 </head>
 <body class="bl-body">
     <main class="bl-stage">
@@ -99,6 +99,7 @@
                 <div class="bl-slot" data-key="9" data-place="table"><img class="bl-hot-art is-tile" src="./assets/atlas/oak_top.png" alt=""><em>9</em></div>
             </div>
         </div>
+        <button type="button" class="bl-touch-btn is-craft" id="craft-btn" aria-label="合成">合成</button>
         <div class="bl-touch" id="touch-pad" hidden>
             <div class="bl-dpad" id="touch-dpad" aria-label="方向">
                 <button type="button" class="bl-dpad-btn is-up" data-dir="fwd" aria-label="前"></button>
@@ -117,7 +118,7 @@
         <div class="bl-look-tip" id="look-tip">Click to mine · 5–9 选中后右键放方块 · Esc 释放视角</div>
         <div class="bl-hurt" id="hurt-flash" aria-hidden="true"></div>
         <div class="bl-boss-hud is-hidden" id="boss-hud">
-            <span id="boss-name">字母石像</span>
+            <span id="boss-name">凋灵</span>
             <b id="boss-hp">0/0</b>
             <em id="boss-phase">识别</em>
             <em id="boss-shield">蓝罩 0</em>
@@ -148,8 +149,11 @@
                 <div class="bl-quiz-choices" id="quiz-choices"></div>
                 <button type="button" class="bl-btn is-ghost bl-quiz-mic is-hidden" id="quiz-mic">说出来</button>
                 <form class="bl-quiz-type is-hidden" id="quiz-type" autocomplete="off">
-                    <input id="quiz-input" type="text" inputmode="latin" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="48" placeholder="type the word">
-                    <button type="submit" class="bl-btn" id="quiz-submit">施放</button>
+                    <div class="bl-quiz-type-row">
+                        <input id="quiz-input" type="text" inputmode="latin" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="48" placeholder="type the word">
+                        <button type="submit" class="bl-btn" id="quiz-submit">施放</button>
+                    </div>
+                    <div class="bl-letter-keyboard is-hidden" id="quiz-keyboard" aria-label="拼写键盘"></div>
                 </form>
                 <div class="bl-quiz-time"><i id="quiz-timer"></i></div>
             </div>
@@ -224,13 +228,25 @@
                         <p class="bl-help-kicker">第 2 页 · 玩法</p>
                         <div class="bl-help-grid">
                             <div class="bl-help-row"><kbd>准星</kbd><span>看方块 / 生物出词</span></div>
-                            <div class="bl-help-row"><kbd>金色词块</kbd><span>挖开学词得金币</span></div>
+                            <div class="bl-help-row"><kbd>金色词块</kbd><span>同主题成批；答对 4/8/12 个给材料和金币</span></div>
                             <div class="bl-help-row"><kbd>词门</kbd><span>走近答题开门</span></div>
                             <div class="bl-help-row"><kbd>设</kbd><span>重选玩法 · 本局</span></div>
                             <div class="bl-help-row"><kbd>Boss</kbd><span>砍会掉血，说对词破罩</span></div>
                             <div class="bl-help-row"><kbd>点中文</kbd><span>两次打空后的兜底</span></div>
                             <div class="bl-help-row"><kbd>战斗</kbd><span>世界不停</span></div>
                             <div class="bl-help-row"><kbd>音乐</kbd><span>顶栏开关主题曲</span></div>
+                        </div>
+                    </section>
+                    <section class="bl-help-page is-hidden" data-help-page="2">
+                        <p class="bl-help-kicker">第 3 页 · 十二关</p>
+                        <div class="bl-help-grid">
+                            <div class="bl-help-row"><kbd>1–3</kbd><span>草原 / 樱花 / 沙漠</span></div>
+                            <div class="bl-help-row"><kbd>4–6</kbd><span>黄昏 / 水晶 / 下界</span></div>
+                            <div class="bl-help-row"><kbd>7–9</kbd><span>密林 / 雪原 / 海岛</span></div>
+                            <div class="bl-help-row"><kbd>10–12</kbd><span>蘑菇谷 / 火山 / 末地</span></div>
+                            <div class="bl-help-row"><kbd>词库</kbd><span>597 词均分十二关，每关一整章</span></div>
+                            <div class="bl-help-row"><kbd>通关</kbd><span>花金币解锁下一关</span></div>
+                            <div class="bl-help-row"><kbd>地图</kbd><span>384 格大世界，往外走看建筑</span></div>
                         </div>
                     </section>
                 </div>
@@ -294,13 +310,13 @@
     <script src="./data/craft.js?v=20260817-bl-hold2"></script>
     <script src="./data/atlas-paint.js?v=20260817-bl-art3"></script>
     <script src="./data/fx.js?v=20260817-bl-art6"></script>
-    <script src="./engine.js?v=20260818-bl-touch1"></script>
-    <script src="./data/combat.js?v=20260817-bl-aggro1"></script>
+    <script src="./engine.js?v=20260818-bl-vocab2"></script>
+    <script src="./data/combat.js?v=20260818-bl-vocab2"></script>
     <script src="./data/speech-input.js?v=20260817-bl-stt1"></script>
     <script src="./data/companion.js?v=20260817-bl-quiz1"></script>
-    <script src="./data/words.js?v=20260818-bl-quiz2"></script>
-    <script src="./data/levels.js?v=20260817-bl-words2"></script>
-    <script src="./data/quests.js?v=20260816-bl-p1"></script>
+    <script src="./data/words.js?v=20260818-bl-learn5"></script>
+    <script src="./data/levels.js?v=20260818-bl-learn5"></script>
+    <script src="./data/quests.js?v=20260818-bl-review1"></script>
     <script src="./data/skins.js?v=20260817-bl-art3"></script>
     <script src="./assets/img2threejs/voxelPix.js?v=20260816-bl-mobs3"></script>
     <script src="./assets/img2threejs/createCreeperModel.js?v=20260816-bl-cast3"></script>
@@ -319,26 +335,52 @@
     <script src="./assets/atlas4v/sheep-atlas.js?v=20260818-bl-4vhost1"></script>
     <script src="./assets/atlas4v/chicken-atlas.js?v=20260818-bl-4vhost1"></script>
     <script src="./assets/atlas4v/wolf-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/creeper-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/zombie-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/skeleton-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/spider-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/enderman-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/witch-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/piglin-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/slime-atlas.js?v=20260818-bl-4vhost2"></script>
-    <script src="./assets/atlas4v/blaze-atlas.js?v=20260818-bl-4vhost2"></script>
-    <script src="./assets/atlas4v/ghast-atlas.js?v=20260818-bl-4vhost2"></script>
-    <script src="./assets/atlas4v/warden-atlas.js?v=20260818-bl-4vhost2"></script>
-    <script src="./assets/atlas4v/fox-atlas.js?v=20260818-bl-4vhost2"></script>
-    <script src="./assets/atlas4v/cube-atlas.js?v=20260818-bl-4vhost2"></script>
-    <script src="./assets/atlas4v/magma-atlas.js?v=20260818-bl-4vhost2"></script>
-    <script src="./assets/atlas4v/trader-atlas.js?v=20260818-bl-4vhost2"></script>
-    <script src="./assets/atlas4v/bee-atlas.js?v=20260818-bl-4vhost2"></script>
-    <script src="./assets/atlas4v/wither-atlas.js?v=20260818-bl-4vhost2"></script>
-    <script src="./assets/atlas4v/dragon-atlas.js?v=20260818-bl-4vhost2"></script>
-    <script src="./assets/atlas4v/storm-atlas.js?v=20260818-bl-4vhost2"></script>
-    <script src="./assets/img2threejs/fourViewModel.js?v=20260818-bl-4vhost2"></script>
+    <script src="./assets/atlas4v/creeper-atlas.js?v=20260818-bl-4vrest1"></script>
+    <script src="./assets/atlas4v/zombie-atlas.js?v=20260818-bl-4vrest2"></script>
+    <script src="./assets/atlas4v/skeleton-atlas.js?v=20260818-bl-4vrest1"></script>
+    <script src="./assets/atlas4v/spider-atlas.js?v=20260818-bl-4vrest1"></script>
+    <script src="./assets/atlas4v/enderman-atlas.js?v=20260818-bl-4vrest1"></script>
+    <script src="./assets/atlas4v/witch-atlas.js?v=20260818-bl-4vrest1"></script>
+    <script src="./assets/atlas4v/piglin-atlas.js?v=20260818-bl-4vrest1"></script>
+    <script src="./assets/atlas4v/slime-atlas.js?v=20260818-bl-4vrest1"></script>
+    <script src="./assets/atlas4v/blaze-atlas.js?v=20260818-bl-4vboss1"></script>
+    <script src="./assets/atlas4v/ghast-atlas.js?v=20260818-bl-4vboss1"></script>
+    <script src="./assets/atlas4v/warden-atlas.js?v=20260818-bl-4vboss1"></script>
+    <script src="./assets/atlas4v/fox-atlas.js?v=20260818-bl-4vrest1"></script>
+    <script src="./assets/atlas4v/cube-atlas.js?v=20260818-bl-4vrest1"></script>
+    <script src="./assets/atlas4v/magma-atlas.js?v=20260818-bl-4vrest1"></script>
+    <script src="./assets/atlas4v/trader-atlas.js?v=20260818-bl-4vrest1"></script>
+    <script src="./assets/atlas4v/bee-atlas.js?v=20260818-bl-4vrest1"></script>
+    <script src="./assets/atlas4v/wither-atlas.js?v=20260818-bl-4vfix1"></script>
+    <script src="./assets/atlas4v/dragon-atlas.js?v=20260818-bl-4vboss1"></script>
+    <script src="./assets/atlas4v/storm-atlas.js?v=20260818-bl-4vboss1"></script>
+    <script src="./assets/atlas4v/husk-atlas.js?v=20260818-bl-4vnew1"></script>
+    <script src="./assets/atlas4v/ravager-atlas.js?v=20260818-bl-4vnew1"></script>
+    <script src="./assets/atlas4v/phantom-atlas.js?v=20260818-bl-4vnew1"></script>
+    <script src="./assets/atlas4v/vex-atlas.js?v=20260818-bl-4vnew2"></script>
+    <script src="./assets/atlas4v/drowned-atlas.js?v=20260818-bl-4vnew2"></script>
+    <script src="./assets/atlas4v/snowgolem-atlas.js?v=20260818-bl-4vnew2"></script>
+    <script src="./assets/atlas4v/shulker-atlas.js?v=20260818-bl-4vnew3"></script>
+    <script src="./assets/atlas4v/guardian-atlas.js?v=20260818-bl-4vnew3"></script>
+    <script src="./assets/atlas4v/pufferfish-atlas.js?v=20260818-bl-4vnew3"></script>
+    <script src="./assets/atlas4v/spore_bug-atlas.js?v=20260818-bl-orig1"></script>
+    <script src="./assets/atlas4v/fire_spirit-atlas.js?v=20260818-bl-orig1"></script>
+    <script src="./assets/atlas4v/sculk_worm-atlas.js?v=20260818-bl-orig1"></script>
+    <script src="./assets/atlas4v/shadow_stalker-atlas.js?v=20260818-bl-orig1"></script>
+    <script src="./assets/img2threejs/fourViewModel.js?v=20260818-bl-4vnew3"></script>
+    <script src="./assets/img2threejs/createHuskModel.js?v=20260818-bl-4vnew1"></script>
+    <script src="./assets/img2threejs/createRavagerModel.js?v=20260818-bl-4vnew1"></script>
+    <script src="./assets/img2threejs/createPhantomModel.js?v=20260818-bl-4vnew1"></script>
+    <script src="./assets/img2threejs/createVexModel.js?v=20260818-bl-4vnew2"></script>
+    <script src="./assets/img2threejs/createDrownedModel.js?v=20260818-bl-4vnew2"></script>
+    <script src="./assets/img2threejs/createSnowGolemModel.js?v=20260818-bl-4vnew2"></script>
+    <script src="./assets/img2threejs/createShulkerModel.js?v=20260818-bl-4vnew3"></script>
+    <script src="./assets/img2threejs/createGuardianModel.js?v=20260818-bl-4vnew3"></script>
+    <script src="./assets/img2threejs/createPufferfishModel.js?v=20260818-bl-4vnew3"></script>
+    <script src="./assets/img2threejs/createSporeBugModel.js?v=20260818-bl-orig1"></script>
+    <script src="./assets/img2threejs/createFireSpiritModel.js?v=20260818-bl-orig1"></script>
+    <script src="./assets/img2threejs/createSculkWormModel.js?v=20260818-bl-orig1"></script>
+    <script src="./assets/img2threejs/createShadowStalkerModel.js?v=20260818-bl-orig1"></script>
     <script src="./assets/img2threejs/createGolemModel.js?v=20260817-bl-4vatlas1"></script>
     <script src="./assets/img2threejs/createGhastModel.js?v=20260817-bl-i2t1"></script>
     <script src="./assets/img2threejs/createBlazeModel.js?v=20260817-bl-i2t1"></script>
@@ -348,7 +390,7 @@
     <script src="./assets/img2threejs/createStormModel.js?v=20260816-bl-mobs4"></script>
     <script src="./assets/img2threejs/createTools3d.js?v=20260817-bl-tools3d"></script>
     <script src="./assets/img2threejs/createProps3d.js?v=20260817-bl-i2t4v2"></script>
-    <script src="./mobs.js?v=20260818-bl-hot1"></script>
-    <script src="./game.js?v=20260818-bl-quiz2"></script>
+    <script src="./mobs.js?v=20260818-bl-learn5"></script>
+    <script src="./game.js?v=20260818-bl-learn5"></script>
 </body>
 </html>

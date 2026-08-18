@@ -1,0 +1,18 @@
+{
+  "pack": "blocklegend-boss-phases",
+  "date": "2026-08-18",
+  "note": "04 表：每只 Boss 一张 1×3 正面阶段图。raw 带灰底，keyed 已抠边。未编译进 atlas，等过目。",
+  "layout": "left=phase1, middle=phase2, right=phase3",
+  "consumer": "prj/games/blocklegend/review-boss-phases.html + L.bossFormOf 阶段发光/缩放",
+  "items": [
+    { "id": "wither", "path": "wither-phases.png", "keyed": "keyed/wither-phases.png", "size": [1536, 1024] },
+    { "id": "ghast", "path": "ghast-phases.png", "keyed": "keyed/ghast-phases.png", "size": [1536, 1024] },
+    { "id": "blaze", "path": "blaze-phases.png", "keyed": "keyed/blaze-phases.png", "size": [1536, 1024] },
+    { "id": "warden", "path": "warden-phases.png", "keyed": "keyed/warden-phases.png", "size": [1536, 1024] },
+    { "id": "ravager", "path": "ravager-phases.png", "keyed": "keyed/ravager-phases.png", "size": [1536, 1024] },
+    { "id": "dragon", "path": "dragon-phases.png", "keyed": "keyed/dragon-phases.png", "size": [1536, 1024] },
+    { "id": "storm", "path": "storm-phases.png", "keyed": "keyed/storm-phases.png", "size": [1536, 1024] },
+    { "id": "fox", "path": "fox-phases.png", "keyed": "keyed/fox-phases.png", "size": [1536, 1024] },
+    { "id": "guardian", "path": "guardian-phases.png", "keyed": "keyed/guardian-phases.png", "size": [1536, 1024] }
+  ]
+}

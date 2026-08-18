@@ -1,0 +1,12 @@
+Use case: game-character-sheet
+Asset type: boss phase variants, front view only
+Primary request: One horizontal 1x3 sheet of the SAME voxel Warden. Huge dark teal body, long arms, short legs, cyan horn sensors, cyan chest heart. No text.
+
+Left phase 1: dim cyan heart, hunched, quiet.
+Middle phase 2: brighter heart, both fists down with a small dust cube burst at the ground.
+Right phase 3: heart blazing cyan-white, a thin cyan sonic ring around the torso.
+
+Scene: flat warm gray #c8c4bc, no ground shadow.
+Style: Minecraft-like voxel boxes only, no bevel, no PBR.
+Text: none.
+Output: 16:9 PNG three-phase front sheet.

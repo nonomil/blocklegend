@@ -1,0 +1,12 @@
+Use case: game-character-sheet
+Asset type: boss phase variants, front view only
+Primary request: One horizontal 1x3 sheet of the SAME voxel Ender Dragon. Dark purple head with horns, visible wings, chest, stepped tail. Front three-quarter is forbidden — TRUE front. No text.
+
+Left phase 1: wings high, hovering, dim purple eyes.
+Middle phase 2: head down for dive, mouth slightly open with a magenta fire cube.
+Right phase 3: wings wide low, brighter magenta eyes, tail swept to the side.
+
+Scene: flat warm gray #c8c4bc, no ground shadow.
+Style: Minecraft-like voxel boxes only, no bevel, no PBR.
+Text: none.
+Output: 16:9 PNG three-phase front sheet.

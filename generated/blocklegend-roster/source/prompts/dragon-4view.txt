@@ -1,8 +1,16 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel ink-wing dragon: long dark-purple body, horned head, two flat wing slabs, short legs, tail. Clean 2x2 orthographic turnaround.
+Primary request: One original voxel ink-wing wyrm. HORIZONTAL four-legged dragon. Body 12x10x18 box. Neck box in front. Head 10x8x10 with lower jaw slab and two short horns. Two wide flat wing slabs left and right. Four vertical legs. Long tail box behind. Dark purple hide, magenta eyes on the FRONT of the head only.
 
-Scene/backdrop: flat warm gray studio #c8c4bc. Style: Minecraft-like voxel boxes only.
-Composition: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
-Color palette: body #1a1028, wing #2a1840, horn #3a2458.
+CRITICAL LAYOUT — four ELEVATION views, same height, feet on one baseline:
+- Top-left FRONT: face the camera. See the face, spread wings, two FRONT legs. Head is a square, not a long top-down silhouette.
+- Top-right RIGHT: full LENGTH profile. Head+neck on the LEFT of this quadrant, tail on the RIGHT. Two legs. Wing as a thin slab.
+- Bottom-left BACK: tail pointing AT the camera. See wing backs and two REAR legs. This is a standing rear elevation. NEVER a floorplan. NEVER a top-down map of wings.
+- Bottom-right LEFT: mirror profile. Head+neck on the RIGHT of this quadrant, tail on the LEFT.
+
+FORBIDDEN: top-down view, 3/4 beauty shot, isometric, looking down on the wings.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
+Color palette: hide #1a1028, wings #2a1840, horns #3a2458, eyes #b450ff.
 Text: none. Output: 1024x1024 PNG four-view sheet.

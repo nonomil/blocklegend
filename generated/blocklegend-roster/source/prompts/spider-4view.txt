@@ -1,25 +1,13 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel cave spider, same identity as a low dark eight-legged hunter, shown as a clean 2x2 orthographic turnaround.
+Primary request: One original voxel cave hunter matching public SpiderModel cuboids. Head cube 8x8x8 at the front with two glowing red eyes. Small thorax 6x6x6. Large rear abdomen 10x8x12. Exactly EIGHT long thin horizontal legs, four per side, 12x2x2, splayed out. Low to the ground. NEVER four legs.
 
-Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow blob, no environment.
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
 
-Subject: axis-aligned box arthropod. Large rear abdomen cube, smaller thorax, cube head at the front with two glowing red eyes. Four thick horizontal legs splayed left and right (two front, two back). Low to the ground. Pixel dark chitin, nearest-neighbor.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
 
-Style/medium: Minecraft-like voxel boxes only, no bevel, no rounded corners, no PBR, 16-bit pixel faces, flat Lambert lighting.
+Composition/framing: 2x2 elevation views only. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. TRUE orthographic, no 3/4, no top-down. Same scale, same baseline.
 
-Composition/framing: 2x2 grid, equal cell size, same scale, same baseline, full body in every cell.
-Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
-Orthographic camera, no perspective, no 3/4 cheat. Idle standing.
+Color palette: hide #1b1412, thorax #221816, eyes #d50000.
 
-Lighting/mood: soft top-left studio light, readable planes, no HDRI.
-
-Color palette: body #1b1412, thorax #221816, eyes #d50000.
-
-Text (verbatim): none. No labels, no letters, no watermarks.
-
-Transparency: solid studio background, not checkerboard.
-
-Constraints: one character only, original palette, keep silhouette recognizable as a low box spider.
-
-Output: 1024x1024 PNG four-view sheet.
+Text: none. Output: 1024x1024 PNG four-view sheet.

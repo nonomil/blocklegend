@@ -1,8 +1,13 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel traveling merchant: tan head, long rectangular nose, blue robe, dark-blue hood. Clean 2x2 orthographic turnaround.
+Primary request: One original voxel traveling merchant matching public WanderingTrader / villager cuboids. Tan 8x10x8 head with a long 2x4x2 nose. Blue robe 8x12x6, darker blue hood, two hanging arms, two legs. Not a witch, no pointed hat.
 
-Scene/backdrop: flat warm gray studio #c8c4bc. Style: Minecraft-like voxel boxes only.
-Composition: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
-Color palette: robe #1565c0, hood #0d47a1, skin #e8c090, nose #b8865a.
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
+
+Composition/framing: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. TRUE orthographic.
+
+Color palette: robe #1976d2, hood #0d47a1, skin #e8c090, nose #b8865a.
+
 Text: none. Output: 1024x1024 PNG four-view sheet.

@@ -1,0 +1,12 @@
+Use case: game-character-sheet
+Asset type: boss phase variants, front view only
+Primary request: One horizontal 1x3 sheet of the SAME voxel Fox. Orange blocky fox, cream snout and tail tip, upright ears, dark paws. Front view. No text.
+
+Left phase 1: standing, looking slightly aside (circling).
+Middle phase 2: body shifted to one side (dodge), same silhouette scale.
+Right phase 3: both front paws forward as if pouncing.
+
+Scene: flat warm gray #c8c4bc, no ground shadow.
+Style: Minecraft-like voxel boxes only, no bevel, no PBR.
+Text: none.
+Output: 16:9 PNG three-phase front sheet.

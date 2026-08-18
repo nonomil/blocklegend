@@ -1,0 +1,14 @@
+Use case: game-character-sheet
+Asset type: character four-view reference for 3D
+Primary request: One ORIGINAL voxel mushroom-biome beetle. Not a Minecraft silverfish. Cuboids only: a plump 10x6x12 rust-red BODY, a 6x5x6 cream HEAD on the front, two short 4x2x2 antennae, and six thin 2x4x2 legs (three per side). Cream mushroom spots on the back. Sitting on the studio floor.
+
+How each view MUST look:
+- FRONT (top-left): cream head with two black square eyes. Body behind. Three legs visible on each side as small blocks.
+- RIGHT (top-right): beetle facing LEFT. Head on the left, body to the right, three legs along the belly.
+- BACK (bottom-left): rust-red body with two or three cream square spots. NO face.
+- LEFT (bottom-right): mirror of right. Head on the RIGHT.
+
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR. TRUE orthographic, no 3/4, no top-down.
+Color palette: body #b4543a, spots #f2d8b0, head #e8c8a0, eyes #141010, legs #7a3a28.
+Text: none. Output: 1024x1024 PNG four-view sheet.

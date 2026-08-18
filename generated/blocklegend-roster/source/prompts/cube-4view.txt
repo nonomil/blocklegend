@@ -1,8 +1,13 @@
 Use case: game-character-sheet
 Asset type: character four-view reference for 3D
-Primary request: One original voxel blue cube beast: a 16-unit blue cube with two black square eyes. Clean 2x2 orthographic turnaround.
+Primary request: One original voxel blue cube beast. One solid 16x16x16 blue cube body. Two black square eyes painted on the FRONT face only. No legs, no arms. Back and sides are plain blue.
 
-Scene/backdrop: flat warm gray studio #c8c4bc. Style: Minecraft-like voxel boxes only.
-Composition: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT.
+Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
+
+Composition/framing: 2x2. Top-left FRONT, top-right RIGHT, bottom-left BACK, bottom-right LEFT. TRUE orthographic.
+
 Color palette: body #6b8cff, eyes #141010.
+
 Text: none. Output: 1024x1024 PNG four-view sheet.
