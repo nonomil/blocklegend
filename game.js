@@ -177,14 +177,14 @@
         startTheme();
         if (bridge && bridge.recordPlaySession) bridge.recordPlaySession(GAME_ID);
         bank = (W.FALLBACK_BANK || []).slice();
-        startLevel(progress.unlockedLevel || 1);
         W.loadCatalog(function (err, list) {
             if (err || !list || !list.length) {
                 toast('词库稍后补上 · 先打面前的怪');
-                return;
+            } else {
+                bank = list;
             }
-            bank = list;
-            refreshPool();
+            if (session.levelStarted) applyLoadedBank();
+            else ensureLevelStarted();
             paintSayStrip();
             syncHud();
         });
@@ -421,9 +421,15 @@
         }
         const quizInput = document.getElementById('quiz-input');
         if (quizInput) {
+            function maybeAutoSpell() {
+                if (!session.quiz || !session.quiz.typed) return;
+                if (W.checkQuiz && W.checkQuiz(session.quiz, quizInput.value)) submitTypedQuiz();
+            }
             quizInput.addEventListener('input', function () {
                 if (session.quiz) refreshQuizKeyPaint();
+                maybeAutoSpell();
             });
+            quizInput.addEventListener('compositionend', maybeAutoSpell);
         }
         document.addEventListener('keydown', function (e) {
             if (session.quiz) {
@@ -1016,6 +1022,34 @@
         });
     }
 
+    function ensureLevelStarted() {
+        if (session.levelStarted) return;
+        session.levelStarted = true;
+        startLevel(progress.unlockedLevel || session.level || 1);
+    }
+
+    function applyLoadedBank() {
+        refreshPool();
+        session.monsters.forEach(function (m) {
+            if (!m || m.asked || m.quizPassed) return;
+            m.word = null;
+            bindMobWord(m);
+        });
+        if (engine && engine.world && engine.world.wordCells && pool.length) {
+            const used = {};
+            Object.keys(engine.world.wordCells).forEach(function (key) {
+                const hit = pool.filter(function (w) {
+                    return w && w.text && !used[w.id || w.text];
+                })[0] || pool[0];
+                if (!hit) return;
+                used[hit.id || hit.text] = true;
+                engine.world.wordCells[key] = hit;
+            });
+        }
+        paintSayStrip();
+        syncHud();
+    }
+
     function startLevel(level) {
         clearEntities();
         session.level = Math.max(1, Number(level) || 1);
@@ -1242,7 +1276,6 @@
             bossHits: 0,
             reviewFirst: !!(extra && extra.reviewFirst)
         };
-        bindMobWord(mob);
         if (mob.isBoss) {
             if (session.boss) {
                 mob.hp = session.boss.hp;
@@ -1252,6 +1285,7 @@
             if (model.setHp) model.setHp(1, true);
         }
         session.monsters.push(mob);
+        bindMobWord(mob);
         paintCastHud();
         return mob;
     }
@@ -2263,7 +2297,9 @@
     function submitTypedQuiz() {
         if (!session.quiz || !session.quiz.typed) return;
         const input = document.getElementById('quiz-input');
-        attemptQuiz(input && input.value);
+        const value = input && input.value;
+        if (!String(value || '').trim()) return;
+        attemptQuiz(value);
     }
 
     function letterKeyboardHtml(opts) {
@@ -3098,6 +3134,7 @@
         const search = window.location.search || '';
         if (P && P.shouldSkipBuddyGate && P.shouldSkipBuddyGate(search)) {
             toggleLayer('buddy-gate', false);
+            ensureLevelStarted();
             return;
         }
         toggleLayer('buddy-gate', true);
@@ -3119,6 +3156,7 @@
             session.buddyConfig = readBuddyConfig();
         }
         toggleLayer('buddy-gate', false);
+        ensureLevelStarted();
         startTheme();
         if (plan.openForm) {
             openBuddySettings();

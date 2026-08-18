@@ -675,8 +675,6 @@
             if (!want) return null;
             return list.find(function (w) { return normAnswer(w.text) === want; }) || null;
         }
-        const preferred = findText(o.prefer);
-        if (preferred && !o.reviewFirst) return preferred;
         function skipped(hit) {
             if (!hit) return true;
             const skip = {};
@@ -686,19 +684,17 @@
             });
             return !!(skip[normAnswer(hit.id)] || skip[normAnswer(hit.text)]);
         }
+        const preferred = findText(o.prefer);
+        if (preferred && !o.reviewFirst && !used[preferred.id || preferred.text] && !skipped(preferred)) {
+            return preferred;
+        }
         if (o.reviewFirst) {
             const reviewHits = (Array.isArray(o.review) ? o.review : []).map(findText).filter(function (hit) {
                 return hit && !used[hit.id || hit.text] && !isBlockFiller(hit.text) && !skipped(hit);
             });
             if (reviewHits.length) return reviewHits[0];
         }
-        if (preferred) return preferred;
-        if (o.theme) {
-            const themed = list.filter(function (w) {
-                return w && w.theme === o.theme && !used[w.id || w.text] && !isBlockFiller(w.text) && !skipped(w);
-            });
-            if (themed.length) return themed[Math.floor(Math.random() * themed.length)];
-        }
+        if (preferred && !used[preferred.id || preferred.text] && !skipped(preferred)) return preferred;
         if (o.kind) {
             const label = labelFor(o.kind, list);
             const known = !!KIND_ALIASES[o.kind];
@@ -706,7 +702,13 @@
                 ? { id: label.en, text: label.en, zh: label.zh || '', theme: '动物' }
                 : null);
             const id = word && (word.id || word.text);
-            if (word && id && !used[id] && !isBlockFiller(word.text)) return word;
+            if (word && id && !used[id] && !isBlockFiller(word.text) && !skipped(word)) return word;
+        }
+        if (o.theme) {
+            const themed = list.filter(function (w) {
+                return w && w.theme === o.theme && !used[w.id || w.text] && !isBlockFiller(w.text) && !skipped(w);
+            });
+            if (themed.length) return themed[Math.floor(Math.random() * themed.length)];
         }
         const focusHits = (Array.isArray(o.focus) ? o.focus : []).map(findText).filter(function (hit) {
             return hit && !used[hit.id || hit.text] && !isBlockFiller(hit.text) && !skipped(hit);
@@ -735,11 +737,18 @@
 
     function checkQuiz(quiz, input) {
         const q = quiz || {};
-        if (q.word && normAnswer(input) === normAnswer(q.word.text)) return true;
-        if (q.typed || q.mode === 'spell' || q.mode === 'fill' || q.mode === 'letters' || q.mode === 'enphrase') {
-            return normAnswer(input) === normAnswer(q.answer);
+        const raw = String(input == null ? '' : input).trim();
+        if (!raw) return false;
+        if (q.word && normAnswer(raw) === normAnswer(q.word.text)) return true;
+        if (q.typed || q.mode === 'spell' || q.mode === 'fill' || q.mode === 'letters') {
+            const wantZh = String((q.word && q.word.zh) || '').trim();
+            const gotZh = raw.replace(/[^\u4e00-\u9fff]/g, '');
+            if (wantZh && gotZh && gotZh === wantZh) return true;
         }
-        return String(input) === String(q.answer);
+        if (q.typed || q.mode === 'spell' || q.mode === 'fill' || q.mode === 'letters' || q.mode === 'enphrase') {
+            return normAnswer(raw) === normAnswer(q.answer);
+        }
+        return raw === String(q.answer || '');
     }
 
     function channelOf(quiz, input) {
@@ -773,6 +782,16 @@
     }
 
     function resolveAttempt(quiz, input, opts) {
+        if (!String(input == null ? '' : input).trim()) {
+            return {
+                correct: false,
+                retry: true,
+                record: false,
+                crit: false,
+                comboKeep: false,
+                reveal: ''
+            };
+        }
         const correct = checkQuiz(quiz, input);
         const retried = !!(opts && opts.retried);
         if (correct) {
