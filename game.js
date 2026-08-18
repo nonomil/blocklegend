@@ -1030,6 +1030,7 @@
 
     function applyLoadedBank() {
         refreshPool();
+        session.usedWordKeys = {};
         session.monsters.forEach(function (m) {
             if (!m || m.asked || m.quizPassed) return;
             m.word = null;
@@ -1065,6 +1066,7 @@
         session.familiarIds = [];
         session.choiceOnly = {};
         session.seenByWord = {};
+        session.usedWordKeys = {};
         session.themeAwarded = {};
         session.waveTheme = '';
         session.missByWord = {};
@@ -2401,6 +2403,26 @@
         progress.spokenWordIds = W.noteId(progress.spokenWordIds, id);
     }
 
+    function rememberBoundWord(word) {
+        if (!session.usedWordKeys) session.usedWordKeys = {};
+        const text = String((word && word.text) || '').toLowerCase();
+        const id = String((word && word.id) || '').toLowerCase();
+        if (text) session.usedWordKeys[text] = 1;
+        if (id) session.usedWordKeys[id] = 1;
+    }
+
+    function sessionSkipKeys() {
+        const keys = [];
+        function push(key) {
+            const k = String(key || '').trim().toLowerCase();
+            if (k && keys.indexOf(k) < 0) keys.push(k);
+        }
+        Object.keys(session.usedWordKeys || {}).forEach(push);
+        Object.keys(session.seenByWord || {}).forEach(push);
+        (progress.shownWordIds || []).forEach(push);
+        return keys;
+    }
+
     function bindMobWord(mob) {
         if (!mob) return;
         const used = session.monsters.map(function (m) {
@@ -2416,14 +2438,15 @@
             focus: (cfg && cfg.focusWords) || [],
             prefer: mob.word && mob.word.text,
             review: sessionReviewKeys(),
-            reviewFirst: !!mob.reviewFirst && !(mob.word && mob.word.text),
-            skip: Object.keys(session.seenByWord || {}),
+            reviewFirst: !!mob.isBoss && !!mob.reviewFirst && !(mob.word && mob.word.text),
+            skip: sessionSkipKeys(),
             theme: (!mob.reviewFirst && session.waveTheme) || ''
         });
         if (!mob.word) {
             const label = W.labelFor(kind, bank);
             mob.word = label.word || { id: label.en, text: label.en, zh: label.zh };
         }
+        rememberBoundWord(mob.word);
     }
 
     function paintCastHud() {
@@ -2536,7 +2559,6 @@
         mob.voiceFails = 0;
         launchBoltToward(mob, { cosmetic: true });
         applyResolvedHit(mob, 'bolt', { answered: true, correct: true, channel: 'spell' });
-        if (mob.hp > 0 && !mob.isBoss) bindMobWord(mob);
         paintCastHud();
         toast((word && word.text) || 'Hit!');
     }
