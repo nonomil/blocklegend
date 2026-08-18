@@ -8,7 +8,7 @@
 
     const COOLDOWN_MS = 4000;
     const MAX_WORDS = 8;
-    const DEFAULT_MODEL = 'deepseek-v4-flash';
+    const DEFAULT_MODEL = 'llama3.2:3b';
     const STORAGE_KEY = null;
 
     function wordOf(snap) {
@@ -139,6 +139,13 @@
         return { pick: 'play', typeOnly: false, openForm: false, clearModel: true };
     }
 
+    function applyPlayMode(pick) {
+        const p = String(pick || '');
+        if (p === 'web') return { mode: 'web', pad: false, lockLook: false, label: '网页模式 · 拖鼠标看' };
+        if (p === 'tablet') return { mode: 'tablet', pad: true, lockLook: false, label: '平板模式 · 虚拟摇杆' };
+        return { mode: 'desktop', pad: false, lockLook: true, label: '电脑模式 · 键鼠' };
+    }
+
     function resolveBuddyConfig(source) {
         const s = source || {};
         const q = s.query || {};
@@ -243,6 +250,7 @@
         parseChatReply: parseChatReply,
         shouldSkipBuddyGate: shouldSkipBuddyGate,
         applyBuddyPick: applyBuddyPick,
+        applyPlayMode: applyPlayMode,
         resolveBuddyConfig: resolveBuddyConfig,
         pickTtsVoice: pickTtsVoice,
         planSpeak: planSpeak,

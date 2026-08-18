@@ -51,6 +51,43 @@
         shadow_stalker: { kind: 'shadow_stalker', hp: 44, coins: 8, contact: 2, speed: 1.18, loot: 'shadow-hood', color: 0x1c1c24, hitRadius: 0.45 },
         pillager: { kind: 'pillager', hp: 42, coins: 8, contact: 2, speed: 1.0, loot: 'crossbow-bolt', color: 0x5a2a3a, hitRadius: 0.5 }
     };
+    const ANIMALS = {
+        pig: { kind: 'pig', hp: 16, coins: 2, contact: 0, loot: ['pork'] },
+        cow: { kind: 'cow', hp: 20, coins: 2, contact: 0, loot: ['beef'] },
+        sheep: { kind: 'sheep', hp: 14, coins: 2, contact: 0, loot: ['wool', 'mutton'] },
+        chicken: { kind: 'chicken', hp: 8, coins: 1, contact: 0, loot: ['chicken'] }
+    };
+    const BUILD_DROP = {
+        slime: 'cobble', cube: 'cobble', husk: 'cobble', zombie: 'cobble', golem: 'cobble',
+        creeper: 'sand', skeleton: 'glass', spider: 'wool', fox: 'wool',
+        magma: 'glass', blaze: 'glass', drowned: 'sand'
+    };
+
+    function isFarmAnimal(kind) {
+        return !!ANIMALS[kind];
+    }
+
+    function animalOf(kind) {
+        const row = ANIMALS[kind];
+        if (!row) return null;
+        return {
+            kind: row.kind,
+            hp: row.hp,
+            coins: row.coins,
+            contact: row.contact,
+            loot: row.loot.slice()
+        };
+    }
+
+    function animalLoot(kind) {
+        const row = ANIMALS[kind];
+        return row ? row.loot.slice() : [];
+    }
+
+    function bonusBuildDrop(kind) {
+        return BUILD_DROP[kind] || 'cobble';
+    }
+
     const MONSTER_KINDS = Object.keys(MONSTERS);
     const BEHAVIOR = {
         slime: 'chase', cube: 'chase', husk: 'chase', fox: 'chase',
@@ -307,6 +344,11 @@
         tickAggro: tickAggro,
         MONSTERS: MONSTERS,
         MONSTER_KINDS: MONSTER_KINDS,
+        ANIMALS: ANIMALS,
+        isFarmAnimal: isFarmAnimal,
+        animalOf: animalOf,
+        animalLoot: animalLoot,
+        bonusBuildDrop: bonusBuildDrop,
         behaviorOf: behaviorOf,
         behaviorSpeedScale: behaviorSpeedScale,
         behaviorStopRange: behaviorStopRange,

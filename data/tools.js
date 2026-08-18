@@ -5,8 +5,10 @@
 (function (global) {
     'use strict';
 
-    const SLOT_IDS = ['sword', 'axe', 'pickaxe', 'shovel'];
-    const DEFAULT_HOTBAR = ['sword', 'axe', 'pickaxe', 'shovel', 'dirt', 'cobble', 'oak-log', 'plank', 'table'];
+    const SLOT_IDS = ['fist', 'sword', 'axe', 'pickaxe', 'shovel'];
+    const DEFAULT_HOTBAR = ['fist', null, null, null, 'oak-log', 'plank', null, null, null];
+    const START_BAG = { 'oak-log': 3, plank: 4 };
+    const FOOD = { pork: 4, beef: 4, mutton: 4, chicken: 3 };
 
     function emptyHotbar() {
         return DEFAULT_HOTBAR.slice();
@@ -39,7 +41,35 @@
     }
 
     function isHotTool(id) {
-        return id === 'sword' || id === 'axe' || id === 'pickaxe' || id === 'shovel';
+        if (!id) return false;
+        if (id === 'fist' || id === 'sword' || id === 'axe' || id === 'pickaxe' || id === 'shovel' || id === 'place') return true;
+        return /_(sword|pick|axe|shovel|bow|shield)$/.test(id);
+    }
+
+    function isLegacyLoadout(bar) {
+        return !!(bar && bar[0] === 'sword' && bar[1] === 'axe' && bar[2] === 'pickaxe' && bar[3] === 'shovel');
+    }
+
+    function toolRole(id) {
+        const key = String(id || '');
+        if (!key || key === 'fist') return 'fist';
+        if (/pick/.test(key)) return 'pickaxe';
+        if (/axe/.test(key)) return 'axe';
+        if (/shovel/.test(key)) return 'shovel';
+        if (/sword/.test(key) || key === 'sword') return 'sword';
+        return 'fist';
+    }
+
+    function eatHeal(id) {
+        return FOOD[id] || 0;
+    }
+
+    function applyEat(hp, hpMax, item) {
+        const heal = eatHeal(item);
+        const cur = Number(hp) || 0;
+        const max = Number(hpMax) || 10;
+        if (!heal) return { ok: false, hp: cur, heal: 0 };
+        return { ok: true, hp: Math.min(max, cur + heal), heal: heal };
     }
     const BASE_BREAK_MS = {
         log: 900,
@@ -57,21 +87,24 @@
         plank: 700,
         table: 720,
         word: 280,
-        gate: 400
+        gate: 400,
+        glass: 600
     };
     const TOOLS = {
-        sword: { id: 'sword', melee: 1, mine: { log: 0.35, leaf: 0.45, dirt: 0.28, grass: 0.28, sand: 0.28, snow: 0.3, stone: 0.16, water: 0.3, coal: 0.16, iron: 0.14, gold: 0.14, diamond: 0.12, plank: 0.4, table: 0.4, word: 1, gate: 1 } },
-        axe: { id: 'axe', melee: 0.55, mine: { log: 1, leaf: 1, dirt: 0.34, grass: 0.34, sand: 0.34, snow: 0.34, stone: 0.2, water: 0.34, coal: 0.2, iron: 0.18, gold: 0.16, diamond: 0.14, plank: 1, table: 1, word: 1, gate: 1 } },
-        pickaxe: { id: 'pickaxe', melee: 0.42, mine: { log: 0.4, leaf: 0.4, dirt: 0.72, grass: 0.72, sand: 0.72, snow: 0.72, stone: 1, water: 0.4, coal: 1, iron: 1, gold: 1, diamond: 1, plank: 0.45, table: 0.45, word: 1, gate: 1 } },
-        shovel: { id: 'shovel', melee: 0.35, mine: { log: 0.25, leaf: 0.3, dirt: 1, grass: 1, sand: 1, snow: 1, stone: 0.14, water: 1, coal: 0.14, iron: 0.12, gold: 0.12, diamond: 0.1, plank: 0.28, table: 0.28, word: 1, gate: 1 } },
-        place: { id: 'place', melee: 0.28, mine: { log: 0.22, leaf: 0.28, dirt: 0.32, grass: 0.32, sand: 0.32, snow: 0.32, stone: 0.12, water: 0.3, coal: 0.12, iron: 0.1, gold: 0.1, diamond: 0.08, plank: 0.24, table: 0.24, word: 1, gate: 1 } }
+        fist: { id: 'fist', melee: 0.22, mine: { log: 0.28, leaf: 0.4, dirt: 0.42, grass: 0.42, sand: 0.4, snow: 0.4, stone: 0.1, water: 0.3, coal: 0.1, iron: 0.08, gold: 0.08, diamond: 0.06, plank: 0.28, table: 0.28, word: 1, gate: 1, glass: 0.16 } },
+        sword: { id: 'sword', melee: 1, mine: { log: 0.35, leaf: 0.45, dirt: 0.28, grass: 0.28, sand: 0.28, snow: 0.3, stone: 0.16, water: 0.3, coal: 0.16, iron: 0.14, gold: 0.14, diamond: 0.12, plank: 0.4, table: 0.4, word: 1, gate: 1, glass: 0.2 } },
+        axe: { id: 'axe', melee: 0.55, mine: { log: 1, leaf: 1, dirt: 0.34, grass: 0.34, sand: 0.34, snow: 0.34, stone: 0.2, water: 0.34, coal: 0.2, iron: 0.18, gold: 0.16, diamond: 0.14, plank: 1, table: 1, word: 1, gate: 1, glass: 0.22 } },
+        pickaxe: { id: 'pickaxe', melee: 0.42, mine: { log: 0.4, leaf: 0.4, dirt: 0.72, grass: 0.72, sand: 0.72, snow: 0.72, stone: 1, water: 0.4, coal: 1, iron: 1, gold: 1, diamond: 1, plank: 0.45, table: 0.45, word: 1, gate: 1, glass: 1 } },
+        shovel: { id: 'shovel', melee: 0.35, mine: { log: 0.25, leaf: 0.3, dirt: 1, grass: 1, sand: 1, snow: 1, stone: 0.14, water: 1, coal: 0.14, iron: 0.12, gold: 0.12, diamond: 0.1, plank: 0.28, table: 0.28, word: 1, gate: 1, glass: 0.18 } },
+        place: { id: 'place', melee: 0.28, mine: { log: 0.22, leaf: 0.28, dirt: 0.32, grass: 0.32, sand: 0.32, snow: 0.32, stone: 0.12, water: 0.3, coal: 0.12, iron: 0.1, gold: 0.1, diamond: 0.08, plank: 0.24, table: 0.24, word: 1, gate: 1, glass: 0.14 } }
     };
     const DROPS = {
         log: 'oak-log',
         leaf: 'stick',
         dirt: 'dirt',
         grass: 'dirt',
-        sand: 'dirt',
+        sand: 'sand',
+        glass: 'glass',
         snow: 'dirt',
         stone: 'cobble',
         water: 'dirt',
@@ -84,7 +117,8 @@
     };
 
     function toolOf(id) {
-        return TOOLS[id] || TOOLS.sword;
+        if (TOOLS[id]) return TOOLS[id];
+        return TOOLS[toolRole(id)] || TOOLS.fist;
     }
 
     function breakMs(toolId, kind) {
@@ -138,6 +172,8 @@
         if (loot === 'oak-log') return 'log';
         if (loot === 'plank') return 'plank';
         if (loot === 'table') return 'table';
+        if (loot === 'sand') return 'sand';
+        if (loot === 'glass') return 'glass';
         if (loot === 'chest' || loot === 'furnace' || loot === 'torch') return loot;
         return null;
     }
@@ -148,6 +184,8 @@
         if (kind === 'log') return 'oak-log';
         if (kind === 'plank') return 'plank';
         if (kind === 'table') return 'table';
+        if (kind === 'sand') return 'sand';
+        if (kind === 'glass') return 'glass';
         return null;
     }
 
@@ -164,10 +202,16 @@
         placeKindOf: placeKindOf,
         lootOfPlace: lootOfPlace,
         DEFAULT_HOTBAR: DEFAULT_HOTBAR,
+        START_BAG: START_BAG,
+        FOOD: FOOD,
         emptyHotbar: emptyHotbar,
         normalizeHotbar: normalizeHotbar,
         assignHotbar: assignHotbar,
         swapHotbar: swapHotbar,
-        isHotTool: isHotTool
+        isHotTool: isHotTool,
+        isLegacyLoadout: isLegacyLoadout,
+        toolRole: toolRole,
+        eatHeal: eatHeal,
+        applyEat: applyEat
     };
 }(typeof window !== 'undefined' ? window : globalThis));

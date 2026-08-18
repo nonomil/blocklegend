@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
     <title>方块传奇 · 学英语大冒险</title>
-    <link rel="stylesheet" href="./game.css?v=20260819-bl-daily1">
+    <link rel="stylesheet" href="./game.css?v=20260819-bl-mode3">
 </head>
 <body class="bl-body">
     <main class="bl-stage">
@@ -15,6 +15,7 @@
             <a class="bl-back" id="back-link" href="./">返回工作台</a>
             <strong class="bl-title">方块传奇</strong>
             <button type="button" class="bl-btn" id="dex-btn" aria-label="Word dex">图鉴</button>
+            <button type="button" class="bl-btn" id="scene-btn" aria-label="Practice a sentence">练一句</button>
             <button type="button" class="bl-btn" id="parent-btn" aria-label="Parent report">给家长看</button>
             <button type="button" class="bl-btn" id="buddy-btn" aria-label="Buddy settings">设</button>
             <button type="button" class="bl-btn" id="help-btn" aria-label="Help">?</button>
@@ -223,6 +224,22 @@
                 </div>
             </div>
         </div>
+        <div class="bl-layer is-hidden" id="scene-layer">
+            <div class="bl-card bl-scene">
+                <h2 id="scene-title">练一句</h2>
+                <p id="scene-hint">你在点餐</p>
+                <p id="scene-en">Hello.</p>
+                <div class="bl-scene-picks" id="scene-picks"></div>
+                <form class="bl-scene-type" id="scene-form" autocomplete="off">
+                    <input id="scene-type" type="text" maxlength="64" placeholder="打这一句，或只打关键词" inputmode="latin" autocapitalize="none" spellcheck="false">
+                    <button type="submit" class="bl-btn">说出去</button>
+                    <button type="button" class="bl-btn" id="scene-mic">听我说</button>
+                </form>
+                <div class="bl-card-actions">
+                    <button type="button" class="bl-btn" id="scene-close">关闭</button>
+                </div>
+            </div>
+        </div>
         <div class="bl-layer is-hidden" id="dex-layer">
             <div class="bl-card bl-dex">
                 <h2>图鉴</h2>
@@ -266,6 +283,7 @@
                             <div class="bl-help-row"><kbd>战斗</kbd><span>世界不停</span></div>
                             <div class="bl-help-row"><kbd>音乐</kbd><span>顶栏开关主题曲</span></div>
                             <div class="bl-help-row"><kbd>图鉴</kbd><span>看自己收过的词</span></div>
+                            <div class="bl-help-row"><kbd>练一句</kbd><span>点餐 / 问路，说或拼三句</span></div>
                         </div>
                     </section>
                     <section class="bl-help-page is-hidden" data-help-page="2">
@@ -290,13 +308,25 @@
             </div>
         </div>
         <div class="bl-layer" id="buddy-gate">
-            <div class="bl-card bl-buddy-card">
-                <h2>怎么玩</h2>
-                <p id="buddy-gate-note" class="bl-buddy-note">This session only. Nothing is saved.</p>
-                <div class="bl-buddy-picks">
-                    <button type="button" class="bl-btn bl-buddy-pick" id="buddy-pick-play" data-buddy-pick="play">先玩 · Template buddy</button>
-                    <button type="button" class="bl-btn bl-buddy-pick" id="buddy-pick-home" data-buddy-pick="home">连家里电脑 · Home PC</button>
-                    <button type="button" class="bl-btn bl-buddy-pick" id="buddy-pick-type" data-buddy-pick="type">只打字 · Type only</button>
+            <div class="bl-card bl-mode-card">
+                <h2>选一个玩法</h2>
+                <p id="buddy-gate-note" class="bl-buddy-note">点下面一张图开始。电脑锁鼠标，网页拖着看，平板用摇杆。之后可点「设」再改。</p>
+                <div class="bl-mode-picks">
+                    <button type="button" class="bl-mode-pick" data-play-mode="desktop">
+                        <span class="bl-mode-art" data-art="desktop" aria-hidden="true"></span>
+                        <strong>电脑模式</strong>
+                        <em>键盘 WASD · 鼠标锁定看四周</em>
+                    </button>
+                    <button type="button" class="bl-mode-pick" data-play-mode="web">
+                        <span class="bl-mode-art" data-art="web" aria-hidden="true"></span>
+                        <strong>网页模式</strong>
+                        <em>按住拖鼠标看 · 不锁指针</em>
+                    </button>
+                    <button type="button" class="bl-mode-pick" data-play-mode="tablet">
+                        <span class="bl-mode-art" data-art="tablet" aria-hidden="true"></span>
+                        <strong>平板模式</strong>
+                        <em>左下摇杆 · 右下攻击</em>
+                    </button>
                 </div>
             </div>
         </div>
@@ -337,15 +367,16 @@
     <script src="./child-courses.js?v=20260815-word-backflow-v1"></script>
     <script src="./vendor/three.min.js?v=20260815-bl-s1"></script>
     <script src="./data/shop.js?v=20260815-bl-look11"></script>
-    <script src="./data/tools.js?v=20260818-bl-hot1"></script>
-    <script src="./data/craft.js?v=20260817-bl-hold2"></script>
+    <script src="./data/tools.js?v=20260819-bl-survive1"></script>
+    <script src="./data/craft.js?v=20260819-bl-survive1"></script>
     <script src="./data/atlas-paint.js?v=20260817-bl-art3"></script>
     <script src="./data/fx.js?v=20260817-bl-art6"></script>
-    <script src="./engine.js?v=20260818-bl-apk1"></script>
-    <script src="./data/combat.js?v=20260818-bl-world8"></script>
-    <script src="./data/speech-input.js?v=20260818-bl-stt2"></script>
-    <script src="./data/companion.js?v=20260819-bl-ollama1"></script>
-    <script src="./data/words.js?v=20260819-bl-daily1"></script>
+    <script src="./engine.js?v=20260819-bl-survive1"></script>
+    <script src="./data/combat.js?v=20260819-bl-survive1"></script>
+    <script src="./data/speech-input.js?v=20260819-bl-scene1"></script>
+    <script src="./data/scenes.js?v=20260819-bl-scene1"></script>
+    <script src="./data/companion.js?v=20260819-bl-mode1"></script>
+    <script src="./data/words.js?v=20260819-bl-survive1"></script>
     <script src="./data/levels.js?v=20260818-bl-world8"></script>
     <script src="./data/quests.js?v=20260818-bl-review1"></script>
     <script src="./data/skins.js?v=20260817-bl-art3"></script>
@@ -424,6 +455,6 @@
     <script src="./assets/img2threejs/createTools3d.js?v=20260817-bl-tools3d"></script>
     <script src="./assets/img2threejs/createProps3d.js?v=20260817-bl-i2t4v2"></script>
     <script src="./mobs.js?v=20260818-bl-learn5"></script>
-    <script src="./game.js?v=20260819-bl-daily1"></script>
+    <script src="./game.js?v=20260819-bl-survive1"></script>
 </body>
 </html>

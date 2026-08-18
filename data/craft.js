@@ -17,7 +17,9 @@
         diamond_sword: '钻石剑', diamond_pick: '钻石镐', diamond_axe: '钻石斧', diamond_shovel: '钻石铲',
         torch: '火把', chest: '箱子', furnace: '熔炉', door: '木门',
         fence: '栅栏', ladder: '梯子', bowl: '碗', boat: '船',
-        shears: '剪刀', fishing_rod: '钓竿', bucket: '桶'
+        shears: '剪刀', fishing_rod: '钓竿', bucket: '桶',
+        sand: '沙子', glass: '玻璃', wool: '羊毛',
+        pork: '猪肉', beef: '牛肉', mutton: '羊肉', chicken: '鸡肉'
     };
 
     const RECIPES = [
@@ -57,7 +59,8 @@
         { id: 'boat', name: '船', zh: '5 木板', inputs: { plank: 5 }, outputs: { boat: 1 }, grid: 3, shape: [3, 2], cells: ['plank', null, 'plank', 'plank', 'plank', 'plank'] },
         { id: 'shears', name: '剪刀', zh: '2 铁锭', inputs: { iron_ingot: 2 }, outputs: { shears: 1 }, grid: 3, shape: [2, 2], cells: [null, 'iron_ingot', 'iron_ingot', null] },
         { id: 'bucket', name: '桶', zh: '3 铁锭', inputs: { iron_ingot: 3 }, outputs: { bucket: 1 }, grid: 3, shape: [3, 2], cells: ['iron_ingot', null, 'iron_ingot', null, 'iron_ingot', null] },
-        { id: 'fishing_rod', name: '钓竿', zh: '3 木棍 + 2 线', inputs: { stick: 3, string: 2 }, outputs: { fishing_rod: 1 }, grid: 3, shape: [3, 3], cells: [null, null, 'stick', null, 'stick', 'string', 'stick', null, 'string'] }
+        { id: 'fishing_rod', name: '钓竿', zh: '3 木棍 + 2 线', inputs: { stick: 3, string: 2 }, outputs: { fishing_rod: 1 }, grid: 3, shape: [3, 3], cells: [null, null, 'stick', null, 'stick', 'string', 'stick', null, 'string'] },
+        { id: 'glass', name: '玻璃', zh: '1 沙子 + 1 煤炭', inputs: { sand: 1, coal: 1 }, outputs: { glass: 1 }, grid: 2, shapeless: ['sand', 'coal'] }
     ];
 
     const HIDDEN = { bowl: true, boat: true, shears: true, bucket: true, fishing_rod: true };
@@ -101,7 +104,9 @@
         wood_bow: 'bow', wood_shield: 'shield', arrow: 'arrow',
         torch: 'torch', chest: 'chest', furnace: 'furnace', door: 'door',
         fence: 'fence', ladder: 'ladder', bowl: 'bowl', boat: 'boat',
-        shears: 'shears', fishing_rod: 'rod', bucket: 'bucket'
+        shears: 'shears', fishing_rod: 'rod', bucket: 'bucket',
+        sand: 'dirt', glass: 'gold', wool: 'string',
+        pork: 'dirt', beef: 'dirt', mutton: 'dirt', chicken: 'dirt'
     };
 
     function itemIcon(id) {
@@ -120,6 +125,8 @@
         if (key === 'cobble') return './assets/atlas/stone.png';
         if (key === 'oak-log') return './assets/atlas/oak_side.png';
         if (key === 'plank' || key === 'table') return './assets/atlas/oak_top.png';
+        if (key === 'sand') return './assets/atlas/sand.png';
+        if (key === 'glass') return './assets/atlas/ice.png';
         return '';
     }
 
@@ -279,7 +286,8 @@
 
     const SMELTS = {
         iron_ingot: { inputs: { iron_ore: 1, coal: 1 }, outputs: { iron_ingot: 1 } },
-        gold_ingot: { inputs: { gold: 1, coal: 1 }, outputs: { gold_ingot: 1 } }
+        gold_ingot: { inputs: { gold: 1, coal: 1 }, outputs: { gold_ingot: 1 } },
+        glass: { inputs: { sand: 1, coal: 1 }, outputs: { glass: 1 } }
     };
 
     function smelt(bag, id) {

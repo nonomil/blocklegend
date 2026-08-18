@@ -365,6 +365,25 @@
         8: { coins: 12, loot: { plank: 2, coal: 2 } },
         12: { coins: 16, loot: { torch: 3, iron_ore: 1 } }
     };
+    const HOUSE_STEPS = [6, 12, 18];
+    const HOUSE_PACKS = {
+        6: { coins: 6, loot: { cobble: 8, sand: 4 }, label: '圆石和沙子' },
+        12: { coins: 8, loot: { glass: 6, cobble: 8 }, label: '玻璃和石头' },
+        18: { coins: 10, loot: { glass: 8, wool: 4, iron_ore: 1 }, label: '小屋大礼包' }
+    };
+
+    function dueHouseAwards(correctCount, awarded) {
+        const n = Number(correctCount) || 0;
+        const have = Number(awarded) || 0;
+        for (let i = 0; i < HOUSE_STEPS.length; i += 1) {
+            const need = HOUSE_STEPS[i];
+            if (n >= need && have < need) {
+                const pack = HOUSE_PACKS[need];
+                return { need: need, coins: pack.coins, loot: pack.loot, label: pack.label };
+            }
+        }
+        return null;
+    }
     const HARD_MISS = 3;
     const PHRASE_EVERY = 4;
     const SHORT_SPELL = 5;
@@ -1434,6 +1453,8 @@
         letterBlank: letterBlank,
         pickWaveTheme: pickWaveTheme,
         dueThemeAwards: dueThemeAwards,
+        dueHouseAwards: dueHouseAwards,
+        HOUSE_STEPS: HOUSE_STEPS,
         THEME_STEPS: THEME_STEPS,
         collectReviewKeys: collectReviewKeys,
         layoutWorldWords: layoutWorldWords,

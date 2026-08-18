@@ -27,7 +27,8 @@
         'crossbow-bolt': 6
     };
     const DROP_COLOR = {
-        'oak-log': 0x6b4a28, 'stick': 0x8a6234, 'dirt': 0x8a6a3c, 'cobble': 0x7a7a80, 'plank': 0xe0b46a
+        'oak-log': 0x6b4a28, 'stick': 0x8a6234, 'dirt': 0x8a6a3c, 'cobble': 0x7a7a80, 'plank': 0xe0b46a,
+        sand: 0xe8d090, glass: 0xa8e0f0, wool: 0xf4f0ea, pork: 0xe07070, beef: 0x8a3030, mutton: 0xc06060, chicken: 0xf0c080
     };
     const CHAPTERS = [
         '',
@@ -49,6 +50,7 @@
     const C = window.BlockLegendCombat;
     const W = window.BlockLegendWords;
     const SP = window.BlockLegendSpeech;
+    const SC = window.BlockLegendScenes;
     const P = window.BlockLegendCompanion;
     const L = window.BlockLegendLevels;
     const Q = window.BlockLegendQuests;
@@ -102,10 +104,11 @@
         buddyKey: '',
         buddyConfig: null,
         buddyPick: '',
+        playMode: '',
         buddyTypeOnly: false,
         lastHeard: '',
         missByWord: {},
-        tool: 'sword',
+        tool: 'fist',
         mining: false,
         mine: null,
         lookKey: '',
@@ -113,7 +116,8 @@
         lookSpoken: false,
         placeLoot: 'dirt',
         worldActs: 0,
-        hotbar: T && T.emptyHotbar ? T.emptyHotbar() : ['sword', 'axe', 'pickaxe', 'shovel', 'dirt', 'cobble', 'oak-log', 'plank', 'table'],
+        hotbar: T && T.emptyHotbar ? T.emptyHotbar() : ['fist', null, null, null, 'oak-log', 'plank', null, null, null],
+        craftQuizOk: false,
         hotIndex: 0,
         invPick: null,
         helpPage: 0,
@@ -178,6 +182,7 @@
         session.buddyConfig = readBuddyConfig();
         bindChrome();
         bindCombatInput(canvas);
+        bindFarmAnimals();
         bindTouchPad();
         spawnMerchant();
         engine.onTick(tick);
@@ -223,7 +228,7 @@
         };
         selectTool(0);
         engine.startLoop();
-        toast('1剑 2斧 3镐 4铲 · 按住左键用工具 · 右键魔法');
+        toast('空手开局 · 砍树合成木镐 · 吃肉回血');
     }
 
     function loadProgress() {
@@ -247,7 +252,15 @@
         stampPlayDate();
         session.coins = Number(progress.coined) || 0;
         session.bag = Object.assign({}, progress.bag || C.emptyBag());
-        session.hotbar = T.normalizeHotbar(progress.hotbar);
+        if (!progress.hotbar || !progress.hotbar.length || (T.isLegacyLoadout && T.isLegacyLoadout(progress.hotbar))) {
+            session.hotbar = T.emptyHotbar();
+            const start = (T && T.START_BAG) || { 'oak-log': 3, plank: 4 };
+            Object.keys(start).forEach(function (k) {
+                if ((Number(session.bag[k]) || 0) < start[k]) session.bag[k] = start[k];
+            });
+        } else {
+            session.hotbar = T.normalizeHotbar(progress.hotbar);
+        }
         session.hotIndex = 0;
         session.invPick = null;
     }
@@ -299,6 +312,32 @@
         });
         const dexClose = document.getElementById('dex-close');
         if (dexClose) dexClose.addEventListener('click', function () { toggleLayer('dex-layer', false); });
+        const sceneBtn = document.getElementById('scene-btn');
+        if (sceneBtn) sceneBtn.addEventListener('click', function () { openSceneLayer(); });
+        const sceneClose = document.getElementById('scene-close');
+        if (sceneClose) sceneClose.addEventListener('click', function () { toggleLayer('scene-layer', false); });
+        const sceneMic = document.getElementById('scene-mic');
+        if (sceneMic) sceneMic.addEventListener('click', function () { listenScene(); });
+        const sceneForm = document.getElementById('scene-form');
+        if (sceneForm) {
+            sceneForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const input = document.getElementById('scene-type');
+                const heard = input ? String(input.value || '').trim() : '';
+                if (!heard) return;
+                handleSceneHeard(heard);
+                if (input) input.value = '';
+            });
+        }
+        const scenePicks = document.getElementById('scene-picks');
+        if (scenePicks) {
+            scenePicks.addEventListener('click', function (e) {
+                const btn = e.target.closest('[data-scene]');
+                if (!btn || !SC) return;
+                session.scene = SC.start(btn.getAttribute('data-scene'));
+                paintScene();
+            });
+        }
         const parentBtn = document.getElementById('parent-btn');
         if (parentBtn) parentBtn.addEventListener('click', function () {
             paintParentReport();
@@ -329,9 +368,9 @@
         const gate = document.getElementById('buddy-gate');
         if (gate) {
             gate.addEventListener('click', function (e) {
-                const btn = e.target.closest('[data-buddy-pick]');
+                const btn = e.target.closest('[data-play-mode]');
                 if (!btn) return;
-                chooseBuddy(btn.getAttribute('data-buddy-pick'));
+                choosePlayMode(btn.getAttribute('data-play-mode'));
             });
         }
         const buddyForm = document.getElementById('buddy-form');
@@ -611,7 +650,7 @@
     }
 
     function overlayOpen() {
-        return ['quiz-layer', 'settle-layer', 'trade-layer', 'help-layer', 'craft-layer', 'buddy-layer', 'buddy-gate'].some(function (id) {
+        return ['quiz-layer', 'settle-layer', 'trade-layer', 'help-layer', 'craft-layer', 'buddy-layer', 'buddy-gate', 'scene-layer'].some(function (id) {
             const el = document.getElementById(id);
             return el && !el.classList.contains('is-hidden');
         });
@@ -656,10 +695,29 @@
         return false;
     }
 
+    function openCraftQuiz() {
+        if (session.pending || session.quiz) return;
+        const skip = sessionSkipKeys().concat(progress.learnedIds || []);
+        const word = (W.nextWord && (W.nextWord(pool, skip) || W.nextWord(pool, progress.learnedIds))) || (pool && pool[0]);
+        if (!word) {
+            session.craftQuizOk = true;
+            toggleCraft(true);
+            return;
+        }
+        rememberBoundWord(word);
+        session.pending = { craft: true };
+        fillQuizCard(nextLearnQuiz(word), '合成台 · 先做一题再制作');
+    }
+
     function toggleCraft(forceOn, atTable) {
         const el = document.getElementById('craft-layer');
         if (!el) return;
         const on = forceOn == null ? el.classList.contains('is-hidden') : !!forceOn;
+        if (on && !session.craftQuizOk) {
+            openCraftQuiz();
+            return;
+        }
+        if (!on) session.craftQuizOk = false;
         session.atTable = true;
         const nextSize = 3;
         if (!on || session.craftSize !== nextSize) {
@@ -901,11 +959,34 @@
         return !!(document.querySelector('.bl-layer:not(.is-hidden), .bl-quiz-layer:not(.is-hidden)'));
     }
 
+    function tryEat() {
+        const id = session.hotbar && session.hotbar[session.hotIndex];
+        const plan = T.applyEat ? T.applyEat(engine.player.hp, engine.player.hpMax, id) : { ok: false };
+        if (!plan.ok) return false;
+        const n = Number(session.bag[id]) || 0;
+        if (n <= 0) {
+            toast('没有' + itemLabel(id) + '了');
+            return true;
+        }
+        session.bag[id] = n - 1;
+        engine.player.hp = plan.hp;
+        persist();
+        paintHearts();
+        paintHotbar();
+        toast('吃了' + itemLabel(id) + ' · +' + plan.heal + 'HP');
+        return true;
+    }
+
     function beginMine() {
         hideLookTip();
         if (session.paused || uiBlocksWorld()) return;
+        if (meleeTarget()) {
+            session.mining = true;
+            tryMelee();
+            return;
+        }
+        if (tryEat()) return;
         session.mining = true;
-        if (meleeTarget()) tryMelee();
     }
 
     function endMine() {
@@ -927,6 +1008,8 @@
     function wantTouchPad() {
         if (/[?&]pad=0(?:&|$)/.test(location.search || '')) return false;
         if (/[?&]pad=1(?:&|$)/.test(location.search || '')) return true;
+        if (session.playMode === 'tablet') return true;
+        if (session.playMode === 'desktop' || session.playMode === 'web') return false;
         if (window.Capacitor) return true;
         if (window.matchMedia && (window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(hover: none)').matches)) return true;
         return false;
@@ -935,10 +1018,15 @@
     function syncTouchHud() {
         const root = document.getElementById('touch-pad');
         document.body.classList.toggle('is-overlay', overlayOpen());
-        if (!root || !wantTouchPad()) return;
+        if (!root) return;
+        if (!wantTouchPad()) {
+            root.hidden = true;
+            return;
+        }
         root.hidden = overlayOpen();
     }
 
+    let touchPadBound = false;
     function bindTouchPad() {
         const root = document.getElementById('touch-pad');
         const dpad = document.getElementById('touch-dpad');
@@ -946,6 +1034,11 @@
         if (!wantTouchPad()) return;
         root.hidden = false;
         document.body.classList.add('is-touch');
+        if (touchPadBound) {
+            syncTouchHud();
+            return;
+        }
+        touchPadBound = true;
         const dirs = ['fwd', 'back', 'left', 'right'];
         let padId = null;
 
@@ -1185,6 +1278,25 @@
         });
     }
 
+    function grantHouseAwards() {
+        if (!W.dueHouseAwards) return;
+        let guard = 0;
+        while (guard < 4) {
+            guard += 1;
+            const pack = W.dueHouseAwards(progress.rightCount, progress.houseAwarded || 0);
+            if (!pack) return;
+            progress.houseAwarded = pack.need;
+            session.coins = (Number(session.coins) || 0) + (Number(pack.coins) || 0);
+            Object.keys(pack.loot || {}).forEach(function (id) {
+                session.bag = C.addLoot(session.bag, id, pack.loot[id]);
+            });
+            toast('单词小屋奖励 · ' + (pack.label || '材料'));
+            if (sfx && sfx.reward) sfx.reward();
+        }
+        persist();
+        paintBagCounts();
+    }
+
     function grantThemeAwards() {
         if (!W.dueThemeAwards) return;
         const due = W.dueThemeAwards(pool, session.familiarIds, session.themeAwarded);
@@ -1410,6 +1522,23 @@
         syncBossHud();
     }
 
+    function bindFarmAnimals() {
+        if (!engine || !engine.world) return;
+        (engine.world.animals || []).forEach(function (a) {
+            const row = C.animalOf && C.animalOf(a.kind);
+            if (!row) return;
+            a.hp = row.hp;
+            a.maxHp = row.hp;
+            a.coins = row.coins;
+            a.loot = row.loot[0];
+            a.peaceful = true;
+            a.contact = 0;
+            a.hitRadius = 0.45;
+            a.y = engine.world.surfaceAt(Math.floor(a.x), Math.floor(a.z));
+            bindMobWord(a);
+        });
+    }
+
     function spawnMerchant() {
         const mid = Math.floor(engine.world.size / 2);
         const x = mid + 4.5, z = mid - 6.5;
@@ -1422,8 +1551,15 @@
         session.merchant = { x: x, z: z, mesh: g, model: model };
     }
 
+    function farmTargets() {
+        return ((engine.world && engine.world.animals) || []).filter(function (a) {
+            return !!(a && a.peaceful && a.hp > 0);
+        });
+    }
+
     function meleeHits() {
-        const arc = session.monsters.filter(function (m) {
+        const living = session.monsters.concat(farmTargets());
+        const arc = living.filter(function (m) {
             return m.hp > 0 && C.inMeleeArc(engine.player, engine.look.yaw, m);
         });
         if (arc.length) return arc;
@@ -1473,14 +1609,16 @@
         const id = (session.hotbar && session.hotbar[slot - 1]) || null;
         setHotbar(slot);
         if (!id) {
-            session.tool = 'place';
+            session.tool = 'fist';
             showUseTip();
             return;
         }
         if (T.isHotTool(id)) {
-            selectTool(T.SLOT_IDS.indexOf(id));
-            session.hotIndex = slot - 1;
-            setHotbar(slot);
+            const role = T.toolRole ? T.toolRole(id) : id;
+            session.tool = role;
+            if (session.mine) session.mine.acc = 0;
+            if (viewModel && viewModel.setTool) viewModel.setTool(role === 'fist' ? 'sword' : role);
+            showUseTip();
             return;
         }
         selectPlace(id);
@@ -1551,7 +1689,7 @@
     }
 
     function nextPlaceLoot() {
-        const order = [session.placeLoot, 'dirt', 'cobble', 'oak-log', 'plank', 'table', 'chest', 'furnace', 'torch'];
+        const order = [session.placeLoot, 'dirt', 'cobble', 'sand', 'glass', 'oak-log', 'plank', 'table', 'chest', 'furnace', 'torch'];
         for (let i = 0; i < order.length; i += 1) {
             const loot = order[i];
             if (loot && (Number(session.bag[loot]) || 0) > 0) return loot;
@@ -1832,7 +1970,7 @@
         const origin = eyeOrigin();
         const dir = T.lookDir(engine.look.yaw, engine.look.pitch);
         let best = null, bestDot = 0.74, bestDist = 7;
-        session.monsters.forEach(function (m) {
+        session.monsters.concat(farmTargets()).forEach(function (m) {
             if (m.hp <= 0) return;
             const aim = C.aimPoint(m);
             const dx = aim.x - origin.x;
@@ -2677,6 +2815,7 @@
             noteWordResult(word, correct);
             recordBridgeAnswer(word, correct);
             if (correct && rec.channel === 'spell') maybeCompleteDaily(word, 'spell');
+            if (correct) grantHouseAwards();
         }
         persist();
         paintCastHud();
@@ -2714,6 +2853,16 @@
             toast(correct
                 ? (((word && word.text) || '好') + ' · 继续砍挖建')
                 : '先记住这个词，再继续');
+            return;
+        }
+        if (pending.craft) {
+            if (correct) {
+                session.craftQuizOk = true;
+                toggleCraft(true);
+                toast('合成台开了 · 用木头做木棍和木镐');
+            } else {
+                toast('先答对才能合成');
+            }
             return;
         }
         pending.mob.asked = true;
@@ -3023,7 +3172,10 @@
         flashMesh(mob.mesh);
         mob.hurtFlash = 0.1;
         if (mob.model) mob.model.setHp(mob.hp / (mob.maxHp || 1), true);
-        if (res.dead) killMonster(mob);
+        if (res.dead) {
+            if (mob.peaceful) killAnimal(mob);
+            else killMonster(mob);
+        }
         playCombatHit(crit);
         paintCastHud();
     }
@@ -3036,12 +3188,30 @@
         else if (mob.mesh) engine.scene.remove(mob.mesh);
         session.monsters = session.monsters.filter(function (m) { return m !== mob; });
         spawnPickup(mob.x, mob.z, mob.coins, mob.loot);
+        const extra = C.bonusBuildDrop && C.bonusBuildDrop(mob.kind);
+        if (extra) spawnPickup(mob.x + 0.35, mob.z, 0, extra);
         paintCastHud();
         noteQuest({ type: 'kill', kind: mob.kind, quizCorrect: !!mob.asked });
         if (!session.boss && session.monsters.length === 0) {
             if (session.wavesLeft > 0) spawnWave();
             else spawnBoss();
         }
+    }
+
+    function killAnimal(mob) {
+        mob.hp = 0;
+        if (mob.mesh && MOBS.beginDeath) MOBS.beginDeath(engine.scene, session.fx, mob.mesh);
+        else if (mob.mesh) engine.scene.remove(mob.mesh);
+        if (engine.world && engine.world.animals) {
+            engine.world.animals = engine.world.animals.filter(function (a) { return a !== mob; });
+        }
+        const drops = (C.animalLoot && C.animalLoot(mob.kind)) || [mob.loot];
+        spawnPickup(mob.x, mob.z, mob.coins || 0, drops[0]);
+        for (let i = 1; i < drops.length; i += 1) {
+            spawnPickup(mob.x + 0.3 * i, mob.z, 0, drops[i]);
+        }
+        paintCastHud();
+        noteQuest({ type: 'kill', kind: mob.kind, quizCorrect: !!mob.asked });
     }
 
     function killBoss(mob) {
@@ -3255,6 +3425,35 @@
     function showBuddyGate() {
         toggleLayer('buddy-layer', false);
         toggleLayer('buddy-gate', true);
+    }
+
+    function syncPlayControls() {
+        const root = document.getElementById('touch-pad');
+        if (wantTouchPad()) {
+            bindTouchPad();
+            return;
+        }
+        if (root) root.hidden = true;
+        document.body.classList.remove('is-touch');
+        if (engine && engine.setMoveAxis) engine.setMoveAxis(0, 0);
+        if (engine && engine.setHeld) {
+            ['fwd', 'back', 'left', 'right', 'jump'].forEach(function (dir) {
+                engine.setHeld(dir, false);
+            });
+        }
+    }
+
+    function choosePlayMode(pick) {
+        const plan = P && P.applyPlayMode ? P.applyPlayMode(pick) : {
+            mode: 'desktop', pad: false, lockLook: true, label: '电脑模式 · 键鼠'
+        };
+        session.playMode = plan.mode;
+        toggleLayer('buddy-gate', false);
+        if (engine && engine.setLookLock) engine.setLookLock(!!plan.lockLook);
+        syncPlayControls();
+        ensureLevelStarted();
+        startTheme();
+        toast(plan.label);
     }
 
     function chooseBuddy(pick) {
@@ -3653,6 +3852,10 @@
 
     function finishListen(heard, o, lock, inQuiz, target) {
         paintHeard(heard);
+        if (o.scene) {
+            handleSceneHeard(heard);
+            return;
+        }
         const hit = heardHits(target, heard, lock);
         if (o.buddy) {
             setVoiceState(hit ? 'matched' : 'not-matched');
@@ -3741,7 +3944,7 @@
         const target = (lock && lock.word && lock.word.text)
             || (session.quiz && session.quiz.word && session.quiz.word.text)
             || '';
-        if (!target && !o.buddy) return;
+        if (!target && !o.buddy && !o.scene) return;
         if (session.voice && session.voice.rec) stopVoiceRec();
         try {
             if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -3915,10 +4118,6 @@
             moveBolts(dt);
             moveBossShots(dt);
             collectPickups();
-            // 脱战 4 秒缓慢回血
-            if (engine.player.hp < engine.player.hpMax && t - (session.lastHitAt || 0) > 4000) {
-                engine.player.hp = Math.min(engine.player.hpMax, engine.player.hp + 0.25 * dt);
-            }
         }
         MOBS.stepFx(engine.scene, session.fx, dt);
         if (session.merchant && session.merchant.model) {
@@ -4453,6 +4652,65 @@
         if (!id) return;
         W.completeDaily(progress, id, todayIso());
         persist();
+    }
+
+    function openSceneLayer() {
+        if (!SC) return;
+        session.scene = SC.start((session.scene && session.scene.sceneId) || 'greet');
+        paintScene();
+        toggleLayer('scene-layer', true);
+    }
+
+    function paintScene() {
+        if (!SC || !session.scene) return;
+        const sc = SC.sceneOf(session.scene.sceneId);
+        const line = SC.currentLine(session.scene);
+        const title = document.getElementById('scene-title');
+        const hint = document.getElementById('scene-hint');
+        const en = document.getElementById('scene-en');
+        if (title) title.textContent = sc.title;
+        if (hint) hint.textContent = line ? (sc.hint + ' · ' + line.hint) : sc.hint;
+        if (en) en.textContent = line ? line.en : '场景完成';
+        const picks = document.getElementById('scene-picks');
+        if (picks && !picks.childNodes.length) {
+            SC.SCENES.forEach(function (item) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'bl-btn';
+                btn.setAttribute('data-scene', item.id);
+                btn.textContent = item.title;
+                picks.appendChild(btn);
+            });
+        }
+    }
+
+    function handleSceneHeard(heard) {
+        if (!SC || !session.scene) return;
+        const next = SC.apply(session.scene, {
+            heard: heard,
+            matchHeard: SP && SP.matchHeard,
+            matchPhrase: SP && SP.matchPhrase
+        });
+        session.scene = next;
+        if (next.ok) {
+            recordBridgeAnswer({ id: next.key, text: next.key }, true);
+            if (next.done) {
+                toast('场景完成');
+                noteQuest({ type: 'scene-done', id: next.sceneId });
+            }
+        } else {
+            toast('再说一次，或打关键词');
+        }
+        paintScene();
+        persist();
+    }
+
+    function listenScene() {
+        const line = SC && session.scene ? SC.currentLine(session.scene) : null;
+        listenOnce({
+            scene: true,
+            lock: { word: { text: (line && (line.key || line.en)) || 'hello' } }
+        });
     }
 
     function paintDailyHud() {

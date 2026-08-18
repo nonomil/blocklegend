@@ -1387,6 +1387,7 @@
         if (kind === 'plank') return 5;
         if (kind === 'table') return 5;
         if (kind === 'word' || kind === 'gate') return 7;
+        if (kind === 'glass') return 14;
         return 2;
     }
 
@@ -2022,7 +2023,7 @@
     }
 
     function placeVoxel(world, x, y, z, kind) {
-        const allowed = { dirt: true, stone: true, log: true, plank: true, table: true };
+        const allowed = { dirt: true, stone: true, log: true, plank: true, table: true, sand: true, glass: true };
         if (y <= 0 || !allowed[kind]) return { ok: false };
         if (voxelAt(world, x, y, z)) return { ok: false };
         if (x < 0 || z < 0 || x >= world.size || z >= world.size) return { ok: false };
@@ -2602,12 +2603,20 @@
 
         let pointerLocked = false;
         let lookFrozen = false;
+        let lookLock = true;
         let dragLook = null; // PointerLock 不可用（部分 WebView/触屏）时的拖动视角兜底
         const SENS = 0.0026, DRAG_SENS = 0.005;
         function syncLookTip() {
             const tip = document.getElementById('look-tip');
             if (!tip) return;
-            tip.classList.toggle('is-hidden', lookFrozen || pointerLocked);
+            tip.classList.toggle('is-hidden', lookFrozen || pointerLocked || !lookLock);
+        }
+        function setLookLock(on) {
+            lookLock = !!on;
+            if (!lookLock && document.exitPointerLock && document.pointerLockElement) {
+                document.exitPointerLock();
+            }
+            syncLookTip();
         }
         function setUiMode(on) {
             lookFrozen = !!on;
@@ -2619,7 +2628,7 @@
         }
         function resumeLook() {
             lookFrozen = false;
-            if (!lite && canvas.requestPointerLock) canvas.requestPointerLock();
+            if (lookLock && !lite && canvas.requestPointerLock) canvas.requestPointerLock();
             syncLookTip();
         }
         function setCastMode(on) {
@@ -2648,7 +2657,7 @@
                 refreshKeys();
             });
             canvas.addEventListener('click', function () {
-                if (lookFrozen || lite) return;
+                if (lookFrozen || lite || !lookLock) return;
                 if (!pointerLocked && canvas.requestPointerLock) canvas.requestPointerLock();
             });
             document.addEventListener('pointerlockchange', function () {
@@ -2792,6 +2801,7 @@
             onTick: function (fn) { tickHook = fn; },
             fps: function () { return fps; },
             setUiMode: setUiMode,
+            setLookLock: setLookLock,
             resumeLook: resumeLook,
             setCastMode: setCastMode,
             setHeld: setHeld,
