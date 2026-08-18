@@ -97,7 +97,11 @@ jobs:
 
       - name: Verify and name APK
         run: |
-          VER=$(tr -d '\r\n' < VERSION)
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VER="${GITHUB_REF_NAME#v}"
+          else
+            VER=$(tr -d '\r\n' < VERSION)
+          fi
           echo "APP_VER=$VER" >> "$GITHUB_ENV"
           if [ -s android/app/build/outputs/apk/release/app-release.apk ]; then
             SRC=android/app/build/outputs/apk/release/app-release.apk
