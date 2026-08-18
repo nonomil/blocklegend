@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
     <title>方块传奇 · 学英语大冒险</title>
-    <link rel="stylesheet" href="./game.css?v=20260818-bl-stt2">
+    <link rel="stylesheet" href="./game.css?v=20260819-bl-daily1">
 </head>
 <body class="bl-body">
     <main class="bl-stage">
@@ -14,6 +14,8 @@
         <header class="bl-topbar">
             <a class="bl-back" id="back-link" href="./">返回工作台</a>
             <strong class="bl-title">方块传奇</strong>
+            <button type="button" class="bl-btn" id="dex-btn" aria-label="Word dex">图鉴</button>
+            <button type="button" class="bl-btn" id="parent-btn" aria-label="Parent report">给家长看</button>
             <button type="button" class="bl-btn" id="buddy-btn" aria-label="Buddy settings">设</button>
             <button type="button" class="bl-btn" id="help-btn" aria-label="Help">?</button>
             <button type="button" class="bl-btn" id="audio-btn" aria-pressed="false" aria-label="Mute music">音乐</button>
@@ -39,11 +41,13 @@
                 <span><i class="bl-ico bl-ico-coin" aria-hidden="true"></i> <b id="coin-label">0</b></span>
                 <span><i class="bl-ico bl-ico-atk" aria-hidden="true"></i> <b id="atk-label">8</b></span>
                 <span><i class="bl-ico bl-ico-def" aria-hidden="true"></i> <b id="def-label">2</b></span>
+                <span id="streak-label">连续 0 天</span>
             </div>
             <p class="bl-listen" id="listen-panel">
                 <span class="bl-listen-title">Listening</span>
                 <span class="bl-say" id="say-strip">Say:</span>
                 <span class="bl-my-english" id="my-english">My English: 0 words</span>
+                <span id="daily-word">今日：— · 说一次或拼一次</span>
             </p>
         </aside>
 
@@ -57,6 +61,7 @@
                 <li><i class="bl-dot is-right"></i>答对 <b id="stat-right">0</b></li>
                 <li><i class="bl-dot is-wrong"></i>答错 <b id="stat-wrong">0</b></li>
             </ul>
+            <p id="parent-three" class="bl-parent-three">开口 0 次 · 已学 0 词 · 明天复习 0 词</p>
             <span id="stat-total" hidden>0</span>
         </aside>
 
@@ -204,6 +209,30 @@
                 </div>
             </div>
         </div>
+        <div class="bl-layer is-hidden" id="parent-layer">
+            <div class="bl-card bl-parent">
+                <h2>给家长看</h2>
+                <p id="parent-streak">连续 0 天</p>
+                <p id="parent-speak">开口 0 次</p>
+                <p id="parent-learned">已学 0 词</p>
+                <p id="parent-due">明天没有到期复习</p>
+                <ul id="parent-levels"></ul>
+                <p id="parent-advice">今天可以开口一个新词</p>
+                <div class="bl-card-actions">
+                    <button type="button" class="bl-btn" id="parent-close">关闭</button>
+                </div>
+            </div>
+        </div>
+        <div class="bl-layer is-hidden" id="dex-layer">
+            <div class="bl-card bl-dex">
+                <h2>图鉴</h2>
+                <p class="bl-dex-kicker">见过 / 能写 / 说过 / 会了 / 该复习 · 答对一次不算掌握</p>
+                <ul id="word-dex"></ul>
+                <div class="bl-card-actions">
+                    <button type="button" class="bl-btn" id="dex-close">关闭</button>
+                </div>
+            </div>
+        </div>
         <div class="bl-layer is-hidden" id="help-layer">
             <div class="bl-card bl-help">
                 <h2>操作说明</h2>
@@ -236,6 +265,7 @@
                             <div class="bl-help-row"><kbd>点中文</kbd><span>两次打空后的兜底</span></div>
                             <div class="bl-help-row"><kbd>战斗</kbd><span>世界不停</span></div>
                             <div class="bl-help-row"><kbd>音乐</kbd><span>顶栏开关主题曲</span></div>
+                            <div class="bl-help-row"><kbd>图鉴</kbd><span>看自己收过的词</span></div>
                         </div>
                     </section>
                     <section class="bl-help-page is-hidden" data-help-page="2">
@@ -273,14 +303,14 @@
         <div class="bl-layer is-hidden" id="buddy-layer">
             <div class="bl-card bl-buddy-card">
                 <h2>连家里电脑</h2>
-                <p id="buddy-hint" class="bl-buddy-note">This session only. Nothing is saved.</p>
+                <p id="buddy-hint" class="bl-buddy-note">家里电脑（推荐）：先开 Ollama，再开 buddy-proxy。地址 http://127.0.0.1:4210/v1，模型 llama3.2:3b。没有模型也能玩，陪玩会说固定短句。This session only. Nothing is saved.</p>
                 <form class="bl-buddy-form" id="buddy-form" autocomplete="off">
                     <label for="buddy-endpoint">家里电脑地址</label>
                     <input id="buddy-endpoint" name="buddy-endpoint" type="url" inputmode="url" placeholder="http://127.0.0.1:4210/v1" spellcheck="false">
                     <details class="bl-buddy-more">
                         <summary>高级选项</summary>
                         <label for="buddy-model">Model</label>
-                        <input id="buddy-model" name="buddy-model" type="text" value="deepseek-v4-flash" spellcheck="false">
+                        <input id="buddy-model" name="buddy-model" type="text" value="llama3.2:3b" spellcheck="false">
                         <label for="buddy-api-key">API key（一般不用填，钥匙在电脑代理里）</label>
                         <input id="buddy-api-key" name="buddy-api-key" type="password" autocomplete="off" spellcheck="false">
                         <label for="buddy-tts">TTS URL（可选）</label>
@@ -312,11 +342,11 @@
     <script src="./data/atlas-paint.js?v=20260817-bl-art3"></script>
     <script src="./data/fx.js?v=20260817-bl-art6"></script>
     <script src="./engine.js?v=20260818-bl-apk1"></script>
-    <script src="./data/combat.js?v=20260818-bl-vocab2"></script>
+    <script src="./data/combat.js?v=20260818-bl-world8"></script>
     <script src="./data/speech-input.js?v=20260818-bl-stt2"></script>
-    <script src="./data/companion.js?v=20260817-bl-quiz1"></script>
-    <script src="./data/words.js?v=20260818-bl-once1"></script>
-    <script src="./data/levels.js?v=20260818-bl-learn5"></script>
+    <script src="./data/companion.js?v=20260819-bl-ollama1"></script>
+    <script src="./data/words.js?v=20260819-bl-daily1"></script>
+    <script src="./data/levels.js?v=20260818-bl-world8"></script>
     <script src="./data/quests.js?v=20260818-bl-review1"></script>
     <script src="./data/skins.js?v=20260817-bl-art3"></script>
     <script src="./assets/img2threejs/voxelPix.js?v=20260816-bl-mobs3"></script>
@@ -394,6 +424,6 @@
     <script src="./assets/img2threejs/createTools3d.js?v=20260817-bl-tools3d"></script>
     <script src="./assets/img2threejs/createProps3d.js?v=20260817-bl-i2t4v2"></script>
     <script src="./mobs.js?v=20260818-bl-learn5"></script>
-    <script src="./game.js?v=20260818-bl-once1"></script>
+    <script src="./game.js?v=20260819-bl-daily1"></script>
 </body>
 </html>

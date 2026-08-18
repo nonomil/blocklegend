@@ -162,13 +162,17 @@
         return model;
     }
 
+    const FIRST_WAVE_COUNT = 6;
+
     function firstWaveKinds(n) {
         const cfg = levelOf(n);
-        if (!cfg || cfg.level <= 1) return ['slime', 'slime'];
-        const kinds = (cfg.waveKinds || ['slime']).filter(Boolean);
-        const a = kinds[0] || 'slime';
-        const b = kinds[1] || a;
-        return [a, b];
+        const raw = (!cfg || cfg.level <= 1)
+            ? ['slime']
+            : (cfg.waveKinds || ['slime']).filter(Boolean);
+        const kinds = raw.length ? raw : ['slime'];
+        const out = [];
+        for (let i = 0; i < FIRST_WAVE_COUNT; i += 1) out.push(kinds[i % kinds.length]);
+        return out;
     }
 
     const BOSS_KITS = {
@@ -503,6 +507,31 @@
         return '回忆';
     }
 
+    function addCalendarDays(dateStr, days) {
+        const d = new Date(String(dateStr || '') + 'T12:00:00');
+        if (isNaN(d.getTime())) return '';
+        d.setDate(d.getDate() + (Number(days) || 0));
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function streakFromDates(dates, today) {
+        const day = String(today || '');
+        if (!day) return 0;
+        const seen = {};
+        (dates || []).forEach(function (d) {
+            if (d) seen[String(d)] = true;
+        });
+        if (!seen[day]) return 0;
+        let n = 0;
+        let cur = day;
+        while (seen[cur]) {
+            n += 1;
+            cur = addCalendarDays(cur, -1);
+            if (!cur) break;
+        }
+        return n;
+    }
+
     function buildSettlement(opts) {
         const o = opts || {};
         const sun = Number(o.sunAwarded) || 0;
@@ -533,6 +562,7 @@
         bossModelOf: bossModelOf,
         bossTitle: bossTitle,
         bossSpawnKind: bossSpawnKind,
+        FIRST_WAVE_COUNT: FIRST_WAVE_COUNT,
         firstWaveKinds: firstWaveKinds,
         BOSS_KITS: BOSS_KITS,
         kitOf: kitOf,
@@ -554,6 +584,7 @@
         tickBoss: tickBoss,
         tryUnlock: tryUnlock,
         bossPhase: bossPhase,
-        buildSettlement: buildSettlement
+        buildSettlement: buildSettlement,
+        streakFromDates: streakFromDates
     };
 }(typeof window !== 'undefined' ? window : globalThis));

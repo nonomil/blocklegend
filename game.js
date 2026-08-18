@@ -112,6 +112,7 @@
         lookSince: 0,
         lookSpoken: false,
         placeLoot: 'dirt',
+        worldActs: 0,
         hotbar: T && T.emptyHotbar ? T.emptyHotbar() : ['sword', 'axe', 'pickaxe', 'shovel', 'dirt', 'cobble', 'oak-log', 'plank', 'table'],
         hotIndex: 0,
         invPick: null,
@@ -142,7 +143,14 @@
             clearedLevels: [],
             bag: {},
             gear: {},
-            hotbar: null
+            hotbar: null,
+            playDates: [],
+            speakCount: 0,
+            speakByDay: {},
+            dailyId: '',
+            dailyDay: '',
+            dailyDoneId: '',
+            dailyDoneDay: ''
         };
     }
 
@@ -228,7 +236,15 @@
         if (!Array.isArray(progress.spokenWordIds)) progress.spokenWordIds = [];
         if (!Array.isArray(progress.reviewWords)) progress.reviewWords = [];
         if (!Array.isArray(progress.clearedLevels)) progress.clearedLevels = [];
+        if (!Array.isArray(progress.playDates)) progress.playDates = [];
+        progress.dailyId = progress.dailyId || '';
+        progress.dailyDay = progress.dailyDay || '';
+        progress.dailyDoneId = progress.dailyDoneId || '';
+        progress.dailyDoneDay = progress.dailyDoneDay || '';
+        if (!progress.speakByDay || typeof progress.speakByDay !== 'object') progress.speakByDay = {};
+        progress.speakCount = Number(progress.speakCount) || 0;
         if (!progress.gear || typeof progress.gear !== 'object') progress.gear = {};
+        stampPlayDate();
         session.coins = Number(progress.coined) || 0;
         session.bag = Object.assign({}, progress.bag || C.emptyBag());
         session.hotbar = T.normalizeHotbar(progress.hotbar);
@@ -276,6 +292,20 @@
         const helpNext = document.getElementById('help-next');
         if (helpPrev) helpPrev.addEventListener('click', function () { showHelpPage(session.helpPage - 1); });
         if (helpNext) helpNext.addEventListener('click', function () { showHelpPage(session.helpPage + 1); });
+        const dexBtn = document.getElementById('dex-btn');
+        if (dexBtn) dexBtn.addEventListener('click', function () {
+            paintDex();
+            toggleLayer('dex-layer', true);
+        });
+        const dexClose = document.getElementById('dex-close');
+        if (dexClose) dexClose.addEventListener('click', function () { toggleLayer('dex-layer', false); });
+        const parentBtn = document.getElementById('parent-btn');
+        if (parentBtn) parentBtn.addEventListener('click', function () {
+            paintParentReport();
+            toggleLayer('parent-layer', true);
+        });
+        const parentClose = document.getElementById('parent-close');
+        if (parentClose) parentClose.addEventListener('click', function () { toggleLayer('parent-layer', false); });
         const audioBtn = document.getElementById('audio-btn');
         if (audioBtn) {
             audioBtn.addEventListener('click', function () {
@@ -542,7 +572,6 @@
             if (e.key === 'Escape') {
                 const gateOpen = document.getElementById('buddy-gate');
                 if (gateOpen && !gateOpen.classList.contains('is-hidden')) {
-                    chooseBuddy('play');
                     return;
                 }
                 toggleLayer('help-layer', false);
@@ -571,6 +600,15 @@
     }
 
     function nowMs() { return Date.now(); }
+
+    function recordBridgeAnswer(word, correct) {
+        try {
+            const bridge = globalThis.WorkbenchGameBridge;
+            if (word && word.text && bridge && bridge.recordWordAnswer) {
+                bridge.recordWordAnswer(word.text, correct);
+            }
+        } catch (e) { /* 工作台桥接失败不能拦住本局出题/伤害 */ }
+    }
 
     function overlayOpen() {
         return ['quiz-layer', 'settle-layer', 'trade-layer', 'help-layer', 'craft-layer', 'buddy-layer', 'buddy-gate'].some(function (id) {
@@ -1048,6 +1086,7 @@
             });
         }
         paintSayStrip();
+        bootDaily();
         syncHud();
     }
 
@@ -1067,6 +1106,7 @@
         session.choiceOnly = {};
         session.seenByWord = {};
         session.usedWordKeys = {};
+        session.worldActs = 0;
         session.themeAwarded = {};
         session.waveTheme = '';
         session.missByWord = {};
@@ -1075,6 +1115,7 @@
         session.wavesLeft = cfg.waves;
         session.quest = Q ? Q.create(session.level) : null;
         refreshPool();
+        bootDaily();
         if (engine && engine.reloadWorld) {
             engine.reloadWorld(ENG.createWorld(cfg.worldSeed || (7 + session.level * 13), {
                 climate: cfg.climate || 'plains',
@@ -1322,8 +1363,8 @@
             ? ((L.firstWaveKinds && L.firstWaveKinds(session.level)) || ['slime', 'slime'])
             : ((cfg && cfg.waveKinds) || ['slime', 'cube', 'slime']);
         const count = session.wave === 1
-            ? 2
-            : Math.min(6, Math.max((kinds.length || 3) + 2, 6));
+            ? Math.max((L.FIRST_WAVE_COUNT || 6), kinds.length)
+            : Math.min(8, Math.max((kinds.length || 3) + 2, 8));
         const offs = C.waveOffsets ? C.waveOffsets(engine.look.yaw, count) : [
             { dx: 0, dz: -4 }, { dx: -2.2, dz: -5.2 }, { dx: 2.2, dz: -5.2 }
         ];
@@ -1546,6 +1587,7 @@
             persist();
             if (viewModel) viewModel.triggerSwing();
             if (sfx && sfx.place) sfx.place();
+            noteWorldAct();
             return;
         }
         const res = ENG.placeVoxel(engine.world, hit.prev.x, hit.prev.y, hit.prev.z, kind);
@@ -1560,6 +1602,7 @@
         persist();
         if (viewModel) viewModel.triggerSwing();
         if (sfx && sfx.place) sfx.place();
+        noteWorldAct();
     }
 
     function eyeOrigin() {
@@ -1757,6 +1800,24 @@
         persist();
         toast('获得 ' + result.drop);
         spawnMineChips(hit, 6);
+        noteWorldAct();
+    }
+
+    function noteWorldAct() {
+        session.worldActs = (Number(session.worldActs) || 0) + 1;
+        maybeOpenWorldQuiz();
+    }
+
+    function maybeOpenWorldQuiz() {
+        if (session.pending || session.quiz) return;
+        if (!(W.shouldAskWorldQuiz && W.shouldAskWorldQuiz(session.worldActs))) return;
+        const skip = sessionSkipKeys().concat(progress.learnedIds || []);
+        const word = (W.nextWord && (W.nextWord(pool, skip) || W.nextWord(pool, progress.learnedIds))) || (pool && pool[0]);
+        if (!word) return;
+        rememberBoundWord(word);
+        session.pending = { worldAct: true };
+        const quiz = nextLearnQuiz(word);
+        fillQuizCard(quiz, '砍挖建 · 学一个词再继续');
     }
 
     function spawnMineChips(hit, n) {
@@ -2399,8 +2460,13 @@
 
     function noteWordSpoken(word) {
         const id = wordKey(word);
-        if (!id || !W.noteId) return;
-        progress.spokenWordIds = W.noteId(progress.spokenWordIds, id);
+        if (id && W.noteId) progress.spokenWordIds = W.noteId(progress.spokenWordIds, id);
+        if (W.bumpSpeak) {
+            const next = W.bumpSpeak(progress, todayIso());
+            progress.speakCount = next.speakCount;
+            progress.speakByDay = next.speakByDay;
+        }
+        maybeCompleteDaily(word, 'speak');
     }
 
     function rememberBoundWord(word) {
@@ -2543,9 +2609,7 @@
         progress.rightCount = (Number(progress.rightCount) || 0) + 1;
         noteFamiliarWord(word, 'spell');
         noteWordResult(word, true);
-        if (word && word.text && global.WorkbenchGameBridge && global.WorkbenchGameBridge.recordWordAnswer) {
-            global.WorkbenchGameBridge.recordWordAnswer(word.text, true);
-        }
+        recordBridgeAnswer(word, true);
         persist();
         if (sfx && sfx.reward) sfx.reward();
         if (viewModel) viewModel.triggerCast();
@@ -2611,9 +2675,8 @@
                 progress.wrongCount = (Number(progress.wrongCount) || 0) + 1;
             }
             noteWordResult(word, correct);
-            if (word && word.text && global.WorkbenchGameBridge && global.WorkbenchGameBridge.recordWordAnswer) {
-                global.WorkbenchGameBridge.recordWordAnswer(word.text, correct);
-            }
+            recordBridgeAnswer(word, correct);
+            if (correct && rec.channel === 'spell') maybeCompleteDaily(word, 'spell');
         }
         persist();
         paintCastHud();
@@ -2645,6 +2708,12 @@
                 toast('再试试才能过门');
                 session.gateAsked = null;
             }
+            return;
+        }
+        if (pending.worldAct) {
+            toast(correct
+                ? (((word && word.text) || '好') + ' · 继续砍挖建')
+                : '先记住这个词，再继续');
             return;
         }
         pending.mob.asked = true;
@@ -3001,6 +3070,7 @@
         }
         const reviewWords = sessionMissed();
         progress.reviewWords = reviewWords;
+        stampPlayDate();
         persist();
         const lines = L.buildSettlement({
             level: session.level,
@@ -3078,15 +3148,35 @@
 
     function speakWord(word) {
         if (!word) return;
+        if (session.speakTimer) {
+            clearTimeout(session.speakTimer);
+            session.speakTimer = 0;
+        }
+        const queue = W.speakQueue ? W.speakQueue(word) : [{ text: word.text, delayMs: 0 }];
+        const first = queue[0];
+        if (!first) return;
+        const rest = queue.slice(1);
+        function speakRest() {
+            rest.forEach(function (item) {
+                session.speakTimer = setTimeout(function () {
+                    speakFallback(item.text);
+                }, item.delayMs || 900);
+            });
+        }
         const src = word.media && word.media.audio;
         if (src) {
             const href = (/^(https?:|\/|\.)/.test(src)) ? src : '../../' + src;
             const audio = new Audio(href);
+            audio.addEventListener('ended', speakRest);
             const p = audio.play();
-            if (p && p.catch) p.catch(function () { speakFallback(word.text); });
+            if (p && p.catch) p.catch(function () {
+                speakFallback(first.text);
+                speakRest();
+            });
             return;
         }
-        speakFallback(word.text);
+        speakFallback(first.text);
+        speakRest();
     }
 
     function speakFallback(text) {
@@ -3191,7 +3281,7 @@
         const cfg = session.buddyConfig || readBuddyConfig();
         const pasted = (window.BLOCKLEGEND_BUDDY) || {};
         setField('buddy-endpoint', cfg.endpoint || '');
-        setField('buddy-model', cfg.model || 'deepseek-v4-flash');
+        setField('buddy-model', cfg.model || (P && P.DEFAULT_MODEL) || 'llama3.2:3b');
         setField('buddy-api-key', pasted.apiKey || cfg.apiKey || '');
         setField('buddy-tts', cfg.ttsUrl || '');
         setField('buddy-stt', cfg.sttUrl || '');
@@ -3202,7 +3292,7 @@
     function applyBuddySettings() {
         window.BLOCKLEGEND_BUDDY = {
             endpoint: fieldVal('buddy-endpoint'),
-            model: fieldVal('buddy-model') || 'deepseek-v4-flash',
+            model: fieldVal('buddy-model') || (P && P.DEFAULT_MODEL) || 'llama3.2:3b',
             apiKey: fieldVal('buddy-api-key'),
             ttsUrl: fieldVal('buddy-tts'),
             sttUrl: fieldVal('buddy-stt')
@@ -3222,7 +3312,7 @@
         setField('buddy-api-key', '');
         setField('buddy-tts', '');
         setField('buddy-stt', '');
-        setField('buddy-model', 'deepseek-v4-flash');
+        setField('buddy-model', (P && P.DEFAULT_MODEL) || 'llama3.2:3b');
         session.buddyPick = 'play';
         session.buddyTypeOnly = false;
         session.buddyConfig = readBuddyConfig();
@@ -4259,6 +4349,169 @@
         }
     }
 
+    function todayIso() {
+        const d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function playDatesOf() {
+        if (!Array.isArray(progress.playDates)) progress.playDates = [];
+        try {
+            if (bridge && bridge.getProgress) {
+                const got = bridge.getProgress(GAME_ID);
+                const meta = got && got.state && got.state.growth && got.state.growth.worldGames && got.state.growth.worldGames.meta;
+                if (meta && Array.isArray(meta.playDates)) {
+                    meta.playDates.forEach(function (d) {
+                        if (d && progress.playDates.indexOf(d) === -1) progress.playDates.push(d);
+                    });
+                }
+            }
+        } catch (e) { /* 工作台 meta 读不到时用本局 progress.playDates */ }
+        return progress.playDates;
+    }
+
+    function stampPlayDate(day) {
+        const date = day || todayIso();
+        if (!Array.isArray(progress.playDates)) progress.playDates = [];
+        if (progress.playDates.indexOf(date) === -1) progress.playDates.push(date);
+    }
+
+    const DEX_STAGE_LABEL = {
+        new: '生疏',
+        familiar: '见过',
+        recall: '能写',
+        spoken: '说过',
+        mastered: '会了',
+        due: '该复习'
+    };
+
+    function paintDex() {
+        const list = document.getElementById('word-dex');
+        if (!list || !W.dexRows) return;
+        const rows = W.dexRows(pool.length ? pool : bank, readMastery(), todayIso());
+        list.textContent = '';
+        if (!rows.length) {
+            const empty = document.createElement('li');
+            empty.textContent = '还没有词';
+            list.appendChild(empty);
+            return;
+        }
+        rows.forEach(function (r) {
+            const li = document.createElement('li');
+            li.setAttribute('data-stage', r.stage || 'new');
+            const en = document.createElement('b');
+            en.textContent = r.text || r.id || '';
+            const zh = document.createElement('span');
+            zh.textContent = r.zh || '';
+            const stage = document.createElement('em');
+            stage.textContent = DEX_STAGE_LABEL[r.stage] || r.stage || '生疏';
+            li.appendChild(en);
+            li.appendChild(zh);
+            li.appendChild(stage);
+            list.appendChild(li);
+        });
+    }
+
+    function paintOpsHud() {
+        const today = todayIso();
+        const dates = playDatesOf();
+        const streakEl = document.getElementById('streak-label');
+        if (streakEl && L.streakFromDates) {
+            const n = L.streakFromDates(dates, today);
+            streakEl.textContent = n ? ('连续 ' + n + ' 天') : '今天还没打卡';
+        }
+        const three = document.getElementById('parent-three');
+        if (three && W.parentThree && W.dexRows) {
+            const rows = W.dexRows(pool.length ? pool : bank, readMastery(), today);
+            const lines = W.parentThree({
+                speakCount: Number(progress.speakCount) || (progress.spokenWordIds || []).length,
+                rows: rows
+            });
+            three.textContent = [lines.speak, lines.learned, lines.review].join(' · ');
+        }
+        paintDailyHud();
+    }
+
+    function bootDaily() {
+        if (!W.pickDailyWord || !W.ensureDaily) return;
+        const today = todayIso();
+        const cfg = L.levelOf ? L.levelOf(session.level) : null;
+        const word = W.pickDailyWord({
+            pool: pool.length ? pool : bank,
+            mastery: readMastery(),
+            today: today,
+            focus: (cfg && cfg.focusWords) || []
+        });
+        W.ensureDaily(progress, word, today);
+        paintDailyHud();
+    }
+
+    function maybeCompleteDaily(word, channel) {
+        if (!W.completeDaily) return;
+        if (channel && channel !== 'speak' && channel !== 'spell') return;
+        const id = word && (word.id || word.text);
+        if (!id) return;
+        W.completeDaily(progress, id, todayIso());
+        persist();
+    }
+
+    function paintDailyHud() {
+        const el = document.getElementById('daily-word');
+        if (!el) return;
+        const today = todayIso();
+        const label = progress.dailyId || '—';
+        const done = W.dailyDone && W.dailyDone({
+            dailyId: progress.dailyId,
+            doneId: progress.dailyDoneId,
+            doneDay: progress.dailyDoneDay,
+            today: today
+        });
+        const n = L.streakFromDates ? L.streakFromDates(playDatesOf(), today) : 0;
+        el.textContent = done
+            ? ('今日 ' + label + ' 做到了 · 连续 ' + n + ' 天')
+            : ('今日：' + label + ' · 说一次或拼一次');
+    }
+
+    function paintParentReport() {
+        if (!W.parentReport) return;
+        const today = todayIso();
+        const R = W.parentReport({
+            today: today,
+            playDates: playDatesOf(),
+            speakCount: Number(progress.speakCount) || 0,
+            speakByDay: progress.speakByDay || {},
+            pool: pool.length ? pool : bank,
+            mastery: readMastery(),
+            levels: (L && L.LEVELS) || []
+        });
+        const streak = document.getElementById('parent-streak');
+        const speak = document.getElementById('parent-speak');
+        const learned = document.getElementById('parent-learned');
+        const due = document.getElementById('parent-due');
+        const levels = document.getElementById('parent-levels');
+        const advice = document.getElementById('parent-advice');
+        if (streak) streak.textContent = '连续 ' + R.streak + ' 天';
+        if (speak) {
+            speak.textContent = '开口 ' + R.speakCount + ' 次'
+                + (R.speakToday ? '（今天 ' + R.speakToday + '）' : '');
+        }
+        if (learned) learned.textContent = '已学 ' + R.learned + ' 词';
+        if (due) {
+            due.textContent = R.dueTexts.length
+                ? ('明天复习：' + R.dueTexts.join('、'))
+                : '明天没有到期复习';
+        }
+        if (levels) {
+            levels.textContent = '';
+            (R.byLevel || []).forEach(function (row) {
+                const li = document.createElement('li');
+                li.textContent = '第' + row.level + '关 ' + row.have + '/' + row.want;
+                levels.appendChild(li);
+            });
+        }
+        if (advice) advice.textContent = R.advice || '今天可以开口一个新词';
+    }
+
     function recallWordCount() {
         const mastery = readMastery();
         let n = 0;
@@ -4348,6 +4601,7 @@
         if (low && engine && engine.player) {
             low.classList.toggle('is-hidden', engine.player.hp > 3);
         }
+        paintOpsHud();
     }
 
     function toast(msg) {

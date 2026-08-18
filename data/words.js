@@ -970,6 +970,30 @@
         return false;
     }
 
+    const WORLD_QUIZ_EVERY = 8;
+
+    function shouldAskWorldQuiz(count, every) {
+        const e = Number(every) > 0 ? Number(every) : WORLD_QUIZ_EVERY;
+        const n = Number(count) || 0;
+        return n > 0 && n % e === 0;
+    }
+
+    function phraseSpeakDelayMs(text) {
+        const n = String(text || '').trim().length;
+        return Math.max(900, Math.min(2200, 700 + n * 120));
+    }
+
+    function speakQueue(word) {
+        const text = String((word && (word.text || word.en)) || '').trim();
+        const phrase = String((word && word.phrase) || '').trim();
+        const items = [];
+        if (text) items.push({ text: text, delayMs: 0 });
+        if (phrase && phrase.toLowerCase() !== text.toLowerCase()) {
+            items.push({ text: phrase, delayMs: phraseSpeakDelayMs(text) });
+        }
+        return items;
+    }
+
     function shouldNudgeSpeak(opts) {
         const o = opts || {};
         if (o.boss) {
@@ -1244,6 +1268,139 @@
         }).length;
     }
 
+    function dexRows(pool, mastery, today) {
+        const map = mastery || {};
+        return (pool || []).map(function (w) {
+            const rec = map[w.id] || map[String(w.text || '').toLowerCase()] || {};
+            return { id: w.id || w.text, text: w.text, zh: w.zh || '', stage: masteryStage(rec, today) };
+        });
+    }
+
+    function dexCounts(rows) {
+        const out = { new: 0, familiar: 0, recall: 0, spoken: 0, mastered: 0, due: 0 };
+        (rows || []).forEach(function (r) { if (r && out[r.stage] != null) out[r.stage] += 1; });
+        return out;
+    }
+
+    function parentThree(opts) {
+        const o = opts || {};
+        const speak = Number(o.speakCount) || 0;
+        let learned = 0;
+        let review = 0;
+        (o.rows || []).forEach(function (r) {
+            if (!r || !r.stage) return;
+            if (r.stage === 'due') review += 1;
+            else if (r.stage !== 'new') learned += 1;
+        });
+        return {
+            speak: '开口 ' + speak + ' 次',
+            learned: '已学 ' + learned + ' 词',
+            review: '明天复习 ' + review + ' 词'
+        };
+    }
+
+    function bumpSpeak(progress, day) {
+        const prev = progress || {};
+        const next = {
+            speakCount: (Number(prev.speakCount) || 0) + 1,
+            speakByDay: Object.assign({}, prev.speakByDay || {})
+        };
+        const d = String(day || '');
+        if (d) next.speakByDay[d] = (Number(next.speakByDay[d]) || 0) + 1;
+        return next;
+    }
+
+    function pickDailyWord(opts) {
+        const o = opts || {};
+        const today = o.today;
+        const mastery = o.mastery || {};
+        const focus = (o.focus || []).map(function (k) { return String(k || '').toLowerCase(); });
+        const cands = (o.pool || []).filter(function (w) {
+            if (!w) return false;
+            const id = String(w.id || '').toLowerCase();
+            const text = String(w.text || '').toLowerCase();
+            return focus.indexOf(id) >= 0 || focus.indexOf(text) >= 0;
+        });
+        if (!cands.length) return null;
+        function recOf(w) {
+            return mastery[w.id] || mastery[String(w.text || '').toLowerCase()] || {};
+        }
+        const due = cands.filter(function (w) {
+            return masteryStage(recOf(w), today) === 'due';
+        }).sort(function (a, b) {
+            return String(a.id || a.text || '').localeCompare(String(b.id || b.text || ''));
+        });
+        if (due.length) return due[0];
+        const fresh = cands.filter(function (w) {
+            return masteryStage(recOf(w), today) === 'new';
+        });
+        return fresh[0] || cands[0];
+    }
+
+    function dailyDone(opts) {
+        const o = opts || {};
+        return !!(o.dailyId && o.doneId && o.dailyId === o.doneId && String(o.doneDay || '') === String(o.today || ''));
+    }
+
+    function ensureDaily(progress, word, today) {
+        const p = progress || {};
+        const day = String(today || '');
+        const w = word || {};
+        if (String(p.dailyDay || '') === day && p.dailyId) return p;
+        p.dailyId = w.id || w.text || '';
+        p.dailyDay = day;
+        p.dailyDoneId = '';
+        p.dailyDoneDay = '';
+        return p;
+    }
+
+    function completeDaily(progress, wordId, today) {
+        const p = progress || {};
+        const day = String(today || '');
+        const id = String(wordId || '');
+        if (id && id === String(p.dailyId || '') && day === String(p.dailyDay || '')) {
+            p.dailyDoneId = id;
+            p.dailyDoneDay = day;
+            if (!Array.isArray(p.playDates)) p.playDates = [];
+            if (day && p.playDates.indexOf(day) === -1) p.playDates.push(day);
+        }
+        return p;
+    }
+
+    function parentReport(opts) {
+        const o = opts || {};
+        const today = String(o.today || '');
+        const rows = dexRows(o.pool, o.mastery, today);
+        const dueTexts = rows.filter(function (r) { return r.stage === 'due'; }).map(function (r) { return r.text || r.id; });
+        const learned = rows.filter(function (r) { return r.stage && r.stage !== 'new'; }).length;
+        const streakFn = o.streakFromDates || (global.BlockLegendLevels && global.BlockLegendLevels.streakFromDates);
+        const streak = o.streak != null
+            ? Number(o.streak) || 0
+            : (streakFn ? streakFn(o.playDates, today) : 0);
+        const speakByDay = o.speakByDay || {};
+        const byLevel = (o.levels || []).map(function (lv) {
+            const focus = lv.focusWords || [];
+            let have = 0;
+            focus.forEach(function (fw) {
+                const key = String(fw || '').toLowerCase();
+                const row = rows.find(function (r) {
+                    return String(r.id || '').toLowerCase() === key || String(r.text || '').toLowerCase() === key;
+                });
+                if (row && row.stage !== 'new') have += 1;
+            });
+            return { level: lv.level, have: have, want: focus.length };
+        });
+        return {
+            streak: streak,
+            speakCount: Number(o.speakCount) || 0,
+            speakToday: Number(speakByDay[today]) || 0,
+            learned: learned,
+            dueTexts: dueTexts,
+            byLevel: byLevel,
+            advice: dueTexts.length ? ('明天先复习：' + dueTexts.join('、')) : '今天可以开口一个新词'
+        };
+    }
+
     function nextWord(pool, learnedIds) {
         const known = {};
         (learnedIds || []).forEach(function (id) { known[id] = true; });
@@ -1298,10 +1455,23 @@
         matchCast: matchCast,
         REASK_HITS: REASK_HITS,
         shouldAsk: shouldAsk,
+        WORLD_QUIZ_EVERY: WORLD_QUIZ_EVERY,
+        shouldAskWorldQuiz: shouldAskWorldQuiz,
+        phraseSpeakDelayMs: phraseSpeakDelayMs,
+        speakQueue: speakQueue,
         shouldNudgeSpeak: shouldNudgeSpeak,
         nextWord: nextWord,
         masteryStage: masteryStage,
         countFamiliar: countFamiliar,
+        dexRows: dexRows,
+        dexCounts: dexCounts,
+        parentThree: parentThree,
+        parentReport: parentReport,
+        bumpSpeak: bumpSpeak,
+        pickDailyWord: pickDailyWord,
+        dailyDone: dailyDone,
+        ensureDaily: ensureDaily,
+        completeDaily: completeDaily,
         labelFor: labelFor,
         shouldAutoSpeak: shouldAutoSpeak,
         shouldShowLookLabel: shouldShowLookLabel,

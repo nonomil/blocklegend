@@ -114,6 +114,11 @@ html, body.bl-body {
 .bl-vocab-line { color: #fff6d2; }
 .bl-vocab b { color: #7fd36a; }
 #stat-wrong { color: #ff8a7a; }
+#daily-word {
+    display: block;
+    margin-top: 4px;
+    color: #ffe27a;
+}
 .bl-listen-title {
     display: block;
     margin: 0 0 2px;
@@ -921,6 +926,73 @@ html, body.bl-body {
 .bl-shop-card b { font-size: 15px; }
 .bl-shop-card em { font-style: normal; color: #c4a574; font-size: 12px; }
 .bl-shop-card .bl-shop-buy { color: #ffe27a; font-size: 12px; }
+.bl-card.bl-dex {
+    width: min(520px, 94vw);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+.bl-dex-kicker {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: #c4a574;
+}
+#word-dex {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow: auto;
+    max-height: 56vh;
+}
+#word-dex li {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 6px 4px;
+    border-bottom: 1px solid rgba(196, 165, 116, .35);
+    font-size: 14px;
+}
+#word-dex b { min-width: 7em; }
+#word-dex span { color: #c4a574; }
+#word-dex em {
+    margin-left: auto;
+    color: #ffe27a;
+    font-style: normal;
+    font-size: 12px;
+}
+.bl-parent-three {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: #c4a574;
+    line-height: 1.4;
+}
+#streak-label { color: #ffe27a; }
+.bl-card.bl-parent {
+    width: min(440px, 94vw);
+    max-height: 80vh;
+    overflow: auto;
+}
+.bl-card.bl-parent p {
+    margin: 0 0 10px;
+    font-size: 18px;
+    line-height: 1.45;
+}
+#parent-advice {
+    color: #ffe27a;
+    font-size: 18px;
+}
+#parent-levels {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+#parent-levels li {
+    font-size: 16px;
+    color: #fff6d2;
+}
 .bl-lowhp {
     position: absolute;
     left: 50%;
@@ -1034,12 +1106,12 @@ button.bl-quiz-en,
 .bl-quiz-choices button.is-reveal { outline: 2px solid #ffe7a0; background: #5a3d18; }
 .bl-quiz-phrase,
 .bl-quiz-phrase-zh {
-    margin: 0 0 6px;
-    font-size: 14px;
+    margin: 0 0 8px;
     color: #1a1208;
-    line-height: 1.4;
+    line-height: 1.35;
 }
-.bl-quiz-phrase-zh { color: #8a6234; font-size: 12px; }
+.bl-quiz-phrase { font-size: 22px; }
+.bl-quiz-phrase-zh { color: #8a6234; font-size: 16px; }
 .bl-quiz-phrase.is-hidden,
 .bl-quiz-phrase-zh.is-hidden,
 .bl-quiz-type.is-hidden,

@@ -171,17 +171,27 @@
     function waveOffsets(yaw, n) {
         const f = forwardXZ(yaw);
         const right = { x: -f.z, z: f.x };
-        const rows = [
-            { dx: f.x * 10.0, dz: f.z * 10.0 },
-            { dx: f.x * 11.2 + right.x * -2.4, dz: f.z * 11.2 + right.z * -2.4 },
-            { dx: f.x * 11.2 + right.x * 2.4, dz: f.z * 11.2 + right.z * 2.4 },
-            { dx: f.x * 12.4, dz: f.z * 12.4 },
-            { dx: f.x * 13.2 + right.x * -3.2, dz: f.z * 13.2 + right.z * -3.2 },
-            { dx: f.x * 13.2 + right.x * 3.2, dz: f.z * 13.2 + right.z * 3.2 },
-            { dx: f.x * 14.4 + right.x * -4.2, dz: f.z * 14.4 + right.z * -4.2 },
-            { dx: f.x * 14.4 + right.x * 4.2, dz: f.z * 14.4 + right.z * 4.2 }
+        const rings = [
+            { dist: 12, angle: 0 },
+            { dist: 14, angle: -0.42 },
+            { dist: 14, angle: 0.42 },
+            { dist: 22, angle: 1.15 },
+            { dist: 22, angle: -1.15 },
+            { dist: 30, angle: 2.15 },
+            { dist: 30, angle: -2.15 },
+            { dist: 38, angle: 3.14 },
+            { dist: 26, angle: 1.7 },
+            { dist: 26, angle: -1.7 }
         ];
-        return rows.slice(0, Math.max(1, Number(n) || 3));
+        const count = Math.max(1, Number(n) || 3);
+        return rings.slice(0, count).map(function (r) {
+            const c = Math.cos(r.angle);
+            const s = Math.sin(r.angle);
+            return {
+                dx: (f.x * c + right.x * s) * r.dist,
+                dz: (f.z * c + right.z * s) * r.dist
+            };
+        });
     }
 
     function aimAction(opts) {
