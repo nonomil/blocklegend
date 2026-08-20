@@ -1,4 +1,4 @@
-﻿# BlockLegend 实施计划夹
+# BlockLegend 实施计划夹
 
 > **给 Claude:** 必需子技能：使用 executing-plans 逐任务实施。当前会话按阶段顺序执行，每批 3 个任务后汇报。
 >
@@ -33,6 +33,8 @@
 | 6 过肩陪玩 | [2026-08-16-06-ai-companion.md](./2026-08-16-06-ai-companion.md) | 看见主角、提醒、G 对话 | 方案见 docs 根 |
 | 7 工作台 HUD | [2026-08-17-07-workshop-hud.md](./2026-08-17-07-workshop-hud.md) | 今日任务、小卖部、背包、坐标、低血提示 | Nick Workshop 合入 |
 | 8 语音识别引擎 | [2026-08-17-08-voice-stt-gateway.md](./2026-08-17-08-voice-stt-gateway.md) | 网关 STT 主力（faster-whisper），Web Speech 加分项，国内无 Google 也能听 | T8.0～T8.4 |
+| 9–12 语音/AI/运营 | [2026-08-18-voice-ai/README.md](./2026-08-18-voice-ai/README.md) | 图鉴、家长页、每日一词、句型场景、Ollama | Phase 9～12（代码已在） |
+| 多科配菜 | [方案册 05](../../../../../docs/01-方案/工作台小游戏设计/05-方块传奇/05-多科题库接入设计.md) | QuestionPort + 石碑/商人/练一句；不进战斗 | 2026-08-19 已进世界，待手玩 |
 
 ## 执行规则
 
@@ -67,6 +69,7 @@ node --test --test-concurrency=1 tests/blocklegend.test.mjs
 | 6 | 实现中（模板陪玩/G 键/开机三选「先玩·连家里电脑·只打字」/「设」重选已进工作区，未提交；模型与 Chrome 语音仍可选） |
 | 7 | 实现中：今日任务/小卖部/背包/坐标/低血提示已进工作区 |
 | 8 | T8.1–T8.3 已进工作区（`/v1/stt`、listenViaGateway、matchHeard 收紧）。T8.0 人工测未做；T8.4 平板禁止开工。网关听需本机 `pip install faster-whisper` |
+| 9–12 | **代码已落地，未手玩**：图鉴翻卡、家长页、每日一词、练一句（2026-08-19 改为听原句→跟读三遍）。对照见 [05-minewords-四项对照](./2026-08-18-voice-ai/05-minewords-四项对照.md)。不标 accepted。 |
 
 > 2026-08-16 只读核对：Phase 5 的部分测试与实现已进入工作区。状态以最新自动测试和 Chrome 实机证据为准，不以“节点已出现”代替体验完成。
 >

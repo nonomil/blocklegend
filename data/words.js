@@ -9,6 +9,11 @@
     const BOSS_ASK_HP = 170;
     const QUIZ_MS = 12000;
     const PACK_BASE = './vocab/core-english-2026.08.15';
+    const PACK_MC = './vocab/minecraft-english-2026.08.15';
+
+    function packBaseOf(wordPack) {
+        return String(wordPack || '') === 'mc' ? PACK_MC : PACK_BASE;
+    }
     const CAT_ORDER = ['颜色', '家人', '身体', '自然', '食物', '动物', '动作', '表达', '物品', '描述', '高频词', '生活', '学校'];
     const FALLBACK_BANK = [
         { id: 'tree', text: 'tree', zh: '树', theme: '自然' },
@@ -131,7 +136,10 @@
     function themesForLevel(level, opts) {
         if (opts && Array.isArray(opts.themes) && opts.themes.length) return opts.themes;
         const L = global.BlockLegendLevels;
-        const row = L && L.levelOf && L.levelOf(level);
+        let lv = Math.max(1, Number(level) || 1);
+        const chapters = Math.floor(Number(opts && opts.chapters) || 0);
+        if (chapters > 0) lv = ((lv - 1) % chapters) + 1;
+        const row = L && L.levelOf && L.levelOf(lv);
         return (row && Array.isArray(row.wordThemes) && row.wordThemes.length) ? row.wordThemes : [];
     }
 
@@ -687,12 +695,22 @@
     function bindCastWord(pool, usedIds, opts) {
         const o = opts || {};
         const used = {};
-        (usedIds || []).forEach(function (id) { if (id) used[id] = true; });
+        function markUsed(key) {
+            const raw = String(key || '').trim();
+            if (raw) used[raw] = true;
+            const n = normAnswer(key);
+            if (n) used[n] = true;
+        }
+        (usedIds || []).forEach(markUsed);
         const list = (pool || []).filter(function (w) { return w && w.text; });
         function findText(text) {
             const want = normAnswer(text);
             if (!want) return null;
             return list.find(function (w) { return normAnswer(w.text) === want; }) || null;
+        }
+        function isUsed(hit) {
+            if (!hit) return true;
+            return !!(used[hit.id] || used[hit.text] || used[normAnswer(hit.id)] || used[normAnswer(hit.text)]);
         }
         function skipped(hit) {
             if (!hit) return true;
@@ -704,37 +722,36 @@
             return !!(skip[normAnswer(hit.id)] || skip[normAnswer(hit.text)]);
         }
         const preferred = findText(o.prefer);
-        if (preferred && !o.reviewFirst && !used[preferred.id || preferred.text] && !skipped(preferred)) {
+        if (preferred && !o.reviewFirst && !isUsed(preferred) && !skipped(preferred)) {
             return preferred;
         }
         if (o.reviewFirst) {
             const reviewHits = (Array.isArray(o.review) ? o.review : []).map(findText).filter(function (hit) {
-                return hit && !used[hit.id || hit.text] && !isBlockFiller(hit.text) && !skipped(hit);
+                return hit && !isUsed(hit) && !isBlockFiller(hit.text) && !skipped(hit);
             });
             if (reviewHits.length) return reviewHits[0];
         }
-        if (preferred && !used[preferred.id || preferred.text] && !skipped(preferred)) return preferred;
+        if (preferred && !isUsed(preferred) && !skipped(preferred)) return preferred;
         if (o.kind) {
             const label = labelFor(o.kind, list);
             const known = !!KIND_ALIASES[o.kind];
             const word = (label && label.word) || (known && label && label.en
                 ? { id: label.en, text: label.en, zh: label.zh || '', theme: '动物' }
                 : null);
-            const id = word && (word.id || word.text);
-            if (word && id && !used[id] && !isBlockFiller(word.text) && !skipped(word)) return word;
+            if (word && !isUsed(word) && !isBlockFiller(word.text) && !skipped(word)) return word;
         }
         if (o.theme) {
             const themed = list.filter(function (w) {
-                return w && w.theme === o.theme && !used[w.id || w.text] && !isBlockFiller(w.text) && !skipped(w);
+                return w && w.theme === o.theme && !isUsed(w) && !isBlockFiller(w.text) && !skipped(w);
             });
             if (themed.length) return themed[Math.floor(Math.random() * themed.length)];
         }
         const focusHits = (Array.isArray(o.focus) ? o.focus : []).map(findText).filter(function (hit) {
-            return hit && !used[hit.id || hit.text] && !isBlockFiller(hit.text) && !skipped(hit);
+            return hit && !isUsed(hit) && !isBlockFiller(hit.text) && !skipped(hit);
         });
         if (focusHits.length) return focusHits[Math.floor(Math.random() * focusHits.length)];
         const fresh = list.filter(function (w) {
-            return w && !used[w.id || w.text] && !isBlockFiller(w.text) && !skipped(w);
+            return w && !isUsed(w) && !isBlockFiller(w.text) && !skipped(w);
         });
         if (fresh.length) return fresh[Math.floor(Math.random() * fresh.length)];
         const nonFill = list.filter(function (w) { return w && !isBlockFiller(w.text); });
@@ -759,6 +776,9 @@
         const raw = String(input == null ? '' : input).trim();
         if (!raw) return false;
         if (q.word && normAnswer(raw) === normAnswer(q.word.text)) return true;
+        if (q.word && Array.isArray(q.word.aliases) && q.word.aliases.some(function (a) {
+            return normAnswer(a) === normAnswer(raw);
+        })) return true;
         if (q.typed || q.mode === 'spell' || q.mode === 'fill' || q.mode === 'letters') {
             const wantZh = String((q.word && q.word.zh) || '').trim();
             const gotZh = raw.replace(/[^\u4e00-\u9fff]/g, '');
@@ -989,12 +1009,10 @@
         return false;
     }
 
-    const WORLD_QUIZ_EVERY = 8;
+    const WORLD_QUIZ_EVERY = 0;
 
-    function shouldAskWorldQuiz(count, every) {
-        const e = Number(every) > 0 ? Number(every) : WORLD_QUIZ_EVERY;
-        const n = Number(count) || 0;
-        return n > 0 && n % e === 0;
+    function shouldAskWorldQuiz() {
+        return false;
     }
 
     function phraseSpeakDelayMs(text) {
@@ -1038,11 +1056,16 @@
         gold: ['gold'],
         diamond: ['diamond'],
         villager: ['villager'],
+        farmer: ['farmer', 'villager'],
         trader: ['wandering trader', 'trader'],
         teacher: ['teacher'],
         house: ['home', 'house'],
         wordhouse: ['home', 'word house'],
         traderhouse: ['home', 'trader house'],
+        farmhouse: ['barn', 'farm'],
+        well: ['well'],
+        pen: ['pen'],
+        path: ['path'],
         pig: ['pig'],
         cow: ['cow'],
         sheep: ['sheep'],
@@ -1062,6 +1085,8 @@
         gate: ['gate'],
         plank: ['plank'],
         table: ['crafting table', 'table'],
+        chair: ['chair'],
+        bookshelf: ['bookshelf', 'bookcase'],
         log: ['log'],
         leaf: ['leaves', 'leaf'],
         slime: ['slime'],
@@ -1073,7 +1098,7 @@
         vex: ['vex'],
         drowned: ['drowned'],
         snowgolem: ['snow golem', 'snowgolem'],
-        shulker: ['shulker'],
+        vindicator: ['vindicator'],
         guardian: ['guardian'],
         pufferfish: ['pufferfish'],
         spore_bug: ['spore bug', 'spore_bug'],
@@ -1115,11 +1140,16 @@
         gold: '金矿',
         diamond: '钻石矿',
         villager: '村民',
+        farmer: '农夫',
         trader: '流浪商人',
         teacher: '老师',
         house: '家',
         wordhouse: '单词屋',
         traderhouse: '商人屋',
+        farmhouse: '谷仓',
+        well: '水井',
+        pen: '畜栏',
+        path: '小路',
         pig: '猪',
         cow: '牛',
         sheep: '羊',
@@ -1139,6 +1169,8 @@
         gate: '单词闸门',
         plank: '木板',
         table: '合成台',
+        chair: '椅子',
+        bookshelf: '书架',
         log: '原木',
         leaf: '树叶',
         slime: '史莱姆',
@@ -1150,7 +1182,7 @@
         vex: '恼鬼',
         drowned: '溺尸',
         snowgolem: '雪傀儡',
-        shulker: '潜影贝',
+        vindicator: '卫道士',
         guardian: '守卫者',
         pufferfish: '河豚',
         spore_bug: '孢子虫',
@@ -1291,7 +1323,15 @@
         const map = mastery || {};
         return (pool || []).map(function (w) {
             const rec = map[w.id] || map[String(w.text || '').toLowerCase()] || {};
-            return { id: w.id || w.text, text: w.text, zh: w.zh || '', stage: masteryStage(rec, today) };
+            return {
+                id: w.id || w.text,
+                text: w.text,
+                zh: w.zh || '',
+                phrase: w.phrase || '',
+                phraseZh: w.phraseZh || '',
+                audio: w.media && w.media.audio ? w.media.audio : '',
+                stage: masteryStage(rec, today)
+            };
         });
     }
 
@@ -1436,6 +1476,9 @@
         bossAskMarks: bossAskMarks,
         QUIZ_MS: QUIZ_MS,
         PACK_BASE: PACK_BASE,
+        PACK_MC: PACK_MC,
+        packBaseOf: packBaseOf,
+        themesForLevel: themesForLevel,
         CAT_ORDER: CAT_ORDER,
         FALLBACK_BANK: FALLBACK_BANK,
         cardsToBank: cardsToBank,

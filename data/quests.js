@@ -1,14 +1,16 @@
 /**
  * blocklegend · 关卡任务纯函数（Phase 1）
- * 第一关五步引导；其他关先视为已完成，避免挡住旧流程。
+ * 第一关引导（含进村看村民）；其他关先视为已完成，避免挡住旧流程。
  */
 (function (global) {
     'use strict';
 
     const LEVEL1 = [
         { id: 'look-tree', title: '找到会发光的橡树', hint: 'WASD 走到树前，对准它' },
+        { id: 'look-village', title: '去村子看村民', hint: '对准 villager / farmer / well；熟悉 4 个英语词后找老师认字' },
         { id: 'make-sword', title: '砍 1 块原木，做一把木剑', hint: '按 2 用斧砍树，再按 C 合成' },
         { id: 'hit-slime', title: '听懂并击败史莱姆', hint: '对准 slime，答对意思再打' },
+        { id: 'ask-teacher', title: '去找老师认字', hint: '再熟悉到 4 个不同英语词，回村对准老师按 F；没有字卡就问好也算' },
         { id: 'learn-five', title: '熟悉 8 个不同的词', hint: '答对 8 个不一样的词，重复不算' },
         { id: 'break-boss', title: '用 3 个词击破 Boss 护盾', hint: '对 Boss 答对，蓝罩变红' }
     ];
@@ -73,13 +75,18 @@
     ];
     const LEVEL12 = [
         { id: 'look', kind: 'enderman', title: '在虚空找到末影人', hint: '对准 enderman' },
-        { id: 'look', kind: 'shulker', title: '找到潜影贝塔', hint: '对准 shulker' },
+        { id: 'look', kind: 'vindicator', title: '找到卫道士', hint: '对准 vindicator' },
         { id: 'learn', need: 20, title: '熟悉 20 个不同的末地词', hint: '答对 20 个不一样的词，重复不算' },
         { id: 'break-boss', title: '对末影龙说对词破罩', hint: '对准 Boss 答对破罩' }
     ];
+    const LEVEL99 = [
+        { id: 'learn', need: 8, title: '在词灵回廊复习到期词', hint: '全是旧词和难词，答对就掉金币' },
+        { id: 'kill', kind: 'slime', title: '打完三波混怪', hint: '没有 Boss，清完波次即通关' }
+    ];
     const BY_LEVEL = {
         1: LEVEL1, 2: LEVEL2, 3: LEVEL3, 4: LEVEL4, 5: LEVEL5, 6: LEVEL6,
-        7: LEVEL7, 8: LEVEL8, 9: LEVEL9, 10: LEVEL10, 11: LEVEL11, 12: LEVEL12
+        7: LEVEL7, 8: LEVEL8, 9: LEVEL9, 10: LEVEL10, 11: LEVEL11, 12: LEVEL12,
+        99: LEVEL99
     };
 
     function create(level) {
@@ -102,9 +109,19 @@
     function matches(step, ev) {
         if (!step || !ev) return false;
         if (step.id === 'look-tree') return ev.type === 'look' && ev.kind === 'log';
+        if (step.id === 'look-village') {
+            return ev.type === 'look' && (
+                ev.kind === 'villager' || ev.kind === 'farmer' || ev.kind === 'teacher'
+                || ev.kind === 'trader' || ev.kind === 'well' || ev.kind === 'house'
+                || ev.kind === 'farmhouse' || ev.kind === 'pen'
+            );
+        }
         if (step.id === 'make-sword') return ev.type === 'craft' && ev.id === 'wood_sword';
         if (step.id === 'hit-slime') {
             return ev.type === 'kill' && ev.kind === 'slime' && !!ev.quizCorrect;
+        }
+        if (step.id === 'ask-teacher') {
+            return ev.type === 'side' || ev.type === 'teacher';
         }
         if (step.id === 'learn-five') {
             return ev.type === 'word-correct' && (Number(ev.count) || 0) >= 8;

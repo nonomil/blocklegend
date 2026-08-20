@@ -76,8 +76,9 @@
     <script src="./assets/atlas4v/vex-atlas.js?v=20260818-bl-4vnew2"></script>
     <script src="./assets/atlas4v/drowned-atlas.js?v=20260818-bl-4vnew2"></script>
     <script src="./assets/atlas4v/snowgolem-atlas.js?v=20260818-bl-4vnew2"></script>
-    <script src="./assets/atlas4v/shulker-atlas.js?v=20260818-bl-4vnew3"></script>
+    <script src="./assets/atlas4v/vindicator-atlas.js?v=20260819-bl-opt55"></script>
     <script src="./assets/atlas4v/guardian-atlas.js?v=20260818-bl-4vnew3"></script>
+    <script src="./assets/atlas4v/elder_guardian-atlas.js?v=20260819-bl-opt51"></script>
     <script src="./assets/atlas4v/pufferfish-atlas.js?v=20260818-bl-4vnew3"></script>
     <script src="./assets/atlas4v/spore_bug-atlas.js?v=20260818-bl-orig1"></script>
     <script src="./assets/atlas4v/fire_spirit-atlas.js?v=20260818-bl-orig1"></script>
@@ -91,8 +92,9 @@
     <script src="./assets/img2threejs/createVexModel.js?v=20260818-bl-4vnew2"></script>
     <script src="./assets/img2threejs/createDrownedModel.js?v=20260818-bl-4vnew2"></script>
     <script src="./assets/img2threejs/createSnowGolemModel.js?v=20260818-bl-4vnew2"></script>
-    <script src="./assets/img2threejs/createShulkerModel.js?v=20260818-bl-4vnew3"></script>
+    <script src="./assets/img2threejs/createVindicatorModel.js?v=20260819-bl-opt55"></script>
     <script src="./assets/img2threejs/createGuardianModel.js?v=20260818-bl-4vnew3"></script>
+    <script src="./assets/img2threejs/createElderGuardianModel.js?v=20260819-bl-opt51"></script>
     <script src="./assets/img2threejs/createPufferfishModel.js?v=20260818-bl-4vnew3"></script>
     <script src="./assets/img2threejs/createSporeBugModel.js?v=20260818-bl-orig1"></script>
     <script src="./assets/img2threejs/createFireSpiritModel.js?v=20260818-bl-orig1"></script>
@@ -105,7 +107,7 @@
     <script src="./assets/img2threejs/createWitherModel.js?v=20260816-bl-mobs4"></script>
     <script src="./assets/img2threejs/createDragonModel.js?v=20260816-bl-mobs4"></script>
     <script src="./assets/img2threejs/createStormModel.js?v=20260816-bl-mobs4"></script>
-    <script src="./assets/img2threejs/createTools3d.js?v=20260816-bl-mobs4"></script>
+    <script src="./assets/img2threejs/createTools3d.js?v=20260819-bl-opt51"></script>
     <script src="./assets/img2threejs/createProps3d.js?v=20260817-bl-i2t4v2"></script>
     <script>
     (function () {
@@ -127,8 +129,9 @@
             { id: 'witch', zh: '女巫', group: 'hostile', make: function () { return window.BlockLegendWitchModel.create(THREE); } },
             { id: 'golem', zh: '铁傀儡', group: 'hostile', make: function () { return window.BlockLegendGolemModel.create(THREE); } },
             { id: 'snowgolem', zh: '雪傀儡', group: 'hostile', make: function () { return window.BlockLegendSnowGolemModel.create(THREE); } },
-            { id: 'shulker', zh: '潜影贝', group: 'hostile', make: function () { return window.BlockLegendShulkerModel.create(THREE); } },
+            { id: 'vindicator', zh: '卫道士', group: 'hostile', make: function () { return window.BlockLegendVindicatorModel.create(THREE); } },
             { id: 'guardian', zh: '守卫者', group: 'hostile', make: function () { return window.BlockLegendGuardianModel.create(THREE); } },
+            { id: 'elder_guardian', zh: '远古守卫者', group: 'hostile', make: function () { return window.BlockLegendElderGuardianModel.create(THREE); } },
             { id: 'pufferfish', zh: '河豚', group: 'hostile', make: function () { return window.BlockLegendPufferfishModel.create(THREE); } },
             { id: 'spore_bug', zh: '孢子虫', group: 'hostile', make: function () { return window.BlockLegendSporeBugModel.create(THREE); } },
             { id: 'fire_spirit', zh: '火灵', group: 'hostile', make: function () { return window.BlockLegendFireSpiritModel.create(THREE); } },
@@ -164,7 +167,9 @@
             { id: 'wood_pickaxe', zh: '木镐', group: 'tool', make: function () { return window.BlockLegendTools3d.createWoodPickaxe(THREE); } },
             { id: 'iron_pickaxe', zh: '铁镐', group: 'tool', make: function () { return window.BlockLegendTools3d.createIronPickaxe(THREE); } },
             { id: 'diamond_pickaxe', zh: '钻石镐', group: 'tool', make: function () { return window.BlockLegendTools3d.createDiamondPickaxe(THREE); } },
-            { id: 'bow', zh: '木弓', group: 'tool', make: function () { return window.BlockLegendTools3d.createBow(THREE); } }
+            { id: 'bow', zh: '木弓', group: 'tool', make: function () { return window.BlockLegendTools3d.createBow(THREE); } },
+            { id: 'arrow', zh: '箭', group: 'tool', make: function () { return window.BlockLegendTools3d.createArrow(THREE); } },
+            { id: 'flint_and_steel', zh: '打火石', group: 'tool', make: function () { return window.BlockLegendTools3d.createFlintAndSteel(THREE); } }
         ];
         const shared = new THREE.WebGLRenderer({ antialias: false });
         shared.setPixelRatio(1);

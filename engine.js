@@ -10,8 +10,7 @@
 (function (global) {
     'use strict';
 
-    /* ---------- 常量（集中文件头，便于调参与审查） ---------- */
-    const WORLD_SIZE = 384;     // 世界边长（格）→ 24×24 区块
+    /* ---------- 渲染/物理常量（气候与世界尺寸以 world-gen 为准） ---------- */
     const CHUNK = 16;           // 区块边长
     const VIEW_CHUNKS = 4;      // 玩家周围半径（区块）
     const MOBILE_VIEW_CHUNKS = 2; // 手机/APK：5×5 区块，少卡
@@ -22,1262 +21,28 @@
     const MOVE_SPEED = 4.2;     // 格/秒
     const JUMP_VY = 7.2;        // 格/秒
     const GRAVITY = 22;         // 格/秒²
-    const STEP_UP = 1.05;       // 允许跨 1 格台阶
     const MAX_DT = 0.05;        // 挂起恢复时防大步长穿地
-    const HEIGHT_MIN = 2;
-    const HEIGHT_MAX = 16;
-    const TREE_COUNT = 96;
-    const FLOWER_COUNT = 160;
-    const BIOME_NAMES = ['plains', 'forest', 'desert', 'mountain', 'snow'];
-    const CLIMATES = {
-        plains: { temp: 0.55, moist: 0.42, hMin: 3, hMax: 11, trees: 110, flowers: 160, oak: 0.5, birch: 0.28, spruce: 0.22, sky: 0x7ec8f0 },
-        forest: { temp: 0.48, moist: 0.78, hMin: 3, hMax: 11, trees: 210, flowers: 70, oak: 0.32, birch: 0.22, spruce: 0.46, sky: 0x6aa87a },
-        quarry: { temp: 0.42, moist: 0.22, hMin: 5, hMax: 16, trees: 32, flowers: 28, oak: 0.18, birch: 0.12, spruce: 0.7, sky: 0x9aa4b0 },
-        duskvale: { temp: 0.5, moist: 0.58, hMin: 2, hMax: 8, trees: 72, flowers: 200, oak: 0.4, birch: 0.42, spruce: 0.18, sky: 0xc48a6a },
-        crystal: { temp: 0.34, moist: 0.7, hMin: 4, hMax: 13, trees: 170, flowers: 40, oak: 0.08, birch: 0.14, spruce: 0.78, sky: 0x7aa8c8 },
-        astral: { temp: 0.16, moist: 0.38, hMin: 6, hMax: 16, trees: 48, flowers: 16, oak: 0, birch: 0.12, spruce: 0.88, sky: 0xc8d4e8 },
-        cherry: { temp: 0.52, moist: 0.72, hMin: 3, hMax: 10, trees: 200, flowers: 180, oak: 0.1, birch: 0.1, spruce: 0.1, sky: 0xf3c2d4 },
-        desert: { temp: 0.86, moist: 0.12, hMin: 3, hMax: 8, trees: 24, flowers: 8, oak: 0, birch: 0, spruce: 0, sky: 0xe8d08a },
-        nether: { temp: 0.92, moist: 0.08, hMin: 4, hMax: 12, trees: 40, flowers: 0, oak: 0, birch: 0, spruce: 1, sky: 0x5a1814 },
-        snow: { temp: 0.12, moist: 0.36, hMin: 4, hMax: 14, trees: 64, flowers: 8, oak: 0, birch: 0.2, spruce: 0.8, sky: 0xc8d8e8 },
-        ocean: { temp: 0.46, moist: 0.92, hMin: 1, hMax: 6, trees: 8, flowers: 12, oak: 0.4, birch: 0.4, spruce: 0.2, sky: 0x4aa0c8 },
-        mushroom: { temp: 0.5, moist: 0.7, hMin: 3, hMax: 9, trees: 90, flowers: 40, oak: 0.2, birch: 0.2, spruce: 0.6, sky: 0xc8a0d0 },
-        volcano: { temp: 0.9, moist: 0.1, hMin: 5, hMax: 16, trees: 16, flowers: 0, oak: 0, birch: 0, spruce: 1, sky: 0x6a2018 },
-        deep_dark: { temp: 0.22, moist: 0.55, hMin: 2, hMax: 8, trees: 20, flowers: 4, oak: 0, birch: 0, spruce: 1, sky: 0x0d1f2b },
-        end: { temp: 0.28, moist: 0.2, hMin: 6, hMax: 14, trees: 12, flowers: 0, oak: 0, birch: 0.1, spruce: 0.9, sky: 0x1a1028 }
-    };
     const ATLAS_TILE = 16;
     const ATLAS_COLS = 4;
     const ATLAS_ROWS = 9;       // 0–19 旧地形/裂纹锁定；20+ 气候/矿石
     const CRACK_TILE0 = 16;     // 第 5 行：crack 0–3
 
-    /* ---------- 确定性随机 ---------- */
-    function makeRng(seed) {
-        let s = (seed >>> 0) || 1;
-        return function () {
-            s ^= s << 13; s >>>= 0;
-            s ^= s >> 17;
-            s ^= s << 5; s >>>= 0;
-            return s / 4294967296;
-        };
+    /* 世界生成 + 体素查询纯函数已抽到 data/world-gen.js（须先于本文件加载） */
+    const W = global.BlockLegendWorld;
+    if (!W) {
+        throw new Error('BlockLegendWorld missing; load data/world-gen.js first');
     }
-    function hash3(x, y, z) {
-        let h = (x * 374761393 + y * 668265263 + z * 2147483647) >>> 0;
-        h = (h ^ (h >> 13)) * 1274126177;
-        return ((h ^ (h >> 16)) >>> 0) / 4294967296;
-    }
+    const {
+        WORLD_SIZE, HEIGHT_MAX, STEP_UP, TREE_COUNT,
+        makeRng, hash3, climateOf, biomeAt, openWordGate, createWorld,
+        breakVoxel, placeVoxel, voxelAt, voxelSpecies, hasBlock, blockKindAt,
+        inHouse, habitatOf, lifeAltitude, stepWander, growWheat,
+        columnBlockedAt, wallBetween, removeTree, surfaceAtWorld, buildTreeCols,
+        ensureWalkTick
+    } = W;
 
-    function climateOf(name) {
-        return CLIMATES[name] || CLIMATES.plains;
-    }
-
-    function makeGrid(rng, coarse) {
-        const grid = [];
-        for (let i = 0; i <= coarse; i += 1) {
-            grid.push([]);
-            for (let j = 0; j <= coarse; j += 1) grid[i].push(rng());
-        }
-        return grid;
-    }
-
-    function sampleGrid(grid, coarse, n, x, z) {
-        const smooth = function (t) { return t * t * (3 - 2 * t); };
-        const fx = x / n * coarse, fz = z / n * coarse;
-        const x0 = Math.min(coarse - 1, Math.floor(fx)), z0 = Math.min(coarse - 1, Math.floor(fz));
-        const tx = smooth(fx - x0), tz = smooth(fz - z0);
-        const a = grid[z0][x0] * (1 - tx) + grid[z0][x0 + 1] * tx;
-        const b = grid[z0 + 1][x0] * (1 - tx) + grid[z0 + 1][x0 + 1] * tx;
-        return a * (1 - tz) + b * tz;
-    }
-
-    function pickBiome(temp, moist, height01) {
-        if (temp < 0.28) return 4;
-        if (temp > 0.74 && moist < 0.38) return 2;
-        if (height01 > 0.72 || (moist < 0.3 && temp < 0.55)) return 3;
-        if (moist > 0.62) return 1;
-        return 0;
-    }
-
-    function biomeAt(world, x, z) {
-        if (!world || x < 0 || z < 0 || x >= world.size || z >= world.size) return 'plains';
-        if (!world.biomes) return world.climate || 'plains';
-        return BIOME_NAMES[world.biomes[z * world.size + x]] || 'plains';
-    }
-
-    /* ---------- 世界生成（纯数据，node 可测） ---------- */
-    function inRect(x, z, box) {
-        return !!(box && x >= box.x0 && x <= box.x1 && z >= box.z0 && z <= box.z1);
-    }
-
-    function inAnyRect(x, z, boxes) {
-        if (!boxes) return false;
-        const list = Array.isArray(boxes) ? boxes : [boxes];
-        for (let i = 0; i < list.length; i += 1) {
-            if (inRect(x, z, list[i])) return true;
-        }
-        return false;
-    }
-
-    function villageStyle(climate) {
-        if (climate === 'desert') return 'desert';
-        if (climate === 'cherry') return 'cherry';
-        if (climate === 'crystal') return 'crystal';
-        if (climate === 'duskvale') return 'dusk';
-        if (climate === 'snow') return 'snow';
-        if (climate === 'mushroom') return 'mushroom';
-        if (climate === 'deep_dark') return 'dusk';
-        if (climate === 'quarry') return 'quarry';
-        if (climate === 'astral') return 'crystal';
-        if (climate === 'nether') return 'nether';
-        if (climate === 'volcano') return 'volcano';
-        if (climate === 'end') return 'end';
-        return 'oak';
-    }
-
-    function villageMats(style) {
-        if (style === 'desert') return { wall: 'sand', post: 'sand', roof: 'sand' };
-        if (style === 'crystal') return { wall: 'stone', post: 'iron', roof: 'stone' };
-        if (style === 'dusk') return { wall: 'stone', post: 'log', roof: 'plank' };
-        if (style === 'cherry') return { wall: 'plank', post: 'log', roof: 'plank' };
-        if (style === 'snow') return { wall: 'snow', post: 'log', roof: 'plank' };
-        if (style === 'mushroom') return { wall: 'plank', post: 'log', roof: 'leaf' };
-        if (style === 'quarry') return { wall: 'stone', post: 'stone', roof: 'plank' };
-        if (style === 'nether') return { wall: 'stone', post: 'gold', roof: 'stone' };
-        if (style === 'volcano') return { wall: 'stone', post: 'stone', roof: 'gold' };
-        if (style === 'end') return { wall: 'stone', post: 'iron', roof: 'stone' };
-        return { wall: 'plank', post: 'log', roof: 'plank' };
-    }
-
-    function villagePlan(climate, cx, cz) {
-        if (climate === 'nether' || climate === 'volcano') {
-            return {
-                x0: cx - 28,
-                z0: cz + 1,
-                x1: cx - 8,
-                z1: cz + 18,
-                style: villageStyle(climate),
-                houses: [
-                    { x: cx - 26, z: cz + 3, w: 6, d: 6, role: 'bed', stories: 1 },
-                    { x: cx - 18, z: cz + 3, w: 6, d: 6, role: 'trader', stories: 2 },
-                    { x: cx - 26, z: cz + 11, w: 6, d: 6, role: 'word', stories: 2 }
-                ],
-                garden: { x: cx - 22, z: cz + 10, w: 3, d: 2 },
-                golem: { x: cx - 16.5, z: cz + 9.5 }
-            };
-        }
-        if (climate === 'desert') {
-            return {
-                x0: cx + 6,
-                z0: cz + 1,
-                x1: cx + 24,
-                z1: cz + 18,
-                style: 'desert',
-                houses: [
-                    { x: cx + 8, z: cz + 3, w: 6, d: 6, role: 'bed', stories: 1 },
-                    { x: cx + 16, z: cz + 3, w: 6, d: 6, role: 'trader', stories: 2 },
-                    { x: cx + 9, z: cz + 11, w: 6, d: 6, role: 'word', stories: 2 },
-                    { x: cx + 17, z: cz + 12, w: 5, d: 5, role: 'bed', stories: 1 }
-                ],
-                garden: { x: cx + 8, z: cz + 16, w: 3, d: 2 },
-                well: { x: cx + 14, z: cz + 8 },
-                golem: { x: cx + 13.5, z: cz + 7.5 }
-            };
-        }
-        return {
-            x0: cx + 6,
-            z0: cz + 1,
-            x1: cx + 28,
-            z1: cz + 22,
-            style: villageStyle(climate),
-            houses: [
-                { x: cx + 8, z: cz + 3, w: 6, d: 6, role: 'bed', stories: 1 },
-                { x: cx + 16, z: cz + 3, w: 6, d: 6, role: 'trader', stories: 2 },
-                { x: cx + 8, z: cz + 12, w: 6, d: 6, role: 'word', stories: 2 },
-                { x: cx + 16, z: cz + 12, w: 5, d: 5, role: 'bed', stories: 1 },
-                { x: cx + 23, z: cz + 6, w: 5, d: 5, role: 'bed', stories: 1 }
-            ],
-            garden: { x: cx + 14, z: cz + 9, w: 4, d: 2 },
-            well: { x: cx + 14, z: cz + 7 },
-            golem: { x: cx + 13.5, z: cz + 9.5 },
-            snowgolem: { x: cx + 11.5, z: cz + 8.5 }
-        };
-    }
-
-    function hamletPlans(climate, cx, cz, n) {
-        if (climate === 'nether' || climate === 'volcano') return [];
-        const style = villageStyle(climate);
-        const sites = [
-            { x: cx - 46, z: cz + 24, w: 5, d: 5, extra: { x: cx - 40, z: cz + 28, w: 4, d: 4 } },
-            { x: cx + 40, z: cz - 40, w: 5, d: 5 },
-            { x: cx - 70, z: cz - 52, w: 5, d: 5 },
-            { x: cx + 64, z: cz + 48, w: 5, d: 5 },
-            { x: cx - 56, z: cz + 62, w: 5, d: 5, extra: { x: cx - 50, z: cz + 68, w: 4, d: 4 } }
-        ];
-        const out = [];
-        sites.forEach(function (site) {
-            if (site.x < 6 || site.z < 6 || site.x + site.w >= n - 4 || site.z + site.d >= n - 4) return;
-            const houses = [{ x: site.x, z: site.z, w: site.w, d: site.d, role: 'bed' }];
-            if (site.extra && site.extra.x >= 6 && site.extra.z >= 6
-                && site.extra.x + site.extra.w < n - 4 && site.extra.z + site.extra.d < n - 4) {
-                houses.push({ x: site.extra.x, z: site.extra.z, w: site.extra.w, d: site.extra.d, role: 'bed' });
-            }
-            let x0 = site.x - 1, z0 = site.z - 1, x1 = site.x + site.w + 1, z1 = site.z + site.d + 1;
-            houses.forEach(function (h) {
-                x0 = Math.min(x0, h.x - 1);
-                z0 = Math.min(z0, h.z - 1);
-                x1 = Math.max(x1, h.x + h.w + 1);
-                z1 = Math.max(z1, h.z + h.d + 1);
-            });
-            out.push({ x0: x0, z0: z0, x1: x1, z1: z1, style: style, houses: houses });
-        });
-        return out;
-    }
-
-    function fillPond(ponds, n, px, pz, r, towns, cx, cz) {
-        if (Math.abs(px - cx) < 6 && Math.abs(pz - cz) < 6) return;
-        for (let dz = -r; dz <= r; dz += 1) {
-            for (let dx = -r; dx <= r; dx += 1) {
-                if (dx * dx + dz * dz > r * r) continue;
-                const x = px + dx, z = pz + dz;
-                if (x < 2 || z < 2 || x >= n - 2 || z >= n - 2) continue;
-                if (inAnyRect(x, z, towns)) continue;
-                ponds[x + ',' + z] = 1;
-            }
-        }
-    }
-
-    function stampRiver(n, ponds, heights, climate, cx, cz, towns) {
-        if (climate === 'desert' || climate === 'nether' || climate === 'volcano' || climate === 'end') return;
-        const span = n / 256;
-        let x = Math.max(6, cx - Math.round(52 * span));
-        let z = Math.max(6, cz - 10);
-        const endX = Math.min(n - 7, cx + Math.round(48 * span));
-        const endZ = Math.min(n - 7, cz + Math.round(64 * span));
-        for (let i = 0; i < Math.round(160 * span); i += 1) {
-            if (!(Math.abs(x - cx) < 6 && Math.abs(z - cz) < 6) && !inAnyRect(x, z, towns)) {
-                fillPond(ponds, n, x, z, i % 8 === 0 ? 2 : 1, towns, cx, cz);
-                if (x >= 1 && z >= 1 && x < n - 1 && z < n - 1) {
-                    heights[z * n + x] = Math.max(2, heights[z * n + x] - 1);
-                }
-            }
-            if (x === endX && z === endZ) break;
-            if (x !== endX) x += x < endX ? 1 : -1;
-            if (i % 2 === 0 && z !== endZ) z += z < endZ ? 1 : -1;
-            if (i % 5 === 0) z = Math.max(4, Math.min(n - 5, z + ((i % 10) < 5 ? 1 : -1)));
-        }
-    }
-
-    function stampRidge(n, heights, biomes, cx, cz) {
-        const z0 = Math.max(8, cz - 70);
-        for (let z = z0; z < z0 + 18 && z < n - 4; z += 1) {
-            for (let x = 16; x < n - 16; x += 1) {
-                if (Math.abs(x - cx) < 8) continue;
-                const d = Math.abs(z - (z0 + 8));
-                if (d > 8) continue;
-                biomes[z * n + x] = 3;
-                heights[z * n + x] = Math.min(HEIGHT_MAX, heights[z * n + x] + 5 - Math.floor(d / 2));
-            }
-        }
-    }
-
-    function stampPonds(n, ponds, rng, climate, cx, cz, village) {
-        if (climate === 'nether') return;
-        if (climate === 'desert') {
-            fillPond(ponds, n, cx - 18, cz + 12, 4, village, cx, cz);
-            fillPond(ponds, n, cx - 12, cz + 18, 3, village, cx, cz);
-            return;
-        }
-        if (climate !== 'astral' && climate !== 'quarry') {
-            fillPond(ponds, n, cx - 14, cz + 6, 3, village, cx, cz);
-            fillPond(ponds, n, cx - 7, cz - 11, 2, village, cx, cz);
-        }
-        if (climate === 'duskvale' || climate === 'plains') {
-            fillPond(ponds, n, cx + 4, cz - 16, 3, village, cx, cz);
-        }
-        if (climate !== 'astral' && climate !== 'quarry') {
-            let x = cx - 14, z = cz + 6;
-            const endX = cx - 7, endZ = cz - 11;
-            for (let i = 0; i < 48; i += 1) {
-                fillPond(ponds, n, x, z, 1, village, cx, cz);
-                if (x === endX && z === endZ) break;
-                if (x !== endX) x += x < endX ? 1 : -1;
-                else z += z < endZ ? 1 : -1;
-            }
-        }
-        const extra = climate === 'ocean' ? 14
-            : climate === 'duskvale' ? 10
-                : climate === 'plains' ? 7
-                    : climate === 'forest' || climate === 'mushroom' ? 5
-                        : 0;
-        for (let i = 0; i < extra; i += 1) {
-            const px = 8 + Math.floor(rng() * (n - 16));
-            const pz = 8 + Math.floor(rng() * (n - 16));
-            const r = 2 + Math.floor(rng() * 3);
-            fillPond(ponds, n, px, pz, r, village, cx, cz);
-        }
-    }
-
-    function stampVillage(n, heights, edits, ponds, plan) {
-        if (!plan) return;
-        plan.beds = [];
-        plan.villagers = [];
-        plan.crops = [];
-        plan.props = plan.props || [];
-        const mats = villageMats(plan.style);
-        const wall = mats.wall;
-        const post = mats.post;
-        const roof = mats.roof;
-        plan.houses.forEach(function (house) {
-            let y0 = 99;
-            for (let z = house.z; z < house.z + house.d; z += 1) {
-                for (let x = house.x; x < house.x + house.w; x += 1) {
-                    if (x < 1 || z < 1 || x >= n - 1 || z >= n - 1) continue;
-                    y0 = Math.min(y0, heights[z * n + x]);
-                }
-            }
-            y0 = Math.max(2, y0);
-            house.y0 = y0;
-            const stories = house.stories || (house.role === 'trader' || house.role === 'word' ? 2 : 1);
-            const wallH = Math.min(stories === 2 ? 6 : 4, HEIGHT_MAX - y0 - 2);
-            const doorX = house.x + Math.floor(house.w / 2);
-            const doorZ = house.z + house.d - 1;
-            const winZ = house.z + 1;
-            const midZ = house.z + Math.floor(house.d / 2);
-            for (let z = house.z; z < house.z + house.d; z += 1) {
-                for (let x = house.x; x < house.x + house.w; x += 1) {
-                    if (x < 1 || z < 1 || x >= n - 1 || z >= n - 1) continue;
-                    heights[z * n + x] = y0;
-                    const edgeX = x === house.x || x === house.x + house.w - 1;
-                    const edgeZ = z === house.z || z === house.z + house.d - 1;
-                    const door = x === doorX && z === doorZ;
-                    const lowWin = ((edgeX && (z === winZ || z === midZ)) || (edgeZ && x === house.x + 1)) && !door;
-                    const highWin = stories === 2 && edgeX && z === winZ && !door;
-                    for (let dy = 0; dy < wallH; dy += 1) {
-                        if (!(edgeX || edgeZ)) {
-                            if (stories === 2 && dy === 3) edits[x + ',' + (y0 + dy) + ',' + z] = wall;
-                            continue;
-                        }
-                        if (door && dy < 2) continue;
-                        if (lowWin && dy === 1) continue;
-                        if (highWin && dy === 4) continue;
-                        edits[x + ',' + (y0 + dy) + ',' + z] = (edgeX && edgeZ) ? post : wall;
-                    }
-                    edits[x + ',' + (y0 + wallH) + ',' + z] = roof;
-                    if (!edgeX && z === midZ) {
-                        edits[x + ',' + (y0 + wallH + 1) + ',' + z] = post;
-                    }
-                }
-            }
-            const chimX = house.x + house.w - 1, chimZ = house.z;
-            for (let cy = wallH; cy <= wallH + 2; cy += 1) {
-                edits[chimX + ',' + (y0 + cy) + ',' + chimZ] = 'stone';
-            }
-            if (house.role === 'word') {
-                edits[doorX + ',' + (y0 + 2) + ',' + doorZ] = 'gold';
-            } else if (house.role === 'trader') {
-                edits[doorX + ',' + (y0 + 2) + ',' + doorZ] = 'iron';
-            }
-            if (house.role === 'trader' || house.role === 'word') {
-                edits[(house.x + 2) + ',' + y0 + ',' + (house.z + 2)] = 'table';
-            }
-            plan.beds.push({ x: house.x + 1, z: house.z + 1, y: y0, role: house.role || 'bed' });
-            plan.props.push({ kind: 'chest', x: house.x + house.w - 2, z: house.z + 1, y: y0 });
-            plan.props.push({ kind: 'torch', x: doorX, z: house.z + 2, y: y0 + 2 });
-            if (house.role === 'trader') {
-                plan.props.push({ kind: 'furnace', x: house.x + 1, z: house.z + 2, y: y0 });
-            }
-            plan.villagers.push({
-                x: doorX + 0.5,
-                z: doorZ + 1.35,
-                role: house.role === 'trader' ? 'trader' : house.role === 'word' ? 'teacher' : 'farmer'
-            });
-        });
-        if (plan.houses.length >= 2) {
-            const a = plan.houses[0], b = plan.houses[1];
-            let x = a.x + Math.floor(a.w / 2), z = a.z + a.d;
-            const ex = b.x + Math.floor(b.w / 2), ez = b.z + Math.floor(b.d / 2);
-            for (let i = 0; i < 48; i += 1) {
-                if (x >= 1 && z >= 1 && x < n - 1 && z < n - 1) {
-                    const y = heights[z * n + x];
-                    edits[x + ',' + (y - 1) + ',' + z] = plan.style === 'desert' ? 'sand' : 'dirt';
-                }
-                if (x === ex && z === ez) break;
-                if (x !== ex) x += x < ex ? 1 : -1;
-                else z += z < ez ? 1 : -1;
-            }
-        }
-        if (plan.garden) {
-            const g = plan.garden;
-            for (let z = g.z - 1; z <= g.z + g.d; z += 1) {
-                for (let x = g.x - 1; x <= g.x + g.w; x += 1) {
-                    if (x < 1 || z < 1 || x >= n - 1 || z >= n - 1) continue;
-                    const edge = x === g.x - 1 || x === g.x + g.w || z === g.z - 1 || z === g.z + g.d;
-                    const y = heights[z * n + x];
-                    if (edge) {
-                        edits[x + ',' + y + ',' + z] = post;
-                        continue;
-                    }
-                    if (x < g.x || z < g.z || x >= g.x + g.w || z >= g.z + g.d) continue;
-                    edits[x + ',' + (y - 1) + ',' + z] = 'dirt';
-                    plan.crops.push({
-                        x: x,
-                        z: z,
-                        y: y,
-                        kind: plan.style === 'desert' ? 'deadbush' : 'wheat'
-                    });
-                }
-            }
-        }
-        if (plan.well) {
-            const wx = plan.well.x, wz = plan.well.z;
-            let y0 = 99;
-            for (let dz = -1; dz <= 1; dz += 1) {
-                for (let dx = -1; dx <= 1; dx += 1) {
-                    const x = wx + dx, z = wz + dz;
-                    if (x < 1 || z < 1 || x >= n - 1 || z >= n - 1) continue;
-                    y0 = Math.min(y0, heights[z * n + x]);
-                }
-            }
-            y0 = Math.max(2, y0);
-            for (let dz = -1; dz <= 1; dz += 1) {
-                for (let dx = -1; dx <= 1; dx += 1) {
-                    const x = wx + dx, z = wz + dz;
-                    if (x < 1 || z < 1 || x >= n - 1 || z >= n - 1) continue;
-                    heights[z * n + x] = y0;
-                    if (dx === 0 && dz === 0) ponds[x + ',' + z] = 1;
-                    else edits[x + ',' + y0 + ',' + z] = 'stone';
-                }
-            }
-            edits[(wx - 1) + ',' + (y0 + 1) + ',' + (wz - 1)] = post;
-            edits[(wx + 1) + ',' + (y0 + 1) + ',' + (wz - 1)] = post;
-            edits[(wx - 1) + ',' + (y0 + 2) + ',' + (wz - 1)] = post;
-            edits[(wx + 1) + ',' + (y0 + 2) + ',' + (wz - 1)] = post;
-            edits[(wx - 1) + ',' + (y0 + 3) + ',' + (wz - 1)] = wall;
-            edits[wx + ',' + (y0 + 3) + ',' + (wz - 1)] = wall;
-            edits[(wx + 1) + ',' + (y0 + 3) + ',' + (wz - 1)] = wall;
-            edits[(wx - 1) + ',' + (y0 + 3) + ',' + (wz + 1)] = wall;
-            edits[wx + ',' + (y0 + 3) + ',' + (wz + 1)] = wall;
-            edits[(wx + 1) + ',' + (y0 + 3) + ',' + (wz + 1)] = wall;
-        }
-    }
-
-    function yAt(heights, n, x, z) {
-        if (x < 0 || z < 0 || x >= n || z >= n) return 3;
-        return Math.max(2, heights[z * n + x] || 3);
-    }
-
-    function setY(heights, n, x, z, h) {
-        if (x < 1 || z < 1 || x >= n - 1 || z >= n - 1) return;
-        heights[z * n + x] = Math.max(2, Math.min(HEIGHT_MAX, h));
-    }
-
-    function putBlock(edits, x, y, z, kind) {
-        if (x < 1 || z < 1 || y < 1 || y > HEIGHT_MAX + 6) return;
-        edits[x + ',' + y + ',' + z] = kind;
-    }
-
-    function flattenPad(heights, n, x, z, w, d) {
-        let y0 = 99;
-        for (let iz = z; iz < z + d; iz += 1) {
-            for (let ix = x; ix < x + w; ix += 1) y0 = Math.min(y0, yAt(heights, n, ix, iz));
-        }
-        y0 = Math.max(2, y0);
-        for (let iz = z; iz < z + d; iz += 1) {
-            for (let ix = x; ix < x + w; ix += 1) setY(heights, n, ix, iz, y0);
-        }
-        return y0;
-    }
-
-    function stampTower(edits, heights, n, x, z, w, d, h, wall, roof, open) {
-        const y0 = flattenPad(heights, n, x, z, w, d);
-        const midX = x + Math.floor(w / 2);
-        const midZ = z + Math.floor(d / 2);
-        for (let iz = z; iz < z + d; iz += 1) {
-            for (let ix = x; ix < x + w; ix += 1) {
-                const edge = ix === x || ix === x + w - 1 || iz === z || iz === z + d - 1;
-                for (let dy = 0; dy < h; dy += 1) {
-                    if (!edge) {
-                        if (dy === h - 1) putBlock(edits, ix, y0 + dy, iz, roof || wall);
-                        continue;
-                    }
-                    if (open && dy > 0 && dy < h - 1 && (ix === midX || iz === midZ)) continue;
-                    putBlock(edits, ix, y0 + dy, iz, wall);
-                }
-            }
-        }
-        return y0;
-    }
-
-    function stampPillar(edits, heights, n, x, z, h, kind) {
-        const y0 = yAt(heights, n, x, z);
-        for (let dy = 0; dy < h; dy += 1) putBlock(edits, x, y0 + dy, z, kind);
-        return y0;
-    }
-
-    function stampCrater(heights, n, cx, cz, r, drop) {
-        for (let dz = -r; dz <= r; dz += 1) {
-            for (let dx = -r; dx <= r; dx += 1) {
-                if (dx * dx + dz * dz > r * r) continue;
-                setY(heights, n, cx + dx, cz + dz, yAt(heights, n, cx + dx, cz + dz) - drop);
-            }
-        }
-    }
-
-    function stampLandmarks(n, heights, edits, ponds, climate, cx, cz, towns, rng, sites, props, tags) {
-        function clear(x, z, w, d) {
-            if (x < 6 || z < 6 || x + w >= n - 6 || z + d >= n - 6) return false;
-            if (Math.abs(x + w / 2 - cx) < 6 && Math.abs(z + d / 2 - cz) < 6) return false;
-            for (let iz = z; iz < z + d; iz += 1) {
-                for (let ix = x; ix < x + w; ix += 1) {
-                    if (inAnyRect(ix, iz, towns)) return false;
-                }
-            }
-            return true;
-        }
-        function mark(x, z, w, d, tag) {
-            sites.push({ x0: x - 1, z0: z - 1, x1: x + w, z1: z + d });
-            tags.push(tag);
-        }
-        function loot(kind, x, z, y) {
-            props.push({ kind: kind, x: x, z: z, y: y });
-        }
-
-        if (climate === 'plains') {
-            const craterX = cx - 22, craterZ = cz - 18;
-            if (clear(craterX - 3, craterZ - 3, 7, 7)) {
-                stampCrater(heights, n, craterX, craterZ, 3, 2);
-                for (let a = 0; a < 8; a += 1) {
-                    const px = craterX + Math.round(Math.cos(a * Math.PI / 4) * 3);
-                    const pz = craterZ + Math.round(Math.sin(a * Math.PI / 4) * 3);
-                    putBlock(edits, px, yAt(heights, n, px, pz), pz, 'stone');
-                }
-                mark(craterX - 3, craterZ - 3, 7, 7, 'creeper-crater');
-            }
-            const shrineX = cx + 18, shrineZ = cz - 10;
-            if (clear(shrineX, shrineZ, 5, 5)) {
-                const y0 = flattenPad(heights, n, shrineX, shrineZ, 5, 5);
-                for (let iz = shrineZ; iz < shrineZ + 5; iz += 1) {
-                    for (let ix = shrineX; ix < shrineX + 5; ix += 1) {
-                        putBlock(edits, ix, y0, iz, 'stone');
-                    }
-                }
-                putBlock(edits, shrineX + 2, y0 + 1, shrineZ + 2, 'stone');
-                putBlock(edits, shrineX + 2, y0 + 2, shrineZ + 2, 'gold');
-                loot('chest', shrineX + 1, shrineZ + 1, y0 + 1);
-                loot('torch', shrineX + 2, shrineZ + 3, y0 + 1);
-                mark(shrineX, shrineZ, 5, 5, 'cube-shrine');
-            }
-            const twX = cx - 20, twZ = cz + 16;
-            if (clear(twX, twZ, 3, 3)) {
-                const y0 = stampTower(edits, heights, n, twX, twZ, 3, 3, 6, 'log', 'plank', true);
-                loot('torch', twX + 1, twZ + 1, y0 + 5);
-                mark(twX, twZ, 3, 3, 'watchtower');
-            }
-        }
-
-        if (climate === 'cherry') {
-            const denX = cx - 20, denZ = cz + 14;
-            if (clear(denX, denZ, 5, 5)) {
-                const y0 = flattenPad(heights, n, denX, denZ, 5, 5);
-                for (let iz = denZ; iz < denZ + 5; iz += 1) {
-                    for (let ix = denX; ix < denX + 5; ix += 1) {
-                        const edge = ix === denX || ix === denX + 4 || iz === denZ || iz === denZ + 4;
-                        if (edge) putBlock(edits, ix, y0, iz, 'dirt');
-                        putBlock(edits, ix, y0 + 1, iz, edge ? 'log' : 'leaf');
-                    }
-                }
-                putBlock(edits, denX + 2, y0 + 1, denZ + 4, null);
-                loot('chest', denX + 2, denZ + 2, y0);
-                mark(denX, denZ, 5, 5, 'fox-den');
-            }
-        }
-
-        if (climate === 'desert') {
-            const ox = cx - 18, oz = cz + 12;
-            for (let dz = -4; dz <= 4; dz += 1) {
-                for (let dx = -4; dx <= 4; dx += 1) {
-                    if (ponds[(ox + dx) + ',' + (oz + dz)]) {
-                        setY(heights, n, ox + dx, oz + dz, Math.max(3, yAt(heights, n, ox + dx, oz + dz) - 1));
-                    }
-                }
-            }
-            tags.push('oasis');
-            const pyX = cx + 20, pyZ = cz - 22;
-            if (clear(pyX, pyZ, 7, 7)) {
-                const y0 = flattenPad(heights, n, pyX, pyZ, 7, 7);
-                for (let i = 0; i < 4; i += 1) {
-                    for (let iz = pyZ + i; iz < pyZ + 7 - i; iz += 1) {
-                        for (let ix = pyX + i; ix < pyX + 7 - i; ix += 1) {
-                            putBlock(edits, ix, y0 + i, iz, i === 3 ? 'gold' : 'sand');
-                        }
-                    }
-                }
-                loot('chest', pyX + 3, pyZ + 3, y0 + 1);
-                mark(pyX, pyZ, 7, 7, 'pyramid');
-            }
-            const campX = cx - 24, campZ = cz - 16;
-            if (clear(campX, campZ, 7, 7)) {
-                const y0 = flattenPad(heights, n, campX, campZ, 7, 7);
-                for (let i = 0; i < 7; i += 1) {
-                    if (i % 2 === 0) {
-                        putBlock(edits, campX + i, y0, campZ, 'sand');
-                        putBlock(edits, campX + i, y0 + 1, campZ, 'log');
-                        putBlock(edits, campX, y0, campZ + i, 'sand');
-                        putBlock(edits, campX + 6, y0 + 1, campZ + i, 'log');
-                    }
-                }
-                loot('chest', campX + 2, campZ + 2, y0);
-                loot('furnace', campX + 4, campZ + 3, y0);
-                loot('torch', campX + 1, campZ + 1, y0 + 1);
-                mark(campX, campZ, 7, 7, 'raid-camp');
-            }
-        }
-
-        if (climate === 'duskvale') {
-            const gyX = cx - 20, gyZ = cz + 16;
-            if (clear(gyX, gyZ, 7, 5)) {
-                const y0 = flattenPad(heights, n, gyX, gyZ, 7, 5);
-                for (let i = 0; i < 3; i += 1) {
-                    const gx = gyX + 1 + i * 2;
-                    stampPillar(edits, heights, n, gx, gyZ + 1, 2, 'stone');
-                    putBlock(edits, gx, y0 + 2, gyZ + 1, 'plank');
-                    loot('torch', gx, gyZ + 2, y0 + 1);
-                }
-                mark(gyX, gyZ, 7, 5, 'graveyard');
-            }
-            const pilX = cx + 20, pilZ = cz - 14;
-            if (clear(pilX, pilZ, 7, 3)) {
-                stampPillar(edits, heights, n, pilX, pilZ, 8, 'stone');
-                stampPillar(edits, heights, n, pilX + 3, pilZ + 1, 9, 'stone');
-                stampPillar(edits, heights, n, pilX + 6, pilZ, 8, 'stone');
-                mark(pilX, pilZ, 7, 3, 'enderman-pillars');
-            }
-            const rsX = cx - 16, rsZ = cz - 22;
-            if (clear(rsX, rsZ, 4, 4)) {
-                const y0 = stampTower(edits, heights, n, rsX, rsZ, 4, 4, 8, 'stone', 'stone', true);
-                loot('torch', rsX + 1, rsZ + 1, y0 + 7);
-                mark(rsX, rsZ, 4, 4, 'phantom-roost');
-            }
-        }
-
-        if (climate === 'crystal') {
-            const hutX = cx - 20, hutZ = cz + 14;
-            if (clear(hutX, hutZ, 5, 5)) {
-                const y0 = flattenPad(heights, n, hutX, hutZ, 5, 5);
-                [[0, 0], [4, 0], [0, 4], [4, 4]].forEach(function (p) {
-                    stampPillar(edits, heights, n, hutX + p[0], hutZ + p[1], 3, 'log');
-                });
-                for (let iz = hutZ; iz < hutZ + 5; iz += 1) {
-                    for (let ix = hutX; ix < hutX + 5; ix += 1) {
-                        const edge = ix === hutX || ix === hutX + 4 || iz === hutZ || iz === hutZ + 4;
-                        putBlock(edits, ix, y0 + 3, iz, 'plank');
-                        if (edge) {
-                            putBlock(edits, ix, y0 + 4, iz, 'plank');
-                            putBlock(edits, ix, y0 + 5, iz, 'plank');
-                        }
-                        putBlock(edits, ix, y0 + 6, iz, 'plank');
-                    }
-                }
-                putBlock(edits, hutX + 2, y0 + 4, hutZ + 4, null);
-                loot('chest', hutX + 2, hutZ + 2, y0 + 4);
-                loot('furnace', hutX + 1, hutZ + 2, y0 + 4);
-                mark(hutX, hutZ, 5, 5, 'witch-hut');
-            }
-            const nestX = cx + 18, nestZ = cz - 18;
-            if (clear(nestX, nestZ, 5, 5)) {
-                stampCrater(heights, n, nestX + 2, nestZ + 2, 2, 2);
-                for (let a = 0; a < 6; a += 1) {
-                    const px = nestX + 2 + Math.round(Math.cos(a) * 2);
-                    const pz = nestZ + 2 + Math.round(Math.sin(a) * 2);
-                    putBlock(edits, px, yAt(heights, n, px, pz), pz, 'stone');
-                }
-                mark(nestX, nestZ, 5, 5, 'spider-nest');
-            }
-            const shX = cx - 18, shZ = cz - 20;
-            if (clear(shX, shZ, 3, 3)) {
-                stampTower(edits, heights, n, shX, shZ, 3, 3, 6, 'stone', 'gold', false);
-                mark(shX, shZ, 3, 3, 'shulker-tower');
-            }
-            const pitX = cx + 22, pitZ = cz - 28;
-            if (clear(pitX, pitZ, 5, 5)) {
-                stampCrater(heights, n, pitX + 2, pitZ + 2, 2, 3);
-                for (let iz = pitZ; iz < pitZ + 5; iz += 1) {
-                    for (let ix = pitX; ix < pitX + 5; ix += 1) {
-                        putBlock(edits, ix, yAt(heights, n, ix, iz) - 1, iz, 'coal');
-                    }
-                }
-                mark(pitX, pitZ, 5, 5, 'warden-pit');
-            }
-        }
-
-        if (climate === 'deep_dark') {
-            const pitX = cx + 22, pitZ = cz - 28;
-            if (clear(pitX, pitZ, 5, 5)) {
-                stampCrater(heights, n, pitX + 2, pitZ + 2, 2, 3);
-                for (let iz = pitZ; iz < pitZ + 5; iz += 1) {
-                    for (let ix = pitX; ix < pitX + 5; ix += 1) {
-                        putBlock(edits, ix, yAt(heights, n, ix, iz) - 1, iz, 'coal');
-                    }
-                }
-                mark(pitX, pitZ, 5, 5, 'warden-pit');
-            }
-            const groveX = cx - 20, groveZ = cz + 16;
-            if (clear(groveX, groveZ, 5, 5)) {
-                const y0 = flattenPad(heights, n, groveX, groveZ, 5, 5);
-                for (let iz = groveZ; iz < groveZ + 5; iz += 1) {
-                    for (let ix = groveX; ix < groveX + 5; ix += 1) {
-                        putBlock(edits, ix, y0, iz, 'stone');
-                        if ((ix + iz) % 2 === 0) putBlock(edits, ix, y0 + 1, iz, 'coal');
-                    }
-                }
-                loot('chest', groveX + 2, groveZ + 2, y0 + 1);
-                mark(groveX, groveZ, 5, 5, 'sculk-grove');
-            }
-        }
-
-        if (climate === 'nether') {
-            [[cx - 20, cz + 14], [cx + 16, cz - 18], [cx - 12, cz - 22]].forEach(function (p, i) {
-                if (!clear(p[0] - 2, p[1] - 2, 5, 5)) return;
-                stampCrater(heights, n, p[0], p[1], 2, 2);
-                putBlock(edits, p[0], yAt(heights, n, p[0], p[1]), p[1], i % 2 ? 'gold' : 'coal');
-                mark(p[0] - 2, p[1] - 2, 5, 5, 'magma-pit');
-            });
-            const bx = cx + 20, bz = cz + 16;
-            if (clear(bx, bz, 7, 7)) {
-                const y0 = stampTower(edits, heights, n, bx, bz, 7, 7, 5, 'stone', 'gold', true);
-                putBlock(edits, bx + 3, y0 + 1, bz + 3, 'gold');
-                loot('chest', bx + 2, bz + 2, y0);
-                loot('furnace', bx + 4, bz + 3, y0);
-                mark(bx, bz, 7, 7, 'bastion');
-            }
-            const blX = cx - 24, blZ = cz - 10;
-            if (clear(blX, blZ, 3, 3)) {
-                stampTower(edits, heights, n, blX, blZ, 3, 3, 8, 'stone', 'gold', true);
-                mark(blX, blZ, 3, 3, 'blaze-cage');
-            }
-            const ghX = cx + 8, ghZ = cz - 28;
-            if (clear(ghX, ghZ, 3, 3)) {
-                for (let iz = ghZ; iz < ghZ + 3; iz += 1) {
-                    for (let ix = ghX; ix < ghX + 3; ix += 1) {
-                        setY(heights, n, ix, iz, Math.min(HEIGHT_MAX, yAt(heights, n, ix, iz) + 5));
-                    }
-                }
-                stampPillar(edits, heights, n, ghX + 1, ghZ + 1, 4, 'stone');
-                mark(ghX, ghZ, 3, 3, 'ghast-perch');
-            }
-        }
-
-        if (climate === 'forest') {
-            const nestX = cx + 20, nestZ = cz - 20;
-            if (clear(nestX, nestZ, 5, 5)) {
-                stampCrater(heights, n, nestX + 2, nestZ + 2, 2, 2);
-                mark(nestX, nestZ, 5, 5, 'spider-nest');
-            }
-            const twX = cx - 22, twZ = cz + 18;
-            if (clear(twX, twZ, 3, 3)) {
-                stampTower(edits, heights, n, twX, twZ, 3, 3, 7, 'log', 'leaf', true);
-                mark(twX, twZ, 3, 3, 'watchtower');
-            }
-        }
-
-        if (climate === 'quarry') {
-            const cutX = cx + 20, cutZ = cz - 20;
-            if (clear(cutX, cutZ, 7, 7)) {
-                stampCrater(heights, n, cutX + 3, cutZ + 3, 3, 3);
-                for (let iz = cutZ; iz < cutZ + 7; iz += 1) {
-                    for (let ix = cutX; ix < cutX + 7; ix += 1) {
-                        const edge = ix === cutX || ix === cutX + 6 || iz === cutZ || iz === cutZ + 6;
-                        putBlock(edits, ix, yAt(heights, n, ix, iz), iz, edge ? 'stone' : 'coal');
-                    }
-                }
-                loot('chest', cutX + 3, cutZ + 3, yAt(heights, n, cutX + 3, cutZ + 3));
-                mark(cutX, cutZ, 7, 7, 'mine-cut');
-            }
-            const padX = cx - 22, padZ = cz + 18;
-            if (clear(padX, padZ, 5, 5)) {
-                const y0 = flattenPad(heights, n, padX, padZ, 5, 5);
-                for (let iz = padZ; iz < padZ + 5; iz += 1) {
-                    for (let ix = padX; ix < padX + 5; ix += 1) {
-                        putBlock(edits, ix, y0, iz, 'stone');
-                    }
-                }
-                stampPillar(edits, heights, n, padX + 2, padZ + 2, 4, 'stone');
-                mark(padX, padZ, 5, 5, 'stone-pad');
-            }
-        }
-
-        if (climate === 'astral') {
-            const spX = cx + 20, spZ = cz - 20;
-            if (clear(spX, spZ, 5, 5)) {
-                const y0 = flattenPad(heights, n, spX, spZ, 5, 5);
-                for (let iz = spZ; iz < spZ + 5; iz += 1) {
-                    for (let ix = spX; ix < spX + 5; ix += 1) {
-                        putBlock(edits, ix, y0, iz, 'stone');
-                    }
-                }
-                stampPillar(edits, heights, n, spX + 2, spZ + 2, 8, 'stone');
-                putBlock(edits, spX + 2, y0 + 8, spZ + 2, 'gold');
-                loot('chest', spX + 1, spZ + 1, y0 + 1);
-                mark(spX, spZ, 5, 5, 'star-spire');
-            }
-            const ringX = cx - 22, ringZ = cz + 16;
-            if (clear(ringX, ringZ, 7, 7)) {
-                const y0 = flattenPad(heights, n, ringX, ringZ, 7, 7);
-                for (let a = 0; a < 8; a += 1) {
-                    const px = ringX + 3 + Math.round(Math.cos(a * Math.PI / 4) * 3);
-                    const pz = ringZ + 3 + Math.round(Math.sin(a * Math.PI / 4) * 3);
-                    putBlock(edits, px, y0, pz, 'iron');
-                    putBlock(edits, px, y0 + 1, pz, 'iron');
-                }
-                mark(ringX, ringZ, 7, 7, 'void-ring');
-            }
-        }
-
-        if (climate === 'snow') {
-            const igX = cx - 20, igZ = cz + 16;
-            if (clear(igX, igZ, 5, 5)) {
-                const y0 = flattenPad(heights, n, igX, igZ, 5, 5);
-                for (let iz = igZ; iz < igZ + 5; iz += 1) {
-                    for (let ix = igX; ix < igX + 5; ix += 1) {
-                        const edge = ix === igX || ix === igX + 4 || iz === igZ || iz === igZ + 4;
-                        putBlock(edits, ix, y0, iz, 'snow');
-                        if (edge) putBlock(edits, ix, y0 + 1, iz, 'snow');
-                        putBlock(edits, ix, y0 + 2, iz, 'snow');
-                    }
-                }
-                putBlock(edits, igX + 2, y0 + 1, igZ + 4, null);
-                loot('chest', igX + 2, igZ + 2, y0 + 1);
-                mark(igX, igZ, 5, 5, 'igloo');
-            }
-        }
-
-        if (climate === 'ocean') {
-            const dkX = cx + 18, dkZ = cz - 16;
-            if (clear(dkX, dkZ, 6, 3)) {
-                const y0 = flattenPad(heights, n, dkX, dkZ, 6, 3);
-                for (let iz = dkZ; iz < dkZ + 3; iz += 1) {
-                    for (let ix = dkX; ix < dkX + 6; ix += 1) {
-                        putBlock(edits, ix, y0, iz, 'plank');
-                    }
-                }
-                stampPillar(edits, heights, n, dkX, dkZ, 3, 'log');
-                stampPillar(edits, heights, n, dkX + 5, dkZ, 3, 'log');
-                loot('chest', dkX + 2, dkZ + 1, y0 + 1);
-                loot('torch', dkX + 4, dkZ + 1, y0 + 1);
-                mark(dkX, dkZ, 6, 3, 'dock');
-            }
-        }
-
-        if (climate === 'mushroom') {
-            const padX = cx - 18, padZ = cz - 16;
-            if (clear(padX, padZ, 5, 5)) {
-                const y0 = flattenPad(heights, n, padX, padZ, 5, 5);
-                stampPillar(edits, heights, n, padX + 2, padZ + 2, 3, 'log');
-                for (let dz = -2; dz <= 2; dz += 1) {
-                    for (let dx = -2; dx <= 2; dx += 1) {
-                        putBlock(edits, padX + 2 + dx, y0 + 3, padZ + 2 + dz, 'leaf');
-                    }
-                }
-                mark(padX, padZ, 5, 5, 'giant-mushroom');
-            }
-        }
-
-        if (climate === 'volcano') {
-            [[cx - 18, cz + 14], [cx + 16, cz - 18]].forEach(function (p) {
-                if (!clear(p[0] - 2, p[1] - 2, 5, 5)) return;
-                stampCrater(heights, n, p[0], p[1], 2, 2);
-                putBlock(edits, p[0], yAt(heights, n, p[0], p[1]), p[1], 'gold');
-                mark(p[0] - 2, p[1] - 2, 5, 5, 'magma-pit');
-            });
-            const blX = cx + 20, blZ = cz + 16;
-            if (clear(blX, blZ, 3, 3)) {
-                stampTower(edits, heights, n, blX, blZ, 3, 3, 8, 'stone', 'gold', true);
-                mark(blX, blZ, 3, 3, 'blaze-cage');
-            }
-        }
-
-        if (climate === 'end') {
-            const pilX = cx + 18, pilZ = cz - 16;
-            if (clear(pilX, pilZ, 7, 3)) {
-                stampPillar(edits, heights, n, pilX, pilZ, 9, 'stone');
-                stampPillar(edits, heights, n, pilX + 3, pilZ + 1, 10, 'stone');
-                stampPillar(edits, heights, n, pilX + 6, pilZ, 9, 'stone');
-                mark(pilX, pilZ, 7, 3, 'enderman-pillars');
-            }
-            const shX = cx - 20, shZ = cz + 14;
-            if (clear(shX, shZ, 3, 3)) {
-                stampTower(edits, heights, n, shX, shZ, 3, 3, 6, 'stone', 'gold', false);
-                mark(shX, shZ, 3, 3, 'shulker-tower');
-            }
-        }
-    }
-
-    function stampWordCubes(n, heights, edits, wordCells, words, cx, cz, village, ponds, treeSet) {
-        const list = (words || []).filter(function (w) { return w && w.text; }).slice(0, 48);
-        if (!list.length) return;
-        const spots = [];
-        function addRing(ox, oz, radii, twist) {
-            radii.forEach(function (r, ri) {
-                const count = 8 + ri * 2;
-                for (let k = 0; k < count; k += 1) {
-                    const a = (k / count) * Math.PI * 2 + (twist || 0) + ri * 0.15;
-                    spots.push([Math.round(ox + Math.cos(a) * r), Math.round(oz + Math.sin(a) * r)]);
-                }
-            });
-        }
-        addRing(cx, cz, [8, 12, 16, 22, 28, 36, 48], 0);
-        (Array.isArray(village) ? village : []).forEach(function (plan, pi) {
-            const mx = Math.round(((Number(plan.x0) || 0) + (Number(plan.x1) || 0)) / 2);
-            const mz = Math.round(((Number(plan.z0) || 0) + (Number(plan.z1) || 0)) / 2);
-            if (Math.hypot(mx - cx, mz - cz) < 14) return;
-            addRing(mx, mz, [7, 11], pi * 0.4);
-        });
-        let i = 0;
-        const usedXZ = {};
-        spots.forEach(function (spot) {
-            if (i >= list.length) return;
-            const x = spot[0], z = spot[1];
-            if (x < 2 || z < 2 || x >= n - 2 || z >= n - 2) return;
-            if (usedXZ[x + ',' + z]) return;
-            if (inAnyRect(x, z, village) || ponds[x + ',' + z] || treeSet[x + ',' + z]) return;
-            if (Math.abs(x - cx) <= 2 && Math.abs(z - cz) <= 2) return;
-            const y = heights[z * n + x];
-            const key = x + ',' + y + ',' + z;
-            if (edits[key]) return;
-            edits[key] = 'word';
-            wordCells[key] = list[i];
-            usedXZ[x + ',' + z] = 1;
-            i += 1;
-        });
-    }
-
-    function addWordArch(n, heights, edits, gates, x, z, axis, word) {
-        if (!word || x < 2 || z < 2 || x >= n - 2 || z >= n - 2) return;
-        const y = heights[z * n + x] || 4;
-        const cells = [];
-        const put = function (ix, iy, iz, kind) {
-            const key = ix + ',' + iy + ',' + iz;
-            edits[key] = kind;
-            cells.push(key);
-        };
-        for (let i = -1; i <= 1; i += 1) {
-            const ix = axis === 'x' ? x : x + i;
-            const iz = axis === 'x' ? z + i : z;
-            put(ix, y, iz, i === 0 ? 'gate' : 'log');
-            put(ix, y + 1, iz, i === 0 ? 'gate' : 'log');
-            put(ix, y + 2, iz, i === 0 ? 'word' : 'plank');
-        }
-        gates.push({ x: x, z: z, y: y, word: word, open: false, cells: cells });
-    }
-
-    function stampWordGates(n, heights, edits, words, cx, cz, village) {
-        const list = (words || []).filter(function (w) { return w && w.text; }).slice(0, 8);
-        const gates = [];
-        if (!list.length) return gates;
-        addWordArch(n, heights, edits, gates, cx + 5, cz, 'x', list[0]);
-        addWordArch(n, heights, edits, gates, cx - 6, cz + 1, 'x', list[1] || list[0]);
-        addWordArch(n, heights, edits, gates, cx, cz + 8, 'z', list[3] || list[0]);
-        addWordArch(n, heights, edits, gates, cx + 10, cz - 4, 'z', list[4] || list[1] || list[0]);
-        if (village && village.houses && village.houses.length) {
-            const house = village.houses.filter(function (h) { return h.role === 'word'; })[0] || village.houses[0];
-            addWordArch(n, heights, edits, gates, house.x + Math.floor(house.w / 2), house.z + house.d, 'z', list[2] || list[0]);
-        }
-        return gates;
-    }
-
-    function openWordGate(world, gate) {
-        if (!world || !gate || gate.open) return false;
-        gate.open = true;
-        if (!world.edits) world.edits = {};
-        (gate.cells || []).forEach(function (key) {
-            world.edits[key] = null;
-        });
-        return true;
-    }
-
-    function carveCaves(n, heights, hollow, rng, climate, cx, cz, village, treeSet, ponds) {
-        const worms = climate === 'quarry' ? 22
-            : climate === 'crystal' || climate === 'duskvale' ? 20
-                : climate === 'astral' ? 8
-                    : climate === 'desert' ? 10
-                        : 14;
-        const starts = [];
-        if (climate !== 'astral') {
-            starts.push([cx - 16, cz - 8], [cx - 10, cz + 14], [cx + 6, cz - 18]);
-        }
-        for (let w = 0; w < worms; w += 1) {
-            starts.push([6 + Math.floor(rng() * (n - 12)), 6 + Math.floor(rng() * (n - 12))]);
-        }
-        starts.forEach(function (start) {
-            let x = start[0], z = start[1];
-            if (Math.abs(x - cx) < 8 && Math.abs(z - cz) < 8) return;
-            if (inAnyRect(x, z, village)) return;
-            const h0 = heights[z * n + x] || 4;
-            let y = Math.max(2, Math.min(h0 - 3, 2 + Math.floor(rng() * Math.max(1, h0 - 4))));
-            const steps = 22 + Math.floor(rng() * 18);
-            for (let s = 0; s < steps; s += 1) {
-                for (let dy = -1; dy <= 1; dy += 1) {
-                    for (let dz = -1; dz <= 0; dz += 1) {
-                        for (let dx = -1; dx <= 0; dx += 1) {
-                            const xx = x + dx, yy = y + dy, zz = z + dz;
-                            if (xx < 1 || zz < 1 || xx >= n - 1 || zz >= n - 1 || yy < 1) continue;
-                            if (inAnyRect(xx, zz, village)) continue;
-                            if (treeSet[xx + ',' + zz]) continue;
-                            const top = heights[zz * n + xx];
-                            if (yy >= top) continue;
-                            if (ponds[xx + ',' + zz] && yy >= top - 1) continue;
-                            if (yy === top - 1 && rng() > 0.12) continue;
-                            hollow[xx + ',' + yy + ',' + zz] = 1;
-                        }
-                    }
-                }
-                x += Math.floor(rng() * 3) - 1;
-                z += Math.floor(rng() * 3) - 1;
-                y += Math.floor(rng() * 3) - 1;
-                x = Math.max(2, Math.min(n - 3, x));
-                z = Math.max(2, Math.min(n - 3, z));
-                const nh = heights[z * n + x] || 4;
-                y = Math.max(1, Math.min(nh - 2, y));
-            }
-        });
-    }
-
-    function createWorld(seed, options) {
-        const opts = options || {};
-        const climateName = opts.climate || 'plains';
-        const climate = climateOf(climateName);
-        const rng = makeRng(seed || 7);
-        const n = WORLD_SIZE;
-        const heightGrid = makeGrid(rng, 12);
-        const tempGrid = makeGrid(rng, 6);
-        const moistGrid = makeGrid(rng, 6);
-        const heights = new Uint8Array(n * n);
-        const biomes = new Uint8Array(n * n);
-        const at = function (x, z) { return heights[z * n + x]; };
-        const put = function (x, z, h) { heights[z * n + x] = h; };
-        const hSpan = Math.max(1, climate.hMax - climate.hMin);
-        for (let z = 0; z < n; z += 1) {
-            for (let x = 0; x < n; x += 1) {
-                const hv = sampleGrid(heightGrid, 12, n, x, z);
-                const tv = Math.max(0, Math.min(1, climate.temp + (sampleGrid(tempGrid, 6, n, x, z) - 0.5) * 0.7));
-                const mv = Math.max(0, Math.min(1, climate.moist + (sampleGrid(moistGrid, 6, n, x, z) - 0.5) * 0.7));
-                const step = hash3(x, 3, z) > 0.8 ? 1 : 0;
-                const h = Math.min(HEIGHT_MAX, climate.hMin + Math.round(hv * hSpan) + step);
-                put(x, z, h);
-                biomes[z * n + x] = pickBiome(tv, mv, hv);
-            }
-        }
-        if (climateName === 'desert' || climateName === 'nether' || climateName === 'cherry' || climateName === 'snow') {
-            const forced = climateName === 'desert' ? 2 : climateName === 'nether' ? 3 : climateName === 'snow' ? 4 : 1;
-            biomes.fill(forced);
-        }
-        const cx = Math.floor(n / 2), cz = Math.floor(n / 2);
-        const base = at(cx, cz);
-        for (let dz = -1; dz <= 1; dz += 1) {
-            for (let dx = -1; dx <= 1; dx += 1) {
-                put(cx + dx, cz + dz, base);
-                biomes[(cz + dz) * n + (cx + dx)] = climateName === 'astral' ? 4
-                    : climateName === 'nether' ? 3
-                    : climateName === 'desert' ? 2
-                    : climateName === 'quarry' ? 3
-                    : climateName === 'cherry' ? 1
-                    : 0;
-            }
-        }
-        stampRidge(n, heights, biomes, cx, cz);
-        const mainVillage = villagePlan(climateName, cx, cz);
-        const hamlets = hamletPlans(climateName, cx, cz, n);
-        const towns = (mainVillage ? [mainVillage] : []).concat(hamlets);
-        const ponds = {};
-        stampRiver(n, ponds, heights, climateName, cx, cz, towns);
-        stampPonds(n, ponds, rng, climateName, cx, cz, towns);
-        const edits = {};
-        towns.forEach(function (plan) {
-            stampVillage(n, heights, edits, ponds, plan);
-        });
-        const landmarkSites = [];
-        const landmarkProps = [];
-        const landmarkTags = [];
-        stampLandmarks(n, heights, edits, ponds, climateName, cx, cz, towns, rng, landmarkSites, landmarkProps, landmarkTags);
-        const blocked = towns.concat(landmarkSites);
-        const trees = [];
-        let guard = 0;
-        const mapScale = n / 256;
-        const wantTrees = Math.round(climate.trees * mapScale);
-        while (trees.length < wantTrees && guard < 6000) {
-            guard += 1;
-            const tx = 3 + Math.floor(rng() * (n - 6));
-            const tz = 3 + Math.floor(rng() * (n - 6));
-            if (Math.abs(tx - cx) <= 3 && Math.abs(tz - cz) <= 3) continue;
-            if (inAnyRect(tx, tz, blocked) || ponds[tx + ',' + tz]) continue;
-            const biome = BIOME_NAMES[biomes[tz * n + tx]];
-            const minGap = climateName === 'desert' || biome === 'desert' ? 3
-                : climateName === 'nether' ? 6
-                : 5;
-            if (trees.some(function (t) { return Math.abs(t.x - tx) + Math.abs(t.z - tz) < minGap; })) continue;
-            const roll = rng();
-            let species = 'oak';
-            if (climateName === 'nether') species = 'crimson';
-            else if (climateName === 'desert' || biome === 'desert') species = 'cactus';
-            else if (climateName === 'cherry') species = 'cherry';
-            else if (biome === 'snow' || climateName === 'astral') species = roll < 0.88 ? 'spruce' : 'birch';
-            else if (biome === 'forest' || climateName === 'crystal') species = roll < climate.spruce ? 'spruce' : (roll < climate.spruce + climate.birch ? 'birch' : 'oak');
-            else if (roll < climate.oak) species = 'oak';
-            else if (roll < climate.oak + climate.birch) species = 'birch';
-            else species = 'spruce';
-            const trunk = species === 'cactus'
-                ? 2 + Math.floor(rng() * 3)
-                : species === 'crimson'
-                    ? 3 + Math.floor(rng() * 2)
-                    : species === 'cherry'
-                        ? 5 + Math.floor(rng() * 2)
-                        : species === 'spruce'
-                            ? 6 + Math.floor(rng() * 3)
-                            : species === 'birch'
-                                ? 5 + Math.floor(rng() * 2)
-                                : 4 + Math.floor(rng() * 2);
-            trees.push({ x: tx, z: tz, surface: at(tx, tz), trunk: trunk, species: species });
-        }
-        const flowers = [];
-        guard = 0;
-        const wantFlowers = Math.round(climate.flowers * mapScale);
-        while (flowers.length < wantFlowers && guard < 4000) {
-            guard += 1;
-            const fx = 2 + Math.floor(rng() * (n - 4));
-            const fz = 2 + Math.floor(rng() * (n - 4));
-            if (Math.abs(fx - cx) <= 2 && Math.abs(fz - cz) <= 2) continue;
-            if (inAnyRect(fx, fz, blocked) || ponds[fx + ',' + fz]) continue;
-            const biome = BIOME_NAMES[biomes[fz * n + fx]];
-            if (biome === 'desert' || biome === 'snow' || climateName === 'nether') continue;
-            if (trees.some(function (t) { return t.x === fx && t.z === fz; })) continue;
-            const kind = climateName === 'cherry'
-                ? (rng() > 0.4 ? 'petal' : 'sakura')
-                : climateName === 'duskvale'
-                    ? (rng() > 0.5 ? 'amber' : 'poppy')
-                    : climateName === 'crystal'
-                        ? (rng() > 0.5 ? 'crystal' : 'dandelion')
-                        : (rng() > 0.45 ? 'poppy' : 'dandelion');
-            flowers.push({ x: fx, z: fz, kind: kind });
-        }
-        const plants = ((mainVillage && mainVillage.crops) || []).slice();
-        const wantPlants = Math.round((climateName === 'nether' || climateName === 'volcano' ? 28 : climateName === 'desert' ? 18 : Math.max(24, Math.floor(climate.flowers * 0.55))) * mapScale);
-        guard = 0;
-        while (plants.length < wantPlants && guard < 3600) {
-            guard += 1;
-            const px = 2 + Math.floor(rng() * (n - 4));
-            const pz = 2 + Math.floor(rng() * (n - 4));
-            if (Math.abs(px - cx) <= 2 && Math.abs(pz - cz) <= 2) continue;
-            if (inAnyRect(px, pz, blocked) || ponds[px + ',' + pz]) continue;
-            if (trees.some(function (t) { return t.x === px && t.z === pz; })) continue;
-            const pkind = climateName === 'nether'
-                ? (rng() > 0.5 ? 'wart' : 'mushroom')
-                : climateName === 'desert'
-                    ? (rng() > 0.45 ? 'deadbush' : 'tumble')
-                    : climateName === 'cherry'
-                        ? (rng() > 0.5 ? 'bush' : 'petalplant')
-                        : climateName === 'crystal'
-                            ? (rng() > 0.5 ? 'crystalbush' : 'reed')
-                            : (rng() > 0.5 ? 'tallgrass' : (rng() > 0.45 ? 'bush' : 'reed'));
-            plants.push({ x: px, z: pz, kind: pkind });
-        }
-        const animals = [];
-        const animalKinds = climateName === 'nether' || climateName === 'desert' || climateName === 'volcano' || climateName === 'end' ? []
-            : climateName === 'crystal' ? ['sheep', 'chicken']
-                : climateName === 'duskvale' ? ['wolf', 'cow', 'chicken']
-                    : climateName === 'cherry' ? ['pig', 'chicken', 'sheep', 'bee']
-                        : climateName === 'snow' ? ['wolf', 'sheep', 'chicken']
-                            : climateName === 'mushroom' ? ['cow', 'sheep', 'bee']
-                                : climateName === 'deep_dark' ? ['wolf']
-                                    : climateName === 'ocean' ? ['chicken']
-                                        : ['pig', 'cow', 'sheep', 'chicken', 'wolf', 'bee'];
-        guard = 0;
-        const herd = Math.max(4, Math.round(4 * mapScale));
-        while (animals.length < animalKinds.length * herd && guard < 3600 && animalKinds.length) {
-            guard += 1;
-            const ax = 4 + Math.floor(rng() * (n - 8));
-            const az = 4 + Math.floor(rng() * (n - 8));
-            if (Math.abs(ax - cx) <= 3 && Math.abs(az - cz) <= 3) continue;
-            if (inAnyRect(ax, az, blocked) || ponds[ax + ',' + az]) continue;
-            if (trees.some(function (t) { return Math.abs(t.x - ax) + Math.abs(t.z - az) < 2; })) continue;
-            animals.push({
-                x: ax + 0.5,
-                z: az + 0.5,
-                kind: animalKinds[animals.length % animalKinds.length],
-                yaw: rng() * Math.PI * 2,
-                phase: rng()
-            });
-        }
-        const pondKeys = Object.keys(ponds);
-        if (pondKeys.length && climateName !== 'nether' && climateName !== 'volcano' && climateName !== 'end') {
-            const waterKinds = climateName === 'crystal' || climateName === 'ocean'
-                ? ['pufferfish', 'guardian', 'guardian']
-                : ['pufferfish', 'guardian'];
-            const wantWater = Math.min(pondKeys.length, waterKinds.length * (climateName === 'ocean' ? 5 : 2));
-            for (let wi = 0; wi < wantWater; wi += 1) {
-                const key = pondKeys[Math.floor(rng() * pondKeys.length)];
-                const parts = key.split(',');
-                const wx = Number(parts[0]) + 0.5;
-                const wz = Number(parts[1]) + 0.5;
-                animals.push({
-                    x: wx,
-                    z: wz,
-                    kind: waterKinds[wi % waterKinds.length],
-                    habitat: 'water',
-                    yaw: rng() * Math.PI * 2,
-                    phase: rng()
-                });
-            }
-        }
-        const treeSet = {};
-        trees.forEach(function (t) { treeSet[t.x + ',' + t.z] = 1; });
-        const wordCells = {};
-        const wordGates = stampWordGates(n, heights, edits, opts.words, cx, cz, mainVillage);
-        stampWordCubes(n, heights, edits, wordCells, opts.words, cx, cz, towns, ponds, treeSet);
-        const hollow = {};
-        carveCaves(n, heights, hollow, rng, climateName, cx, cz, towns, treeSet, ponds);
-        const allHouses = [];
-        const allVillagers = [];
-        const allBeds = [];
-        const allProps = [];
-        const golems = [];
-        towns.forEach(function (plan) {
-            if (plan.houses) allHouses.push.apply(allHouses, plan.houses);
-            if (plan.villagers) allVillagers.push.apply(allVillagers, plan.villagers);
-            if (plan.beds) allBeds.push.apply(allBeds, plan.beds);
-            if (plan.props) allProps.push.apply(allProps, plan.props);
-            if (plan.golem) golems.push({ x: plan.golem.x, z: plan.golem.z, kind: 'golem' });
-            if (plan.snowgolem) golems.push({ x: plan.snowgolem.x, z: plan.snowgolem.z, kind: 'snowgolem' });
-        });
-        allProps.push.apply(allProps, landmarkProps);
-        return {
-            seed: seed || 7,
-            climate: climateName,
-            size: n,
-            heights: heights,
-            biomes: biomes,
-            trees: trees,
-            treeCols: buildTreeCols(trees),
-            flowers: flowers,
-            plants: plants,
-            animals: animals,
-            placedProps: allProps,
-            villagers: allVillagers,
-            beds: allBeds,
-            garden: mainVillage && mainVillage.garden ? mainVillage.garden : null,
-            well: mainVillage && mainVillage.well ? mainVillage.well : null,
-            golems: golems,
-            edits: edits,
-            ponds: ponds,
-            hollow: hollow,
-            wordCells: wordCells,
-            wordGates: wordGates,
-            houses: allHouses,
-            landmarks: landmarkTags,
-            surfaceAt: function (x, z) { return surfaceAtWorld(this, x, z); },
-            treeAt: function (x, z) {
-                return trees.find(function (t) { return t.x === x && t.z === z; }) || null;
-            }
-        };
+    function clamp01(n) {
+        return n < 0 ? 0 : n > 1 ? 1 : n;
     }
 
     /* ---------- 调色 ---------- */
@@ -1299,12 +64,12 @@
             : species === 'birch' ? [0.94, 0.90, 0.80]
             : species === 'spruce' ? [0.72, 0.58, 0.42]
             : [0.92, 0.74, 0.52];
-        const leaf = species === 'cactus' ? [0.32, 0.70, 0.34]
-            : species === 'crimson' ? [0.82, 0.22, 0.28]
-            : species === 'cherry' ? [0.96, 0.58, 0.76]
-            : species === 'birch' ? [0.80, 0.94, 0.52]
-            : species === 'spruce' ? [0.52, 0.80, 0.58]
-            : [0.68, 0.92, 0.52];
+        const leaf = species === 'cactus' ? [0.35, 0.76, 0.37]
+            : species === 'crimson' ? [0.89, 0.24, 0.30]
+            : species === 'cherry' ? [1.00, 0.63, 0.82]
+            : species === 'birch' ? [0.86, 1.00, 0.56]
+            : species === 'spruce' ? [0.56, 0.86, 0.63]
+            : [0.73, 0.99, 0.56];
         const pal = {
             grass: grass,
             dirt: [0.90, 0.74, 0.54],
@@ -1324,6 +89,11 @@
             gate: [0.86, 0.62, 0.18]
         };
         const base = pal[kind] || pal.dirt;
+        if (kind === 'leaf') {
+            // 第二颗种子，避免与 v 同向只压暗；通道同加不偏色
+            const j = hash3(x + 17, y + 9, z + 3) * 0.12 - 0.06;
+            return [clamp01(base[0] + v + j), clamp01(base[1] + v + j), clamp01(base[2] + v + j)];
+        }
         if (climate === 'nether' && kind !== 'log' && kind !== 'leaf') {
             return [base[0] * 0.72 + 0.22 + v, base[1] * 0.38 + 0.04 + v, base[2] * 0.34 + 0.02 + v];
         }
@@ -1388,6 +158,7 @@
         if (kind === 'table') return 5;
         if (kind === 'word' || kind === 'gate') return 7;
         if (kind === 'glass') return 14;
+        if (kind === 'tnt') return 34;
         return 2;
     }
 
@@ -1428,7 +199,7 @@
             return [c[0] * f, c[1] * f, c[2] * f];
         }
         const C = {
-            grass: [138, 206, 96],
+            grass: [126, 208, 72],
             dirt: [198, 152, 104],
             dirtDark: [156, 114, 74],
             dirtLight: [226, 184, 128],
@@ -1439,7 +210,7 @@
             birch: [240, 232, 214],
             birchDark: [120, 108, 90],
             spruce: [148, 114, 78],
-            oakLeaf: [132, 208, 102],
+            oakLeaf: [124, 200, 66],
             birchLeaf: [168, 216, 104],
             spruceLeaf: [110, 176, 122],
             cherry: [148, 86, 96],
@@ -1553,12 +324,15 @@
         function paintLeaf(tx, ty, base, seed) {
             for (let y = 0; y < tile; y += 1) {
                 for (let x = 0; x < tile; x += 1) {
-                    if (n2(x, y, seed) < 0.04) {
+                    const edge = Math.min(x, y, 15 - x, 15 - y);
+                    const hole = n2(x, y, seed) < (edge < 2 ? 0.22 : 0.05);
+                    if (hole) {
                         px(tx, ty, x, y, 0, 0, 0, 0);
                         continue;
                     }
-                    const f = n2(x, y, seed + 1) < 0.28 ? 1.22 : 1.06;
-                    const c = mul(base, f * lum(x, y, seed + 2, 0.08));
+                    const roll = n2(x, y, seed + 1);
+                    const f = roll < 0.16 ? 0.62 : roll < 0.42 ? 0.86 : roll < 0.78 ? 1.08 : 1.32;
+                    const c = mul(base, f * lum(x, y, seed + 2, 0.05));
                     px(tx, ty, x, y, c[0], c[1], c[2]);
                 }
             }
@@ -1758,6 +532,16 @@
         }
         paintOre(0, 8, [214, 176, 48], [255, 230, 120], 70);
         paintOre(1, 8, [72, 210, 214], [180, 250, 255], 71);
+        function paintTnt(tx, ty) {
+            for (let y = 0; y < tile; y += 1) {
+                for (let x = 0; x < tile; x += 1) {
+                    const band = y >= 6 && y <= 9;
+                    const c = band ? [236, 232, 224] : ((x + y) % 2 ? [196, 62, 42] : [168, 40, 28]);
+                    px(tx, ty, x, y, c[0], c[1], c[2]);
+                }
+            }
+        }
+        paintTnt(2, 8);
         if (AtlasPaint && typeof AtlasPaint.paintLeaves === 'function') {
             AtlasPaint.paintLeaves(function (index, x, y, r, g, b, a) {
                 px(index % ATLAS_COLS, Math.floor(index / ATLAS_COLS), x, y, r, g, b, a);
@@ -1772,265 +556,6 @@
         return tex;
     }
 
-    /* ---------- 体素占用：高度图 + 树 + 玩家挖掘覆盖 ---------- */
-    function rawHeight(world, x, z) {
-        if (x < 0 || z < 0 || x >= world.size || z >= world.size) return 0;
-        return world.heights[z * world.size + x];
-    }
-
-    function oreNoise(x, y, z) {
-        let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(z, 2147483647)) >>> 0;
-        h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
-        return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-    }
-
-    function oreOrStone(x, y, z, climate) {
-        const n = oreNoise(x, y + 11, z);
-        const gemCut = climate === 'crystal' ? 0.982 : 0.994;
-        const goldCut = climate === 'nether' ? 0.968 : 0.988;
-        if (n > gemCut) return 'diamond';
-        if (n > goldCut) return 'gold';
-        if (n > 0.975) return 'iron';
-        if (n > 0.94) return 'coal';
-        return 'stone';
-    }
-
-    function groundKind(world, x, y, z) {
-        const h = rawHeight(world, x, z);
-        if (y < 0 || y >= h) return null;
-        if (world.climate === 'nether') {
-            if (y >= h - 2) return 'stone';
-            return oreOrStone(x, y, z, world.climate);
-        }
-        const biome = biomeAt(world, x, z);
-        if (world.climate === 'desert' || biome === 'desert') {
-            if (y >= h - 2) return 'sand';
-            return oreOrStone(x, y, z, world.climate);
-        }
-        if (biome === 'snow') {
-            if (y === h - 1) return 'snow';
-            if (y === h - 2) return 'dirt';
-            return oreOrStone(x, y, z, world.climate);
-        }
-        if (biome === 'mountain' && h >= 11 && y === h - 1 && world.climate !== 'crystal' && world.climate !== 'cherry') return 'stone';
-        if (y === h - 1) return 'grass';
-        if (y === h - 2) return 'dirt';
-        return oreOrStone(x, y, z, world.climate);
-    }
-
-    function eachTreeVoxel(tree, fn) {
-        const species = tree.species || 'oak';
-        for (let i = 0; i < tree.trunk; i += 1) fn(tree.x, tree.surface + i, tree.z, 'log', species);
-        const ty = tree.surface + tree.trunk;
-        if (species === 'cactus') {
-            const h = hash3(tree.x, 9, tree.z);
-            const ay = tree.surface + Math.max(1, tree.trunk - 2);
-            if (h > 0.32) {
-                const dir = h > 0.66 ? 1 : -1;
-                fn(tree.x + dir, ay, tree.z, 'log', species);
-                if (h > 0.78) fn(tree.x + dir, ay + 1, tree.z, 'log', species);
-            }
-            if (h < 0.48) fn(tree.x, ay, tree.z + (h < 0.24 ? 1 : -1), 'log', species);
-            return;
-        }
-        if (species === 'crimson') {
-            for (let dz = -2; dz <= 2; dz += 1) {
-                for (let dx = -2; dx <= 2; dx += 1) {
-                    if (Math.abs(dx) === 2 && Math.abs(dz) === 2) continue;
-                    fn(tree.x + dx, ty, tree.z + dz, 'leaf', species);
-                }
-            }
-            for (let dz = -1; dz <= 1; dz += 1) {
-                for (let dx = -1; dx <= 1; dx += 1) {
-                    fn(tree.x + dx, ty + 1, tree.z + dz, 'leaf', species);
-                }
-            }
-            return;
-        }
-        if (species === 'cherry') {
-            for (let ly = 0; ly < 3; ly += 1) {
-                const r = ly === 2 ? 1 : 2;
-                for (let dz = -r; dz <= r; dz += 1) {
-                    for (let dx = -r; dx <= r; dx += 1) {
-                        if (dx === 0 && dz === 0 && ly === 0) continue;
-                        if (r === 2 && Math.abs(dx) === 2 && Math.abs(dz) === 2 && ly === 0) continue;
-                        fn(tree.x + dx, ty - 1 + ly, tree.z + dz, 'leaf', species);
-                    }
-                }
-            }
-            fn(tree.x, ty + 2, tree.z, 'leaf', species);
-            fn(tree.x + 1, ty - 2, tree.z, 'leaf', species);
-            fn(tree.x - 1, ty - 2, tree.z + 1, 'leaf', species);
-            return;
-        }
-        if (species === 'spruce') {
-            for (let ly = 0; ly < 5; ly += 1) {
-                const r = Math.max(0, 2 - Math.floor(ly / 2));
-                const y = ty - 2 + ly;
-                for (let dz = -r; dz <= r; dz += 1) {
-                    for (let dx = -r; dx <= r; dx += 1) {
-                        if (dx === 0 && dz === 0 && ly < 3) continue;
-                        if (r > 0 && Math.abs(dx) === r && Math.abs(dz) === r) continue;
-                        fn(tree.x + dx, y, tree.z + dz, 'leaf', species);
-                    }
-                }
-            }
-            return;
-        }
-        const layers = species === 'birch' ? 2 : 2;
-        for (let ly = 0; ly < layers; ly += 1) {
-            const r = species === 'birch' ? 1 : (ly === 0 ? 2 : 1);
-            for (let dz = -r; dz <= r; dz += 1) {
-                for (let dx = -r; dx <= r; dx += 1) {
-                    if (dx === 0 && dz === 0 && ly === 0) continue;
-                    if (Math.abs(dx) === 2 && Math.abs(dz) === 2) continue;
-                    fn(tree.x + dx, ty - 1 + ly, tree.z + dz, 'leaf', species);
-                }
-            }
-        }
-        fn(tree.x, ty + 1, tree.z, 'leaf', species);
-        if (species === 'oak') fn(tree.x, ty + 2, tree.z, 'leaf', species);
-    }
-
-    function buildTreeCols(trees) {
-        const cols = {};
-        (trees || []).forEach(function (tree) {
-            eachTreeVoxel(tree, function (x, y, z, kind, species) {
-                const key = x + ',' + z;
-                if (!cols[key]) cols[key] = {};
-                cols[key][y] = { kind: kind, species: species || tree.species || 'oak' };
-            });
-        });
-        return cols;
-    }
-
-    function treeVoxelAt(world, x, y, z) {
-        if (!world.treeCols) world.treeCols = buildTreeCols(world.trees || []);
-        const col = world.treeCols[x + ',' + z];
-        return col && col[y] ? col[y] : null;
-    }
-
-    function treeKindAt(world, x, y, z) {
-        const hit = treeVoxelAt(world, x, y, z);
-        return hit ? hit.kind : null;
-    }
-
-    function editKey(x, y, z) { return x + ',' + y + ',' + z; }
-
-    function voxelAt(world, x, y, z) {
-        if (y < 0 || x < 0 || z < 0 || x >= world.size || z >= world.size) return null;
-        if (!world.edits) world.edits = {};
-        const key = editKey(x, y, z);
-        if (Object.prototype.hasOwnProperty.call(world.edits, key)) return world.edits[key];
-        if (world.hollow && world.hollow[key]) return null;
-        const tree = treeVoxelAt(world, x, y, z);
-        if (tree) return tree.kind;
-        if (world.ponds && world.ponds[x + ',' + z] && y === rawHeight(world, x, z) - 1) return 'water';
-        return groundKind(world, x, y, z);
-    }
-
-    function voxelSpecies(world, x, y, z) {
-        const tree = treeVoxelAt(world, x, y, z);
-        return tree ? tree.species : null;
-    }
-
-    function hasBlock(world, x, y, z) {
-        return voxelAt(world, x, y, z) != null;
-    }
-
-    function blockKindAt(world, x, y, z) {
-        return voxelAt(world, x, y, z);
-    }
-
-    function inHouse(world, x, z) {
-        const houses = world && world.houses;
-        if (!houses || !houses.length) return false;
-        const ix = Math.floor(x), iz = Math.floor(z);
-        for (let i = 0; i < houses.length; i += 1) {
-            const h = houses[i];
-            if (ix >= h.x && ix < h.x + h.w && iz >= h.z && iz < h.z + h.d) return true;
-        }
-        return false;
-    }
-
-    function columnBlockedAt(world, px, pz, feetY) {
-        const cx = Math.floor(px), cz = Math.floor(pz);
-        if (!world) return true;
-        if (world.surfaceAt(cx, cz) - feetY > STEP_UP) return true;
-        const y0 = Math.floor(feetY + 0.35);
-        const y1 = Math.floor(feetY + 1.55);
-        for (let y = y0; y <= y1; y += 1) {
-            const kind = voxelAt(world, cx, y, cz);
-            if (kind && kind !== 'water') return true;
-        }
-        return false;
-    }
-
-    function wallBetween(world, ax, ay, az, bx, by, bz) {
-        const dx = bx - ax, dy = by - ay, dz = bz - az;
-        const dist = Math.hypot(dx, dy, dz) || 1;
-        const steps = Math.max(4, Math.ceil(dist / 0.12));
-        const minY = Math.min(ay, by) - 0.25;
-        const stop = Math.max(0.2, dist - 0.35);
-        for (let i = 1; i < steps; i += 1) {
-            const t = i / steps;
-            if (t * dist > stop) break;
-            const y = ay + dy * t;
-            if (y < minY) continue;
-            const kind = voxelAt(world, Math.floor(ax + dx * t), Math.floor(y), Math.floor(az + dz * t));
-            if (kind && kind !== 'water') return true;
-        }
-        return false;
-    }
-
-    function isGroundKind(kind) {
-        return kind === 'grass' || kind === 'dirt' || kind === 'stone' || kind === 'sand' || kind === 'snow'
-            || kind === 'water' || kind === 'coal' || kind === 'iron' || kind === 'gold' || kind === 'diamond' || kind === 'plank';
-    }
-
-    function surfaceAtWorld(world, x, z) {
-        if (x < 0 || z < 0 || x >= world.size || z >= world.size) return HEIGHT_MAX + 4;
-        const top = rawHeight(world, x, z);
-        for (let y = top - 1; y >= 0; y -= 1) {
-            const kind = voxelAt(world, x, y, z);
-            if (kind && isGroundKind(kind)) return y + 1;
-        }
-        return 0;
-    }
-
-    function removeTree(world, tree) {
-        if (!tree || !world.trees) return { ok: false };
-        const idx = world.trees.indexOf(tree);
-        const target = idx >= 0 ? tree : world.treeAt(tree.x, tree.z);
-        if (!target) return { ok: false };
-        const at = world.trees.indexOf(target);
-        if (at < 0) return { ok: false };
-        world.trees.splice(at, 1);
-        world.treeCols = buildTreeCols(world.trees);
-        return { ok: true, drop: 'oak-log', x: target.x, z: target.z, y: target.surface, kind: 'log' };
-    }
-
-    function breakVoxel(world, x, y, z) {
-        if (y <= 0) return { ok: false };
-        const kind = voxelAt(world, x, y, z);
-        if (!kind) return { ok: false };
-        if (!world.edits) world.edits = {};
-        world.edits[editKey(x, y, z)] = null;
-        const drop = (global.BlockLegendTools && global.BlockLegendTools.dropOf)
-            ? global.BlockLegendTools.dropOf(kind)
-            : kind;
-        return { ok: true, kind: kind, drop: drop, x: x, y: y, z: z };
-    }
-
-    function placeVoxel(world, x, y, z, kind) {
-        const allowed = { dirt: true, stone: true, log: true, plank: true, table: true, sand: true, glass: true };
-        if (y <= 0 || !allowed[kind]) return { ok: false };
-        if (voxelAt(world, x, y, z)) return { ok: false };
-        if (x < 0 || z < 0 || x >= world.size || z >= world.size) return { ok: false };
-        if (!world.edits) world.edits = {};
-        world.edits[editKey(x, y, z)] = kind;
-        return { ok: true, kind: kind, x: x, y: y, z: z };
-    }
 
     // 单位立方体面：corners 逆时针朝向法线，跨度恒为 1
     const FACE_DIRS = [
@@ -2079,10 +604,15 @@
         const x1 = Math.min(n, cx0 + CHUNK);
         const z1 = Math.min(n, cz0 + CHUNK);
         const hidden = function (nx, ny, nz) { return hasBlock(world, nx, ny, nz); };
-        const yMax = HEIGHT_MAX + 16;
+        const yCap = HEIGHT_MAX + 16;
+        const scanY = W.columnScanYEnd || function (surface) {
+            return Math.min(yCap, Math.max(12, (Number(surface) || 0) + 20));
+        };
         for (let z = cz0; z < z1; z += 1) {
             for (let x = cx0; x < x1; x += 1) {
-                for (let y = 0; y < yMax; y += 1) {
+                const surface = world.surfaceAt ? world.surfaceAt(x, z) : 0;
+                const yEnd = scanY(surface, HEIGHT_MAX);
+                for (let y = 0; y < yEnd; y += 1) {
                     const kind = voxelAt(world, x, y, z);
                     if (!kind) continue;
                     pushCubeFaces(faces, x, y, z, kind, hidden);
@@ -2164,12 +694,71 @@
         renderer.shadowMap.enabled = false;
 
         const scene = new THREE.Scene();
-        const hemi = new THREE.HemisphereLight(0xfff4d8, 0x6b8a4a, 0.88);
+        const hemi = new THREE.HemisphereLight(0xfff4d8, 0x6b8a4a, 0.72);
         scene.add(hemi);
-        const sun = new THREE.DirectionalLight(0xfff2d0, 0.85);
+        const sun = new THREE.DirectionalLight(0xfff2d0, 1.12);
         sun.position.set(30, 50, 20);
         scene.add(sun);
         let skyDome = null;
+        let sunDisc = null;
+        let cloudLayer = null;
+        let fogBaseN = 54;
+        let fogBaseF = 112;
+        /* —— 体素云层：单个 InstancedMesh(1 draw call),确定性哈希布局,缓慢漂移 —— */
+        function ensureCloudLayer() {
+            if (cloudLayer) return cloudLayer;
+            const CLOUD_Y = 72;                       // 飞行上限(90)之下,能穿云
+            const CELL = 14;                          // 云团网格间距
+            const span = Math.ceil(world.size / CELL) + 6;
+            const mats = [];
+            const rng = makeRng(world.seed ^ 0x51cd);
+            for (let gx = 0; gx < span; gx += 1) {
+                for (let gz = 0; gz < span; gz += 1) {
+                    if (rng() > 0.16) continue;                       // ~16% 格子有云
+                    const bx = gx * CELL + rng() * 6;
+                    const bz = gz * CELL + rng() * 6;
+                    const w = 2 + Math.floor(rng() * 3);             // 云团长宽(格)
+                    const d = 2 + Math.floor(rng() * 3);
+                    const h = rng() < 0.3 ? 2 : 1;                   // 少数云有厚度
+                    mats.push({ x: bx, z: bz, w: w, d: d, h: h });
+                }
+            }
+            const geo = new THREE.BoxGeometry(CELL * 0.72, 3, CELL * 0.72);
+            const mat = new THREE.MeshLambertMaterial({ transparent: true, opacity: 0.92 });
+            cloudLayer = new THREE.InstancedMesh(geo, mat, mats.length);
+            const m4 = new THREE.Matrix4();
+            mats.forEach(function (c, i) {
+                m4.makeScale(c.w, c.h, c.d);
+                m4.setPosition(c.x - 3 * CELL, CLOUD_Y, c.z - 3 * CELL);
+                cloudLayer.setMatrixAt(i, m4);
+            });
+            cloudLayer.instanceMatrix.needsUpdate = true;
+            cloudLayer.frustumCulled = false;
+            cloudLayer.renderOrder = -500;
+            cloudLayer.userData.drift = 0;
+            scene.add(cloudLayer);
+            return cloudLayer;
+        }
+        function tickClouds(dt) {
+            if (!cloudLayer) return;
+            cloudLayer.userData.drift += dt * 0.55;                    // 缓慢东移
+            const span = world.size + 6 * 14;
+            cloudLayer.position.x = ((cloudLayer.userData.drift % span) + span) % span - span / 2 + world.size / 2;
+        }
+        function ensureSunDisc() {
+            if (sunDisc) return sunDisc;
+            const mat = new THREE.MeshBasicMaterial({
+                color: 0xfff3c4,
+                fog: false,
+                depthWrite: false
+            });
+            sunDisc = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 10), mat);
+            sunDisc.renderOrder = -900;
+            sunDisc.frustumCulled = false;
+            sunDisc.userData.dir = { x: 0.42, y: 0.84, z: 0.28 };
+            scene.add(sunDisc);
+            return sunDisc;
+        }
         function ensureSkyDome() {
             if (skyDome) return skyDome;
             const geo = new THREE.SphereGeometry(72, 24, 16);
@@ -2194,20 +783,25 @@
             duskvale: './assets/sky/duskvale.png',
             crystal: './assets/sky/crystal.png'
         };
+        /* 每气候氛围参数:hemi/ground/sun 为光色,sunI 定向光强度(0.7-1.3 保可读),
+           fogN/fogF 为雾 near/far 能见度(desert 远、snow/deep_dark 近),fogC 可选雾色覆盖
+           (缺省用 climate.sky,确保天/雾/光三色协调不断层)。 */
         const CLIMATE_LIGHT = {
-            plains: { hemi: 0xfff4d8, ground: 0x6b8a4a, sun: 0xfff2d0, cloud: 0xf4f7fb },
-            cherry: { hemi: 0xffd6e8, ground: 0x8a6a78, sun: 0xffc8d8, cloud: 0xffd0e4 },
-            desert: { hemi: 0xffe6a8, ground: 0xc4a060, sun: 0xffe8b0, cloud: 0xfff0d0 },
-            duskvale: { hemi: 0xffc898, ground: 0x6a4a38, sun: 0xffb070, cloud: 0xffc8a0 },
-            crystal: { hemi: 0xc8f0ff, ground: 0x3a6a78, sun: 0xb8e8f8, cloud: 0xd0f4ff },
-            nether: { hemi: 0xff6040, ground: 0x3a1010, sun: 0xff4020, cloud: 0x6a2020 },
-            snow: { hemi: 0xe8f0f8, ground: 0x8aa0b0, sun: 0xf4f8ff, cloud: 0xffffff },
-            ocean: { hemi: 0xc8e8f8, ground: 0x2a6a78, sun: 0xb0d8f0, cloud: 0xe0f0f8 },
-            mushroom: { hemi: 0xf0c8e0, ground: 0x6a4060, sun: 0xe8a0c8, cloud: 0xf8d0e8 },
-            volcano: { hemi: 0xff8040, ground: 0x3a1810, sun: 0xff5020, cloud: 0x5a2018 },
-            deep_dark: { hemi: 0x3a6070, ground: 0x0a1820, sun: 0x206070, cloud: 0x1a3038 },
-            astral: { hemi: 0xc8d4e8, ground: 0x1a2030, sun: 0xa0b8d8, cloud: 0xd0dce8 },
-            end: { hemi: 0xc8a0e8, ground: 0x201028, sun: 0xa070d0, cloud: 0x3a2048 }
+            plains:    { hemi: 0xfff4d8, ground: 0x6b8a4a, sun: 0xfff2d0, cloud: 0xf4f7fb, sunI: 1.15, fogN: 54, fogF: 112 },
+            forest:    { hemi: 0xd8f0c8, ground: 0x3a5a28, sun: 0xe8f0d0, cloud: 0xe0f0e4, sunI: 1.00, fogN: 42, fogF: 86 },
+            quarry:    { hemi: 0xd8dce0, ground: 0x6a7078, sun: 0xe8e8e0, cloud: 0xd0d4d8, sunI: 1.05, fogN: 48, fogF: 96 },
+            cherry:    { hemi: 0xffd6e8, ground: 0x8a6a78, sun: 0xffc8d8, cloud: 0xffd0e4, sunI: 1.12, fogN: 38, fogF: 76 },
+            desert:    { hemi: 0xffe6a8, ground: 0xc4a060, sun: 0xffe8b0, cloud: 0xfff0d0, sunI: 1.30, fogN: 66, fogF: 142 },
+            duskvale:  { hemi: 0xffc898, ground: 0x6a4a38, sun: 0xffb070, cloud: 0xffc8a0, sunI: 0.85, fogN: 34, fogF: 72 },
+            crystal:   { hemi: 0xc8f0ff, ground: 0x3a6a78, sun: 0xb8e8f8, cloud: 0xd0f4ff, sunI: 1.10, fogN: 42, fogF: 86 },
+            nether:    { hemi: 0xff6040, ground: 0x3a1010, sun: 0xff4020, cloud: 0x6a2020, sunI: 0.75, fogN: 26, fogF: 54 },
+            snow:      { hemi: 0xe8f0f8, ground: 0x8aa0b0, sun: 0xf4f8ff, cloud: 0xffffff, sunI: 1.15, fogN: 34, fogF: 70 },
+            ocean:     { hemi: 0xc8e8f8, ground: 0x2a6a78, sun: 0xb0d8f0, cloud: 0xe0f0f8, sunI: 1.10, fogN: 56, fogF: 118 },
+            mushroom:  { hemi: 0xf0c8e0, ground: 0x6a4060, sun: 0xe8a0c8, cloud: 0xf8d0e8, sunI: 1.00, fogN: 42, fogF: 86 },
+            volcano:   { hemi: 0xff8040, ground: 0x3a1810, sun: 0xff5020, cloud: 0x5a2018, sunI: 0.85, fogN: 30, fogF: 62 },
+            deep_dark: { hemi: 0x3a6070, ground: 0x0a1820, sun: 0x206070, cloud: 0x1a3038, sunI: 0.60, fogN: 20, fogF: 44 },
+            astral:    { hemi: 0xc8d4e8, ground: 0x1a2030, sun: 0xa0b8d8, cloud: 0xd0dce8, sunI: 1.05, fogN: 46, fogF: 92 },
+            end:       { hemi: 0xc8a0e8, ground: 0x201028, sun: 0xa070d0, cloud: 0x3a2048, sunI: 0.70, fogN: 24, fogF: 50 }
         };
         function applySky(climateName) {
             const sky = climateOf(climateName).sky;
@@ -2215,11 +809,46 @@
             hemi.color.setHex(light.hemi);
             hemi.groundColor.setHex(light.ground);
             sun.color.setHex(light.sun);
+            /* 定向光强度按气候微调,冷/暗气候稍暗、暖/亮气候稍亮;0.6 下限 + hemi 兜底保可读 */
+            sun.intensity = light.sunI;
             scene.background = new THREE.Color(sky);
-            scene.fog = new THREE.Fog(sky, climateName === 'nether' ? 28 : 46, climateName === 'nether' ? 62 : 78);
+            /* 能见度按气候微调(desert 远、snow/deep_dark 近),lite 缩小视野 */
+            const mood = (global.BlockLegendFx && global.BlockLegendFx.climateMood)
+                ? global.BlockLegendFx.climateMood(climateName)
+                : {};
+            const fogScale = lite ? 0.8 : 1;
+            const fogHex = mood.fogC != null ? mood.fogC : sky;
+            const fogN = mood.fogN != null ? mood.fogN : light.fogN;
+            const fogF = mood.fogF != null ? mood.fogF : light.fogF;
+            scene.fog = new THREE.Fog(
+                fogHex,
+                fogN * fogScale,
+                fogF * fogScale
+            );
+            /* r147 Fog 无 userData，基准记在闭包里供 tickLife 高空扩展 */
+            fogBaseN = fogN * fogScale;
+            fogBaseF = fogF * fogScale;
+            const disc = ensureSunDisc();
+            const slen = Math.hypot(sun.position.x, sun.position.y, sun.position.z) || 1;
+            disc.userData.dir = {
+                x: sun.position.x / slen,
+                y: sun.position.y / slen,
+                z: sun.position.z / slen
+            };
+            disc.material.color.setHex(mood.sunDisc || light.sun);
+            disc.scale.setScalar(mood.sunSize || 3.2);
+            disc.visible = light.sunI >= 0.62;
             const dome = ensureSkyDome();
             dome.material.color.setHex(sky);
             dome.material.map = null;
+            /* 云层按气候上色(lite 模式省 draw call 不建云) */
+            if (!lite) {
+                const cl = ensureCloudLayer();
+                cl.material.color.setHex(light.cloud);
+                cl.visible = true;
+            } else if (cloudLayer) {
+                cloudLayer.visible = false;
+            }
             const file = SKY_FILES[climateName];
             if (!file) return;
             const loader = new THREE.TextureLoader();
@@ -2240,6 +869,30 @@
             alphaTest: 0.5,
             transparent: false
         });
+        terrainMat.userData.waterT = 0;
+        const waterSpec = (global.BlockLegendFx && global.BlockLegendFx.waterFlow)
+            ? global.BlockLegendFx.waterFlow()
+            : null;
+        if (waterSpec) {
+            terrainMat.onBeforeCompile = function (shader) {
+                shader.uniforms.uWaterT = { value: 0 };
+                terrainMat.userData.uWaterT = shader.uniforms.uWaterT;
+                shader.fragmentShader = 'uniform float uWaterT;\n' + shader.fragmentShader;
+                shader.fragmentShader = shader.fragmentShader.replace(
+                    'vec4 sampledDiffuseColor = texture2D( map, vUv );',
+                    [
+                        'vec2 blWaterUv = vUv;',
+                        'vec2 blLocal = (vUv - vec2(' + waterSpec.u0 + ',' + waterSpec.v0 + ')) / vec2(' + waterSpec.uSize + ',' + waterSpec.vSize + ');',
+                        'if (blLocal.x >= 0.0 && blLocal.x <= 1.0 && blLocal.y >= 0.0 && blLocal.y <= 1.0) {',
+                        '  blLocal.x = fract(blLocal.x + uWaterT * ' + waterSpec.speed + ');',
+                        '  blLocal.y = fract(blLocal.y + sin(uWaterT * 0.8 + blLocal.x * 6.2832) * ' + waterSpec.ripple + ');',
+                        '  blWaterUv = vec2(' + waterSpec.u0 + ',' + waterSpec.v0 + ') + blLocal * vec2(' + waterSpec.uSize + ',' + waterSpec.vSize + ');',
+                        '}',
+                        'vec4 sampledDiffuseColor = texture2D( map, blWaterUv );'
+                    ].join('\n')
+                );
+            };
+        }
         const chunkMeshes = [];
         const chunkMap = {};
         const decor = new THREE.Group();
@@ -2271,6 +924,8 @@
                 const y = world.surfaceAt(f.x, f.z);
                 stem.position.set(f.x + 0.5, y + 0.17, f.z + 0.5);
                 head.position.set(f.x + 0.5, y + 0.4, f.z + 0.5);
+                stem.userData.sway = { phase: hash3(f.x, 1, f.z) * 6.2832, amp: 0.7 };
+                head.userData.sway = { phase: hash3(f.x, 1, f.z) * 6.2832, amp: 1.15 };
                 decor.add(stem);
                 decor.add(head);
             });
@@ -2311,6 +966,8 @@
                 );
                 const y = (p.y != null ? p.y : world.surfaceAt(p.x, p.z));
                 stem.position.set(p.x + 0.5, y + (tall ? 0.32 : 0.2), p.z + 0.5);
+                stem.userData.sway = { phase: hash3(p.x, 2, p.z) * 6.2832, amp: tall ? 1.2 : 0.9 };
+                p.mesh = stem;
                 decor.add(stem);
             });
             (world.beds || []).forEach(function (b) {
@@ -2327,23 +984,54 @@
                 decor.add(bed);
             });
             (world.villagers || []).forEach(function (v) {
-                const factory = v.role === 'trader' ? 'createTrader' : v.role === 'teacher' ? 'createTeacher' : 'createVillager';
+                const factory = v.role === 'trader' ? 'createTrader'
+                    : v.role === 'teacher' ? 'createTeacher'
+                        : v.role === 'farmer' ? 'createFarmer'
+                            : 'createVillager';
                 const npc = propOf(factory, function () {
                     const g = new THREE.Group();
-                    g.add(boxMesh(0.34, 0.42, 0.22, v.role === 'trader' ? 0x4a6a8a : v.role === 'teacher' ? 0x2e7d4f : 0x8b4513, 0.72));
+                    const robe = v.role === 'trader' ? 0x4a6a8a
+                        : v.role === 'teacher' ? 0x2e7d4f
+                            : v.role === 'farmer' ? 0xc6a24a
+                                : 0x8b4513;
+                    g.add(boxMesh(0.34, 0.42, 0.22, robe, 0.72));
                     g.add(boxMesh(0.28, 0.26, 0.26, 0xd2a679, 1.06));
                     g.add(boxMesh(0.1, 0.1, 0.12, 0xc49a6c, 0.98));
                     g.add(boxMesh(0.12, 0.28, 0.12, 0x5a3a1a, 0.2));
                     g.add(boxMesh(0.12, 0.28, 0.12, 0x5a3a1a, 0.2));
+                    if (v.role === 'farmer') g.add(boxMesh(0.34, 0.08, 0.34, 0xe6d27a, 1.22));
                     return g;
                 });
+                ensureWalkTick(npc);
                 v.mesh = placeLife(npc, v.x, v.z, 0);
             });
             (world.placedProps || []).forEach(function (p) {
                 const factory = p.kind === 'furnace' ? 'createFurnace'
                     : p.kind === 'torch' ? 'createTorch'
-                        : 'createChest';
+                        : p.kind === 'chair' ? 'createChair'
+                            : p.kind === 'bookshelf' ? 'createBookshelf'
+                                : p.kind === 'table' ? 'createTable'
+                                    : 'createChest';
                 const mesh = propOf(factory, function () {
+                    if (p.kind === 'chair') {
+                        const g = new THREE.Group();
+                        g.add(boxMesh(0.42, 0.08, 0.42, 0x8d6e48, 0.22));
+                        g.add(boxMesh(0.08, 0.36, 0.42, 0x6d4c31, 0.44));
+                        return g;
+                    }
+                    if (p.kind === 'bookshelf') {
+                        const g = new THREE.Group();
+                        g.add(boxMesh(0.7, 0.9, 0.28, 0x6d4c31, 0.46));
+                        g.add(boxMesh(0.62, 0.16, 0.12, 0xc62828, 0.62));
+                        g.add(boxMesh(0.62, 0.16, 0.12, 0x1565c0, 0.38));
+                        return g;
+                    }
+                    if (p.kind === 'table') {
+                        const g = new THREE.Group();
+                        g.add(boxMesh(0.7, 0.08, 0.7, 0xa07848, 0.42));
+                        g.add(boxMesh(0.08, 0.34, 0.08, 0x6d4c31, 0.16));
+                        return g;
+                    }
                     return boxMesh(0.7, 0.7, 0.7, 0x8a5a28, 0.35);
                 });
                 mesh.position.set(p.x + 0.5, p.y, p.z + 0.5);
@@ -2352,10 +1040,19 @@
             });
             (world.animals || []).forEach(function (a) {
                 let animal;
-                if (a.kind === 'pufferfish' && global.BlockLegendPufferfishModel) {
+                if (a.kind === 'dragon' && global.BlockLegendDragonModel) {
+                    animal = global.BlockLegendDragonModel.create(THREE);
+                    animal.scale.setScalar(1.22);
+                    const shield = animal.userData && animal.userData.sculptRuntime
+                        && animal.userData.sculptRuntime.nodes
+                        && animal.userData.sculptRuntime.nodes.shield;
+                    if (shield) shield.visible = false;
+                } else if (a.kind === 'pufferfish' && global.BlockLegendPufferfishModel) {
                     animal = global.BlockLegendPufferfishModel.create(THREE);
                 } else if (a.kind === 'guardian' && global.BlockLegendGuardianModel) {
                     animal = global.BlockLegendGuardianModel.create(THREE);
+                } else if (a.kind === 'elder_guardian' && global.BlockLegendElderGuardianModel) {
+                    animal = global.BlockLegendElderGuardianModel.create(THREE);
                 } else {
                     const factory = a.kind === 'cow' ? 'createCow'
                         : a.kind === 'sheep' ? 'createSheep'
@@ -2370,7 +1067,7 @@
                         return g;
                     });
                 }
-                a.mesh = placeLife(animal, a.x, a.z, a.habitat === 'water' ? -0.15 : 0);
+                a.mesh = placeLife(animal, a.x, a.z, lifeAltitude(a, world) - world.surfaceAt(Math.floor(a.x), Math.floor(a.z)));
                 animal.rotation.y = a.yaw || 0;
             });
             (world.golems || []).forEach(function (golem) {
@@ -2401,12 +1098,13 @@
         }
         rebuildDecor();
 
-        const camera = new THREE.PerspectiveCamera(72, 16 / 9, 0.05, 220);
+        const camera = new THREE.PerspectiveCamera(72, 16 / 9, 0.05, 320);
+        const BASE_FOV = 72;
         const player = {
             x: Math.floor(world.size / 2) + 0.5,
             z: Math.floor(world.size / 2) + 0.5,
             y: world.surfaceAt(Math.floor(world.size / 2), Math.floor(world.size / 2)),
-            vy: 0, onGround: true, hp: 10, hpMax: 10
+            vy: 0, onGround: true, hp: 10, hpMax: 10, mounted: null
         };
         const look = { yaw: Math.PI * 0.25, pitch: -0.28 };
         const keys = {};
@@ -2477,6 +1175,7 @@
             player.z = Math.floor(world.size / 2) + 0.5;
             player.y = world.surfaceAt(Math.floor(player.x), Math.floor(player.z));
             player.vy = 0;
+            player.mounted = null;
             applySky(world.climate);
             rebuildDecor();
             chunksAround(player.x, player.z, world.size, CHUNK, BOOT_CHUNKS).forEach(function (key) {
@@ -2508,7 +1207,100 @@
             return columnBlockedAt(world, px, pz, feetY);
         }
 
+        function updateMountPhysics(dt, input) {
+            const FLY = 9.6;
+            const CLIMB = 6.8;
+            const BOOST_X = 1.7;                          // R 急速速度倍率
+            const SMOOTH = Math.min(1, dt * 6);           // 平滑过渡到目标速度
+            const ROLL_DUR = 1.5;                         // 回旋时长(s)
+
+            // —— R 急速：mount.speedFactor 平滑趋近目标(按住1.7/松开1.0) ——
+            const mount0 = player.mounted;
+            const sTarget = (input.boost && mount0) ? BOOST_X : 1.0;
+            if (mount0) {
+                mount0.speedFactor = mount0.speedFactor == null
+                    ? sTarget
+                    : mount0.speedFactor + (sTarget - mount0.speedFactor) * SMOOTH;
+            }
+            const speed = FLY * (mount0 ? mount0.speedFactor : 1.0);
+
+            // —— Q/E 回旋：1.5s 内围绕前向轴转 ±360°(rollT 0→1，方向 ±1) ——
+            let rollAngle = 0;
+            if (mount0) {
+                if (mount0.rollState !== 'rolling') {
+                    if (input.rollL || input.rollR) {
+                        mount0.rollState = 'rolling';
+                        mount0.rollT = 0;
+                        mount0.rollDir = input.rollL ? 1 : -1;
+                    }
+                }
+                if (mount0.rollState === 'rolling') {
+                    mount0.rollT += dt / ROLL_DUR;
+                    if (mount0.rollT >= 1) {
+                        mount0.rollState = 'done';
+                        mount0.rollT = 1;
+                    }
+                    rollAngle = mount0.rollDir * Math.PI * 2 * mount0.rollT;
+                }
+            }
+
+            const ax = analog.x, ay = analog.y;
+            const useStick = Math.abs(ax) + Math.abs(ay) > 0.001;
+            const dirX = useStick
+                ? (-Math.sin(look.yaw) * ay)
+                : (Math.sin(look.yaw) * (input.back ? 1 : 0) - Math.sin(look.yaw) * (input.fwd ? 1 : 0));
+            const dirZ = useStick
+                ? (-Math.cos(look.yaw) * ay)
+                : (Math.cos(look.yaw) * (input.back ? 1 : 0) - Math.cos(look.yaw) * (input.fwd ? 1 : 0));
+            const rgtX = useStick
+                ? (Math.cos(look.yaw) * ax)
+                : (Math.cos(look.yaw) * (input.right ? 1 : 0) - Math.cos(look.yaw) * (input.left ? 1 : 0));
+            const rgtZ = useStick
+                ? (-Math.sin(look.yaw) * ax)
+                : (-Math.sin(look.yaw) * (input.right ? 1 : 0) + Math.sin(look.yaw) * (input.left ? 1 : 0));
+            let mx = dirX + rgtX, mz = dirZ + rgtZ;
+            const len = Math.hypot(mx, mz);
+            if (len > 0) {
+                mx = mx / len * speed * dt;
+                mz = mz / len * speed * dt;
+                player.x = Math.max(2.5, Math.min(world.size - 2.5, player.x + mx));
+                player.z = Math.max(2.5, Math.min(world.size - 2.5, player.z + mz));
+            }
+            let climb = 0;
+            if (input.jump) climb += 1;
+            if (input.sneak) climb -= 1;
+            if (len > 0.001 || input.fwd || useStick) climb -= Math.sin(look.pitch) * 0.9;
+            player.vy = 0;
+            player.y += climb * CLIMB * dt;
+            const floorY = world.surfaceAt(Math.floor(player.x), Math.floor(player.z)) + 1.55;
+            if (player.y < floorY) player.y = floorY;
+            if (player.y > 90) player.y = 90;
+            player.onGround = player.y <= floorY + 0.08;
+            const mount = player.mounted;
+            if (mount) {
+                mount.x = player.x;
+                mount.z = player.z;
+                mount.y = player.y - 1.32;
+                mount.yaw = look.yaw + Math.PI;
+                // 回旋角应用到龙 mesh（本体绕前向轴滚转），供 tickLife 读取
+                mount.roll = rollAngle;
+                if (mount.rollState === 'done') {
+                    agentRollReset(mount);
+                }
+            }
+        }
+
+        function agentRollReset(mount) {
+            // 回旋结束复位(回到直立,roll 在 tickLife 读取后由下一帧置 0)
+            mount.rollState = null;
+            mount.rollDir = 0;
+        }
+
         function updatePhysics(dt, input) {
+            if (player.mounted) {
+                updateMountPhysics(dt, input);
+                return;
+            }
             // 朝向移动（yaw: 0 朝 -Z，与相机一致）
             const ax = analog.x, ay = analog.y;
             const useStick = Math.abs(ax) + Math.abs(ay) > 0.001;
@@ -2552,14 +1344,106 @@
                 player.onGround = false;
                 if (api && typeof api.onJump === 'function') api.onJump();
             }
+            separatePlayerFromAnimals();
         }
 
+        function farmBodyRadius(kind) {
+            const C = global.BlockLegendCombat;
+            if (C && typeof C.animalBodyRadius === 'function') return C.animalBodyRadius(kind);
+            if (kind === 'sheep') return 1.35;
+            if (kind === 'cow') return 1.15;
+            if (kind === 'chicken') return 0.6;
+            if (kind === 'pig') return 0.95;
+            return 0;
+        }
+
+        function isFarmKind(kind) {
+            const C = global.BlockLegendCombat;
+            if (C && C.isFarmAnimal) return C.isFarmAnimal(kind);
+            return /^(pig|cow|sheep|chicken)$/.test(kind);
+        }
+
+        function separatePlayerFromAnimals() {
+            (world.animals || []).forEach(function (a) {
+                if (!a || (a.hp != null && a.hp <= 0)) return;
+                if (!isFarmKind(a.kind)) return;
+                const min = farmBodyRadius(a.kind) + 0.35;
+                const dx = player.x - a.x;
+                const dz = player.z - a.z;
+                const dist = Math.hypot(dx, dz);
+                if (dist >= min) return;
+                const nx = dist < 0.001 ? 1 : dx / dist;
+                const nz = dist < 0.001 ? 0 : dz / dist;
+                const push = min - dist;
+                const tx = player.x + nx * push;
+                const tz = player.z + nz * push;
+                const R = 0.3;
+                if (!columnBlocked(tx + Math.sign(nx || 1) * R, player.z, player.y)) player.x = tx;
+                if (!columnBlocked(player.x, tz + Math.sign(nz || 1) * R, player.y)) player.z = tz;
+            });
+        }
+
+        const punch = { life: 0, max: 0, yaw: 0, pitch: 0 };
+        const fovPulse = { life: 0, max: 0, add: 0 };
+        function addFovPulse(spec) {
+            if (!spec || !(spec.life > 0)) return;
+            fovPulse.life = spec.life;
+            fovPulse.max = spec.life;
+            fovPulse.add = Number(spec.add) || 0;
+        }
+        function addPunch(spec) {
+            if (!spec || !(spec.life > 0)) return;
+            punch.life = spec.life;
+            punch.max = spec.life;
+            punch.yaw = Number(spec.yaw) || 0;
+            punch.pitch = Number(spec.pitch) || 0;
+        }
         function applyCamera() {
-            camera.position.set(player.x, player.y + EYE_HEIGHT, player.z);
             camera.rotation.order = 'YXZ';
-            camera.rotation.y = look.yaw;
-            camera.rotation.x = look.pitch;
+            let yaw = look.yaw;
+            let pitch = look.pitch;
+            const FX = global.BlockLegendFx;
+            const ride = FX && FX.rideCam
+                ? FX.rideCam({ mounted: !!player.mounted, pitch: look.pitch })
+                : null;
+            if (ride) {
+                const fx = -Math.sin(look.yaw);
+                const fz = -Math.cos(look.yaw);
+                camera.position.set(
+                    player.x - fx * ride.back,
+                    player.y + ride.up + (ride.yLift || 0),
+                    player.z - fz * ride.back
+                );
+                const floor = world.surfaceAt(Math.floor(camera.position.x), Math.floor(camera.position.z)) + 0.9;
+                if (camera.position.y < floor) camera.position.y = floor;
+                pitch = look.pitch * (ride.pitchScale || 1) + (ride.pitchBias || 0);
+            } else {
+                camera.position.set(player.x, player.y + EYE_HEIGHT, player.z);
+            }
+            if (punch.life > 0 && punch.max > 0) {
+                const k = Math.sin((punch.life / punch.max) * Math.PI);
+                yaw += punch.yaw * k;
+                pitch += punch.pitch * k;
+            }
+            camera.rotation.y = yaw;
+            camera.rotation.x = pitch;
+            if (fovPulse.life > 0 && fovPulse.max > 0) {
+                const k = Math.sin((fovPulse.life / fovPulse.max) * Math.PI);
+                camera.fov = BASE_FOV + fovPulse.add * k;
+                camera.updateProjectionMatrix();
+            } else if (camera.fov !== BASE_FOV) {
+                camera.fov = BASE_FOV;
+                camera.updateProjectionMatrix();
+            }
             if (skyDome) skyDome.position.copy(camera.position);
+            if (sunDisc) {
+                const d = sunDisc.userData.dir || { x: 0.42, y: 0.84, z: 0.28 };
+                sunDisc.position.set(
+                    camera.position.x + d.x * 58,
+                    camera.position.y + d.y * 58,
+                    camera.position.z + d.z * 58
+                );
+            }
         }
 
         function resize() {
@@ -2572,8 +1456,8 @@
         }
 
         /* ---------- 输入 ---------- */
-        const input = { fwd: false, back: false, left: false, right: false, jump: false };
-        const held = { fwd: false, back: false, left: false, right: false, jump: false };
+        const input = { fwd: false, back: false, left: false, right: false, jump: false, sneak: false, boost: false, rollL: false, rollR: false };
+        const held = { fwd: false, back: false, left: false, right: false, jump: false, sneak: false, boost: false, rollL: false, rollR: false };
         const analog = { x: 0, y: 0 };
         let moveLocked = false;
         function refreshKeys() {
@@ -2583,6 +1467,10 @@
                 input.left = false;
                 input.right = false;
                 input.jump = false;
+                input.sneak = false;
+                input.boost = false;
+                input.rollL = false;
+                input.rollR = false;
                 return;
             }
             input.fwd = !!(keys['w'] || keys['arrowup'] || held.fwd);
@@ -2590,6 +1478,10 @@
             input.left = !!(keys['a'] || keys['arrowleft'] || held.left);
             input.right = !!(keys['d'] || keys['arrowright'] || held.right);
             input.jump = !!(keys[' '] || held.jump);
+            input.sneak = !!(keys['shift'] || held.sneak);
+            input.boost = !!(keys['r'] || held.boost);
+            input.rollL = !!(keys['q'] || held.rollL);
+            input.rollR = !!(keys['e'] || held.rollR);
         }
         function setHeld(part, on) {
             if (!Object.prototype.hasOwnProperty.call(held, part)) return;
@@ -2640,6 +1532,10 @@
                 input.left = false;
                 input.right = false;
                 input.jump = false;
+                input.sneak = false;
+                input.boost = false;
+                input.rollL = false;
+                input.rollR = false;
                 analog.x = 0;
                 analog.y = 0;
             } else {
@@ -2688,42 +1584,88 @@
         /* ---------- 主循环（rAF 优先，挂起降级 setInterval，voxel 系同款） ---------- */
         let lastAt = 0, fpsCount = 0, fpsAt = 0, fps = 0;
         function tickLife(dt) {
+            tickClouds(dt);
+            terrainMat.userData.waterT = (terrainMat.userData.waterT || 0) + dt;
+            if (terrainMat.userData.uWaterT) {
+                terrainMat.userData.uWaterT.value = terrainMat.userData.waterT;
+            }
+            const sway = (global.BlockLegendFx && global.BlockLegendFx.plantSway)
+                ? global.BlockLegendFx.plantSway(lite)
+                : null;
+            if (sway) {
+                const swayT = terrainMat.userData.waterT;
+                decor.children.forEach(function (m) {
+                    const s = m.userData && m.userData.sway;
+                    if (!s) return;
+                    m.rotation.z = Math.sin(swayT * sway.speed + s.phase) * sway.angle * s.amp;
+                });
+            }
+            /* 高空雾扩展:骑龙 y>50 时雾远端×1.8，倍率走 fx.fogAltitudeScale，不写 Fog.userData */
+            if (scene.fog) {
+                const FX = global.BlockLegendFx;
+                const ext = FX && FX.fogAltitudeScale ? FX.fogAltitudeScale(player.y) : 1;
+                scene.fog.near = fogBaseN * ext;
+                scene.fog.far = fogBaseF * ext;
+            }
             (world.animals || []).forEach(function (a) {
                 if (!a.mesh) return;
-                a.phase = (a.phase || 0) + dt;
-                if ((a.phase * 3) % 4 < dt * 3) a.yaw = (a.yaw || 0) + (hash3(Math.floor(a.x), 2, Math.floor(a.z)) - 0.5) * 1.6;
-                const step = 0.7 * dt;
-                const nx = a.x + Math.sin(a.yaw || 0) * step;
-                const nz = a.z + Math.cos(a.yaw || 0) * step;
-                const inWater = !!(world.ponds && world.ponds[Math.floor(nx) + ',' + Math.floor(nz)]);
-                const stay = a.habitat === 'water' ? inWater : !inWater;
-                if (nx > 2 && nz > 2 && nx < world.size - 2 && nz < world.size - 2
-                    && !inHouse(world, nx, nz)
-                    && stay
-                    && !columnBlockedAt(world, nx, nz, world.surfaceAt(Math.floor(nx), Math.floor(nz)))) {
-                    a.x = nx;
-                    a.z = nz;
+                if (player.mounted === a) {
+                    a.phase = (a.phase || 0) + dt;
+                    a.x = player.x;
+                    a.z = player.z;
+                    a.y = player.y - 1.32;
+                    a.yaw = look.yaw + Math.PI;
+                    a.mesh.position.set(a.x, a.y, a.z);
+                    a.mesh.rotation.y = a.yaw;
+                    // 骑乘时叠加回旋(roll):围绕本地Z(前向轴)滚转,读取 updateMountPhysics 写下的 a.roll
+                    a.mesh.rotation.z = a.roll || 0;
+                    a.mesh.rotation.x = 0;
+                    if (a.mesh.userData && typeof a.mesh.userData.tick === 'function') {
+                        a.mesh.userData.tick(a.phase, true);
+                    }
+                    return;
                 }
-                a.mesh.position.set(a.x, world.surfaceAt(Math.floor(a.x), Math.floor(a.z)), a.z);
+                const hab = a.habitat || habitatOf(a.kind);
+                const speed = a.rideable ? 0.36 : hab === 'air' ? 1.15 : hab === 'water' ? 0.55 : 0.7;
+                const homeR = a.rideable ? 7 : a.pen ? 2.2 : hab === 'air' ? 16 : hab === 'water' ? 5 : 12;
+                const moved = (a.hunting || a.fleeing) ? true : stepWander(a, dt, world, { speed: speed, homeR: homeR });
+                if (isFarmKind(a.kind)) {
+                    const min = farmBodyRadius(a.kind) + 0.35;
+                    const dx = a.x - player.x;
+                    const dz = a.z - player.z;
+                    const dist = Math.hypot(dx, dz);
+                    if (dist < min) {
+                        const nx = dist < 0.001 ? 1 : dx / dist;
+                        const nz = dist < 0.001 ? 0 : dz / dist;
+                        a.x = player.x + nx * min;
+                        a.z = player.z + nz * min;
+                    }
+                }
+                a.y = lifeAltitude(a, world);
+                a.mesh.position.set(a.x, a.y, a.z);
                 a.mesh.rotation.y = a.yaw || 0;
                 if (a.mesh.userData && typeof a.mesh.userData.tick === 'function') {
-                    a.mesh.userData.tick(a.phase, true);
+                    a.mesh.userData.tick(a.phase, hab === 'air' ? true : moved);
                 }
             });
             (world.villagers || []).forEach(function (v) {
                 if (!v.mesh) return;
-                v.bob = (v.bob || 0) + dt;
-                v.mesh.position.y = world.surfaceAt(Math.floor(v.x), Math.floor(v.z)) + Math.sin(v.bob * 2) * 0.03;
+                const moved = stepWander(v, dt, world, { speed: 0.38, homeR: 8 });
+                v.y = lifeAltitude(v, world) + Math.sin((v.phase || 0) * 2) * 0.03;
+                v.mesh.position.set(v.x, v.y, v.z);
+                v.mesh.rotation.y = v.yaw || 0;
                 if (v.mesh.userData && typeof v.mesh.userData.tick === 'function') {
-                    v.mesh.userData.tick(v.bob, false);
+                    v.mesh.userData.tick(v.phase, moved);
                 }
             });
             (world.golems || []).forEach(function (g) {
                 if (!g.mesh) return;
-                g.bob = (g.bob || 0) + dt;
-                g.mesh.position.y = world.surfaceAt(Math.floor(g.x), Math.floor(g.z));
+                const moved = g.guarding ? true : stepWander(g, dt, world, { speed: 0.55, homeR: 8 });
+                g.y = lifeAltitude(g, world);
+                g.mesh.position.set(g.x, g.y, g.z);
+                g.mesh.rotation.y = g.yaw || 0;
                 if (g.mesh.userData && typeof g.mesh.userData.tick === 'function') {
-                    g.mesh.userData.tick(g.bob, false);
+                    g.mesh.userData.tick(g.phase, moved);
                 }
             });
             (world.placedProps || []).forEach(function (p) {
@@ -2740,8 +1682,11 @@
             lastAt = t;
             updatePhysics(dt, input);
             tickLife(dt);
+            separatePlayerFromAnimals();
             streamChunks(1);
             if (typeof tickHook === 'function') tickHook(dt, t);
+            if (punch.life > 0) punch.life = Math.max(0, punch.life - dt);
+            if (fovPulse.life > 0) fovPulse.life = Math.max(0, fovPulse.life - dt);
             applyCamera();
             renderer.render(scene, camera);
             fpsCount += 1;
@@ -2798,6 +1743,8 @@
             },
             resize: resize,
             startLoop: startLoop,
+            punch: addPunch,
+            fovKick: addFovPulse,
             onTick: function (fn) { tickHook = fn; },
             fps: function () { return fps; },
             setUiMode: setUiMode,
@@ -2805,7 +1752,22 @@
             resumeLook: resumeLook,
             setCastMode: setCastMode,
             setHeld: setHeld,
-            setMoveAxis: setMoveAxis
+            setMoveAxis: setMoveAxis,
+            dismount: function () {
+                if (!player.mounted) return false;
+                const m = player.mounted;
+                player.mounted = null;
+                player.y = world.surfaceAt(Math.floor(player.x), Math.floor(player.z));
+                player.vy = 0;
+                if (m) {
+                    m.homeX = player.x;
+                    m.homeZ = player.z;
+                    m.x = player.x;
+                    m.z = player.z;
+                    m.y = player.y + 0.12;
+                }
+                return true;
+            }
         };
         return api;
     }
@@ -2840,6 +1802,10 @@
         breakVoxel: breakVoxel,
         placeVoxel: placeVoxel,
         inHouse: inHouse,
+        habitatOf: habitatOf,
+        lifeAltitude: lifeAltitude,
+        stepWander: stepWander,
+        growWheat: growWheat,
         columnBlockedAt: columnBlockedAt,
         wallBetween: wallBetween,
         collectChunkFaces: collectChunkFaces,

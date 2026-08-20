@@ -1,9 +1,9 @@
 {
   "name": "blocklegend",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "private": true,
   "license": "AGPL-3.0-or-later",
-  "description": "方块传奇 · 在 3D 方块世界里学英语",
+  "description": "我的方块学园 · 地下城闯关，边打边学",
   "scripts": {
     "start": "npx --yes serve . -p 4173",
     "android:prepare": "node scripts/prepare-mobile.mjs",

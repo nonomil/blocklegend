@@ -23,10 +23,32 @@
    通过后截图存 `review/<id>-4view-compare.png`，`roster.json` 才可改 `verified_atlas`。
    不对就改 spec/投射再编译，禁止只看一个好看角度。
 
-## 每角色必有文件
+## 每角色工作夹（2026-08-19 已迁 40 个）
+
+工作树在 `characters/<id>/`，按技能建夹。游戏运行时仍读扁平路径（`four-view/`、`review/`、`atlas4v/`），不要删原文件。
+
+```text
+characters/<id>/
+  character.json
+  refs/refs.json              # 调研门，迁夹时仍空
+  four-view/prompt.txt
+  four-view/<id>-4view.png    # 硬链接到扁平四视图
+  four-view/{front,right,back,left}.png
+  model/spec.json
+  model/links.json
+  model-vs-fourview/compare.png
+  review.md
+```
+
+重建：`python -X utf8 prj/assets/generated/blocklegend-roster/source/migrate_to_character_folders.py`
+
+`migrated-legacy` 不是 `verified`。还缺：下载参考图、生图 vs 参考门、模型四向截图、`gate.json`。
+
+## 每角色必有文件（运行时扁平路径）
 
 | 产物 | 路径 |
 |---|---|
+| 工作夹 | `characters/<id>/` |
 | 提示词 | `source/prompts/<id>-4view.txt` |
 | 四视图 | `four-view/<id>-4view.png` |
 | 盒规格 | `four-view/specs.json` → `models.<id>` |

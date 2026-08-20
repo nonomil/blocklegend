@@ -18,38 +18,46 @@
         sand: 24
     };
 
+    function wrapSeam(rows) {
+        const out = rows.map(function (row) {
+            return row.slice(0, row.length - 1) + row.charAt(0);
+        });
+        out[out.length - 1] = out[0];
+        return out;
+    }
+
     const TILES = {
         grass_top: {
             palette: {
-                d: [78, 140, 48, 255],
-                s: [86, 148, 52, 255],
-                g: [96, 160, 56, 255],
-                G: [110, 172, 64, 255]
+                d: [68, 148, 36, 255],
+                s: [96, 184, 52, 255],
+                g: [126, 208, 72, 255],
+                G: [158, 230, 94, 255]
             },
-            rows: [
-                'gggggggggggggggg',
-                'gggggggggggggggg',
-                'ssssgggggggggggg',
-                'ssssgggggggggggg',
-                'ssssggggGGGGgggg',
-                'ggggggggGGGGgggg',
-                'ggggggggGGGGgggg',
-                'gggggggggggggggg',
-                'gggggggggggggggg',
-                'ggggddgggggggggg',
-                'ggggddgggggggggg',
-                'gggggggggggGGggg',
-                'gggggggggggGGggg',
-                'gggggggggggggggg',
-                'gggggggggggggggg',
-                'gggggggggggggggg'
-            ]
+            rows: wrapSeam([
+                'ggGgggggGgggggsg',
+                'ggggdgggggGggggg',
+                'ssgsgggGggggsggg',
+                'ssssggggggGggggg',
+                'sgsgggGGGGGgggsg',
+                'gggGgggGGGGggggg',
+                'ggggdgggGGgggGgg',
+                'gGgggggggggsgggg',
+                'ggggsgggGggggggg',
+                'ggggddgggggGgggg',
+                'gGggddggggsgggGg',
+                'gggggggGgggGGggg',
+                'ggsggggggggGGgsg',
+                'gggggGggdggggggg',
+                'gGgggggggggsgGgg',
+                'ggggsgggGggggggg'
+            ])
         },
         grass_side: {
             palette: {
-                G: [110, 172, 64, 255],
-                g: [96, 160, 56, 255],
-                s: [86, 148, 52, 255],
+                G: [158, 230, 94, 255],
+                g: [126, 208, 72, 255],
+                s: [96, 184, 52, 255],
                 D: [118, 78, 48, 255],
                 m: [168, 118, 72, 255],
                 L: [198, 148, 96, 255],
@@ -98,7 +106,7 @@
                 'mmmmLmmmDmmmmLmm',
                 'mDmmmmmLmmmDmpmm',
                 'mmLmmDmmmmLmmmDm',
-                'DmmDmmDmmDmmDmmD'
+                'mmLmmmDmmmLmmmDm'
             ]
         },
         stone: {
@@ -125,7 +133,7 @@
                 'mmmmLmmmDmmmmLmm',
                 'mDmmmmmLmmmDmmmm',
                 'mmLmmDmmmmLmmmDm',
-                'DmmDmmDmmDmmDmmD'
+                'mmLmmmDmmmLmmmDm'
             ]
         },
         oak_side: {
@@ -134,25 +142,26 @@
                 m: [148, 98, 52, 255],
                 L: [186, 132, 72, 255],
                 k: [58, 36, 20, 255],
-                g: [168, 118, 64, 255]
+                g: [168, 118, 64, 255],
+                o: [78, 118, 42, 255]
             },
             rows: [
+                'DmLgDmLgDkLgDmLg',
                 'DmLgDmLgDmLgDmLg',
+                'DmLgDkkgDmLgDoLg',
+                'DkLgDkkkDmLgDmLg',
                 'DmLgDmLgDmLgDmLg',
-                'DmLgDkkgDmLgDmLg',
-                'DmLgDkkkDmLgDmLg',
-                'DmLgDmLgDmLgDmLg',
-                'DmLgDmLgDmLgDmLg',
+                'DoLgDmLgDkLgDmLg',
                 'DmLgDmLgDkkgDmLg',
-                'DmLgDmLgDkkkDmLg',
-                'DmLgDmLgDmLgDmLg',
-                'DmLgDmLgDmLgDmLg',
-                'DkkgDmLgDmLgDmLg',
-                'DkkkDmLgDmLgDmLg',
-                'DmLgDmLgDmLgDmLg',
-                'DmLgDmLgDmLgDmLg',
-                'DmLgDmLgDmLgDmLg',
-                'DmLgDmLgDmLgDmLg'
+                'DmLgDkLgDkkkDmLg',
+                'DmLgDmLgDmLgDoLg',
+                'DkLgDmLgDmLgDmLg',
+                'DkkgDmLgDoLgDmLg',
+                'DkkkDmLgDmLgDkLg',
+                'DmLgDoLgDmLgDmLg',
+                'DmLgDmLgDkLgDmLg',
+                'DoLgDmLgDmLgDmLg',
+                'DmLgDmLgDmLgDkLg'
             ]
         },
         oak_top: {
@@ -185,28 +194,29 @@
         oak_leaf: {
             palette: {
                 '.': [0, 0, 0, 0],
-                D: [40, 92, 36, 255],
-                g: [72, 142, 48, 255],
-                G: [118, 186, 64, 255],
-                y: [154, 198, 72, 255]
+                d: [28, 70, 22, 255],
+                D: [48, 112, 34, 255],
+                g: [78, 158, 48, 255],
+                G: [139, 224, 74, 255],
+                y: [188, 253, 96, 255]
             },
             rows: [
-                '..gggggggggggg..',
-                '.gGggggggggggGg.',
-                'gGggggggggggggGg',
-                'gggggGGggGGggggg',
-                'gggggggggggggggg',
-                'ggGgggDDggDDggGg',
-                'gggggggggggggggg',
-                'gggggggggggggggg',
-                'gggggggggggggggg',
-                'gggggggggggggggg',
-                'ggGgggDDggDDggGg',
-                'gggggggggggggggg',
-                'gggggGGggGGggggg',
-                'gGggggggggggggGg',
-                '.gGggggggggggGg.',
-                '..gggggggggggg..'
+                '..GGyy..yGGyGG..',
+                '.GGyyGGyyGGyyGG.',
+                'gGGyGGyGGyGGyGGy',
+                'gGGyGGdGGdGGdGGd',
+                '.GGyGGdDDdGGdGGd',
+                'gGGyGGdDDdGGdDDd',
+                'gGGyGGdDDdDDdDDD',
+                '.gGyGGdDDdDDdDD.',
+                'gdGGdDDdDDdDDDDD',
+                'gdgGdDDdDDdDDDDD',
+                '.gdgGdDDdDDdDDDD',
+                'gdggdDDdDDdDDDD.',
+                'gdggDDdDDDDdDDDD',
+                '.gdgDDdDDDDdDDDg',
+                '..gdgDDdDDDgDD..',
+                '...gd.DDDd.DDD..'
             ]
         },
         sand: {
@@ -233,7 +243,7 @@
                 'mLmmmDmmmmLmmDmm',
                 'ssDssDssDssDssDs',
                 'mmLmmDmmmmLmmmDm',
-                'DmmDmmDmmDmmDmmD'
+                'mmLmmmLmmmLmmmLm'
             ]
         }
     };

@@ -34,6 +34,12 @@ await replaceDir(
   path.join(prj, 'assets', 'vocab', 'core-english-2026.08.15'),
   path.join(destRoot, 'vocab', 'core-english-2026.08.15')
 );
+if (await exists(path.join(prj, 'assets', 'vocab', 'minecraft-english-2026.08.15'))) {
+  await replaceDir(
+    path.join(prj, 'assets', 'vocab', 'minecraft-english-2026.08.15'),
+    path.join(destRoot, 'vocab', 'minecraft-english-2026.08.15')
+  );
+}
 if (await exists(path.join(prj, 'assets', 'generated', 'blocklegend-roster'))) {
   await replaceDir(
     path.join(prj, 'assets', 'generated', 'blocklegend-roster'),

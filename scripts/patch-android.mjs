@@ -76,4 +76,12 @@ if (fs.existsSync(manifest)) {
   }
 }
 
+const strings = path.join(root, 'android', 'app', 'src', 'main', 'res', 'values', 'strings.xml');
+if (fs.existsSync(strings)) {
+  let text = fs.readFileSync(strings, 'utf8');
+  text = text.replace(/<string name="app_name">[^<]*<\/string>/, '<string name="app_name">我的方块学园</string>');
+  text = text.replace(/<string name="title_activity_main">[^<]*<\/string>/, '<string name="title_activity_main">我的方块学园</string>');
+  fs.writeFileSync(strings, text);
+}
+
 console.log('[patch-android] version', version, 'code', code);

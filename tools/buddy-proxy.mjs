@@ -3,12 +3,27 @@
  * If faster-whisper / whisper-stt is not installed, STT returns 501.
  *
  *   node prj/games/blocklegend/tools/buddy-proxy.mjs
+ *
+ * Default chat upstream is local Ollama:
+ *   BL_BUDDY_UPSTREAM=http://127.0.0.1:11434/v1
+ * Empty UPSTREAM makes POST /v1/chat/completions return 501 (game uses template).
+ *
+ * Cloud:
+ *   set BL_BUDDY_UPSTREAM=https://api.deepseek.com/v1
+ *   set BL_BUDDY_API_KEY=...
+ * The proxy adds Authorization. Do not put keys on the game page.
  */
 import http from 'node:http';
+import https from 'node:https';
 import { spawn } from 'node:child_process';
 
 const PORT = Number(process.env.BL_BUDDY_PORT) || 4210;
-const UPSTREAM = process.env.BL_BUDDY_UPSTREAM || '';
+const DEFAULT_UPSTREAM = 'http://127.0.0.1:11434/v1';
+const UPSTREAM = process.env.BL_BUDDY_UPSTREAM != null
+    ? String(process.env.BL_BUDDY_UPSTREAM)
+    : DEFAULT_UPSTREAM;
+const API_KEY = process.env.BL_BUDDY_API_KEY || '';
+const CHAT_TIMEOUT_MS = 1800;
 
 function whisperBin() {
     return process.env.BL_WHISPER_BIN || process.env.WHISPER_STT || '';
@@ -16,6 +31,10 @@ function whisperBin() {
 
 function sttReady() {
     return !!(whisperBin() || process.env.BL_WHISPER_CMD);
+}
+
+function chatReady() {
+    return !!UPSTREAM;
 }
 
 function send(res, code, obj) {
@@ -36,6 +55,11 @@ function readBody(req) {
         req.on('end', () => resolve(Buffer.concat(chunks)));
         req.on('error', reject);
     });
+}
+
+function chatTarget() {
+    const base = String(UPSTREAM || '').replace(/\/+$/, '');
+    return base + '/chat/completions';
 }
 
 async function handleStt(req, res) {
@@ -65,6 +89,61 @@ async function handleStt(req, res) {
     });
 }
 
+async function handleChat(req, res) {
+    if (!UPSTREAM) {
+        send(res, 501, { error: 'chat: no upstream' });
+        return;
+    }
+    const payload = await readBody(req);
+    const target = new URL(chatTarget());
+    const body = payload.length ? payload : Buffer.from('{}');
+    const headers = {
+        'Content-Type': 'application/json',
+        'Content-Length': String(body.length)
+    };
+    if (API_KEY) headers.Authorization = 'Bearer ' + API_KEY;
+    const lib = target.protocol === 'https:' ? https : http;
+    await new Promise((resolve) => {
+        const up = lib.request({
+            protocol: target.protocol,
+            hostname: target.hostname,
+            port: target.port || (target.protocol === 'https:' ? 443 : 80),
+            path: target.pathname + target.search,
+            method: 'POST',
+            headers
+        }, (upRes) => {
+            const chunks = [];
+            upRes.on('data', (c) => chunks.push(c));
+            upRes.on('end', () => {
+                clearTimeout(timer);
+                if (res.headersSent) {
+                    resolve();
+                    return;
+                }
+                res.writeHead(upRes.statusCode || 502, {
+                    'Content-Type': upRes.headers['content-type'] || 'application/json; charset=utf-8',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Headers': 'content-type,x-prompt,authorization',
+                    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+                });
+                res.end(Buffer.concat(chunks));
+                resolve();
+            });
+        });
+        const timer = setTimeout(() => {
+            up.destroy();
+            if (!res.headersSent) send(res, 504, { error: 'chat timeout' });
+            resolve();
+        }, CHAT_TIMEOUT_MS);
+        up.on('error', (e) => {
+            clearTimeout(timer);
+            if (!res.headersSent) send(res, 502, { error: 'chat: ' + (e && e.message ? e.message : 'fail') });
+            resolve();
+        });
+        up.end(body);
+    });
+}
+
 const server = http.createServer(async (req, res) => {
     const url = new URL(req.url || '/', 'http://127.0.0.1');
     if (req.method === 'OPTIONS') {
@@ -83,12 +162,24 @@ const server = http.createServer(async (req, res) => {
         }
         return;
     }
-    if (url.pathname === '/health') {
-        send(res, 200, { ok: true, stt: sttReady() ? 'ready' : '501' });
+    if (url.pathname === '/v1/chat/completions' || url.pathname === '/chat/completions') {
+        if (req.method !== 'POST') {
+            send(res, 405, { error: 'chat: POST only' });
+            return;
+        }
+        try {
+            await handleChat(req, res);
+        } catch (e) {
+            send(res, 500, { error: 'chat: ' + (e && e.message ? e.message : 'fail') });
+        }
         return;
     }
-    if (!UPSTREAM) {
-        send(res, 404, { error: 'no upstream' });
+    if (url.pathname === '/health') {
+        send(res, 200, {
+            ok: true,
+            stt: sttReady() ? 'ready' : '501',
+            chat: chatReady() ? 'ready' : '501'
+        });
         return;
     }
     send(res, 404, { error: 'not found' });
@@ -96,8 +187,8 @@ const server = http.createServer(async (req, res) => {
 
 if (process.argv[1] && process.argv[1].endsWith('buddy-proxy.mjs')) {
     server.listen(PORT, '127.0.0.1', () => {
-        process.stdout.write('buddy-proxy on http://127.0.0.1:' + PORT + ' /v1/stt\n');
+        process.stdout.write('buddy-proxy on http://127.0.0.1:' + PORT + ' /v1/stt /v1/chat/completions\n');
     });
 }
 
-export { server, sttReady };
+export { server, sttReady, chatReady };

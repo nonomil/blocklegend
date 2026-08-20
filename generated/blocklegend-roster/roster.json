@@ -11,13 +11,6 @@
   "gate": "prj/assets/generated/blocklegend-roster/PIPELINE.md",
   "planned": [
     {
-      "id": "vindicator",
-      "en": "vindicator",
-      "zh": "卫道士",
-      "group": "hostile",
-      "note": "同 Illager 盒，铁斧。四视图已出，等人过目再编译。"
-    },
-    {
       "id": "bed",
       "en": "bed",
       "zh": "床",
@@ -47,7 +40,8 @@
       "group": "hostile",
       "rename": true,
       "old_zh": "绿爆怪",
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/creeper"
     },
     {
       "id": "zombie",
@@ -55,7 +49,8 @@
       "zh": "僵尸",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/zombie"
     },
     {
       "id": "skeleton",
@@ -63,7 +58,8 @@
       "zh": "骷髅",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/skeleton"
     },
     {
       "id": "spider",
@@ -71,7 +67,8 @@
       "zh": "蜘蛛",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/spider"
     },
     {
       "id": "enderman",
@@ -81,7 +78,8 @@
       "rename": true,
       "old_en": "shadow",
       "old_zh": "高影",
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/enderman"
     },
     {
       "id": "piglin",
@@ -91,7 +89,8 @@
       "rename": true,
       "old_en": "hog",
       "old_zh": "金牙",
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/piglin"
     },
     {
       "id": "witch",
@@ -99,7 +98,8 @@
       "zh": "女巫",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/witch"
     },
     {
       "id": "golem",
@@ -109,7 +109,8 @@
       "rename": true,
       "old_en": "golem",
       "old_zh": "铁卫",
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/golem"
     },
     {
       "id": "blaze",
@@ -117,7 +118,8 @@
       "zh": "烈焰人",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/blaze"
     },
     {
       "id": "ghast",
@@ -125,7 +127,8 @@
       "zh": "恶魂",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/ghast"
     },
     {
       "id": "warden",
@@ -134,7 +137,8 @@
       "group": "hostile",
       "rename": true,
       "old_zh": "循声守卫",
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/warden"
     },
     {
       "id": "slime",
@@ -143,7 +147,8 @@
       "group": "hostile",
       "rename": true,
       "old_zh": "软泥怪",
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/slime"
     },
     {
       "id": "cube",
@@ -151,7 +156,8 @@
       "zh": "方块兽",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/cube"
     },
     {
       "id": "magma",
@@ -161,7 +167,8 @@
       "rename": true,
       "old_en": "lava",
       "old_zh": "熔岩块",
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/magma"
     },
     {
       "id": "fox",
@@ -169,7 +176,8 @@
       "zh": "狐狸",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/fox"
     },
     {
       "id": "pig",
@@ -177,7 +185,8 @@
       "zh": "猪",
       "group": "animal",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/pig"
     },
     {
       "id": "cow",
@@ -185,7 +194,8 @@
       "zh": "牛",
       "group": "animal",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/cow"
     },
     {
       "id": "sheep",
@@ -193,7 +203,8 @@
       "zh": "羊",
       "group": "animal",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/sheep"
     },
     {
       "id": "chicken",
@@ -201,7 +212,8 @@
       "zh": "鸡",
       "group": "animal",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/chicken"
     },
     {
       "id": "wolf",
@@ -209,7 +221,8 @@
       "zh": "狼",
       "group": "animal",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/wolf"
     },
     {
       "id": "villager",
@@ -218,7 +231,8 @@
       "group": "animal",
       "rename": true,
       "old_zh": "镇民",
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/villager"
     },
     {
       "id": "trader",
@@ -228,7 +242,8 @@
       "rename": true,
       "old_en": "trader",
       "old_zh": "货郎",
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/trader"
     },
     {
       "id": "wither",
@@ -237,7 +252,8 @@
       "group": "boss",
       "rename": true,
       "old_zh": "字母石像",
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/wither"
     },
     {
       "id": "dragon",
@@ -247,7 +263,8 @@
       "rename": true,
       "old_en": "dragon",
       "old_zh": "墨翼",
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/dragon"
     },
     {
       "id": "storm",
@@ -257,7 +274,8 @@
       "rename": true,
       "old_en": "storm",
       "old_zh": "雷语",
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/storm"
     },
     {
       "id": "bee",
@@ -265,7 +283,8 @@
       "zh": "蜜蜂",
       "group": "animal",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/bee"
     },
     {
       "id": "husk",
@@ -273,7 +292,8 @@
       "zh": "尸壳",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/husk"
     },
     {
       "id": "ravager",
@@ -281,7 +301,8 @@
       "zh": "劫掠兽",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/ravager"
     },
     {
       "id": "phantom",
@@ -289,7 +310,8 @@
       "zh": "幻翼",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/phantom"
     },
     {
       "id": "vex",
@@ -297,7 +319,8 @@
       "zh": "恼鬼",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/vex"
     },
     {
       "id": "drowned",
@@ -305,7 +328,8 @@
       "zh": "溺尸",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/drowned"
     },
     {
       "id": "snowgolem",
@@ -313,15 +337,17 @@
       "zh": "雪傀儡",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/snowgolem"
     },
     {
-      "id": "shulker",
-      "en": "shulker",
-      "zh": "潜影贝",
+      "id": "vindicator",
+      "en": "vindicator",
+      "zh": "卫道士",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "atlas",
+      "folder": "characters/vindicator"
     },
     {
       "id": "guardian",
@@ -329,7 +355,8 @@
       "zh": "守卫者",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/guardian"
     },
     {
       "id": "pufferfish",
@@ -337,7 +364,8 @@
       "zh": "河豚",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/pufferfish"
     },
     {
       "id": "spore_bug",
@@ -345,7 +373,8 @@
       "zh": "孢子虫",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/spore_bug"
     },
     {
       "id": "fire_spirit",
@@ -353,7 +382,8 @@
       "zh": "火灵",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/fire_spirit"
     },
     {
       "id": "sculk_worm",
@@ -361,7 +391,8 @@
       "zh": "幽匿虫",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/sculk_worm"
     },
     {
       "id": "shadow_stalker",
@@ -369,7 +400,8 @@
       "zh": "影行者",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/shadow_stalker"
     },
     {
       "id": "pillager",
@@ -377,7 +409,9 @@
       "zh": "掠夺者",
       "group": "hostile",
       "rename": false,
-      "status": "verified_atlas"
+      "status": "verified_atlas",
+      "folder": "characters/pillager"
     }
-  ]
+  ],
+  "character_root": "characters"
 }

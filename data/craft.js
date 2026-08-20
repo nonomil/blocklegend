@@ -19,7 +19,8 @@
         fence: '栅栏', ladder: '梯子', bowl: '碗', boat: '船',
         shears: '剪刀', fishing_rod: '钓竿', bucket: '桶',
         sand: '沙子', glass: '玻璃', wool: '羊毛',
-        pork: '猪肉', beef: '牛肉', mutton: '羊肉', chicken: '鸡肉'
+        tnt: 'TNT', flint_and_steel: '打火石',
+        pork: '猪肉', beef: '牛肉', mutton: '羊肉', chicken: '鸡肉', egg: '鸡蛋'
     };
 
     const RECIPES = [
@@ -60,7 +61,9 @@
         { id: 'shears', name: '剪刀', zh: '2 铁锭', inputs: { iron_ingot: 2 }, outputs: { shears: 1 }, grid: 3, shape: [2, 2], cells: [null, 'iron_ingot', 'iron_ingot', null] },
         { id: 'bucket', name: '桶', zh: '3 铁锭', inputs: { iron_ingot: 3 }, outputs: { bucket: 1 }, grid: 3, shape: [3, 2], cells: ['iron_ingot', null, 'iron_ingot', null, 'iron_ingot', null] },
         { id: 'fishing_rod', name: '钓竿', zh: '3 木棍 + 2 线', inputs: { stick: 3, string: 2 }, outputs: { fishing_rod: 1 }, grid: 3, shape: [3, 3], cells: [null, null, 'stick', null, 'stick', 'string', 'stick', null, 'string'] },
-        { id: 'glass', name: '玻璃', zh: '1 沙子 + 1 煤炭', inputs: { sand: 1, coal: 1 }, outputs: { glass: 1 }, grid: 2, shapeless: ['sand', 'coal'] }
+        { id: 'glass', name: '玻璃', zh: '1 沙子 + 1 煤炭', inputs: { sand: 1, coal: 1 }, outputs: { glass: 1 }, grid: 2, shapeless: ['sand', 'coal'] },
+        { id: 'tnt', name: 'TNT', zh: '2 沙子 + 1 煤炭', inputs: { sand: 2, coal: 1 }, outputs: { tnt: 1 }, grid: 3, shapeless: ['sand', 'sand', 'coal'] },
+        { id: 'flint_and_steel', name: '打火石', zh: '1 铁锭 + 1 煤炭', inputs: { iron_ingot: 1, coal: 1 }, outputs: { flint_and_steel: 1 }, grid: 2, shapeless: ['iron_ingot', 'coal'] }
     ];
 
     const HIDDEN = { bowl: true, boat: true, shears: true, bucket: true, fishing_rod: true };
@@ -88,6 +91,68 @@
         return ITEM_NAME[id] || id;
     }
 
+    const ITEM_EN = {
+        plank: 'plank', stick: 'stick', table: 'table', torch: 'torch',
+        glass: 'glass', sand: 'sand', cobble: 'cobble', chest: 'chest',
+        tnt: 'tnt', flint_and_steel: 'flint',
+        furnace: 'furnace', door: 'door', fence: 'fence', ladder: 'ladder',
+        arrow: 'arrow', wool: 'wool',
+        wood_sword: 'sword', wood_pick: 'pickaxe', wood_axe: 'axe', wood_shovel: 'shovel',
+        wood_bow: 'bow', wood_shield: 'shield',
+        stone_sword: 'sword', stone_pick: 'pickaxe', stone_axe: 'axe', stone_shovel: 'shovel',
+        iron_sword: 'sword', iron_pick: 'pickaxe', iron_axe: 'axe', iron_shovel: 'shovel',
+        gold_sword: 'sword', gold_pick: 'pickaxe', gold_axe: 'axe', gold_shovel: 'shovel',
+        diamond_sword: 'sword', diamond_pick: 'pickaxe', diamond_axe: 'axe', diamond_shovel: 'shovel'
+    };
+    const ITEM_ALIASES = {
+        wood_pick: ['pickaxe', 'pick', 'wood pickaxe'],
+        stone_pick: ['pickaxe', 'pick', 'stone pickaxe'],
+        iron_pick: ['pickaxe', 'pick', 'iron pickaxe'],
+        gold_pick: ['pickaxe', 'pick', 'gold pickaxe'],
+        diamond_pick: ['pickaxe', 'pick', 'diamond pickaxe'],
+        wood_sword: ['sword', 'wood sword'],
+        stone_sword: ['sword', 'stone sword'],
+        iron_sword: ['sword', 'iron sword'],
+        wood_axe: ['axe', 'wood axe'],
+        wood_shovel: ['shovel', 'wood shovel'],
+        table: ['table', 'crafting table'],
+        glass: ['glass'],
+        tnt: ['tnt'],
+        flint_and_steel: ['flint', 'flint and steel']
+    };
+
+    function itemEn(id) {
+        return ITEM_EN[id] || String(id || '').replace(/_/g, ' ');
+    }
+
+    function craftWord(id) {
+        const recipe = recipeOf(id);
+        const outId = recipe ? (Object.keys(recipe.outputs)[0] || id) : id;
+        const key = recipe ? recipe.id : id;
+        return {
+            id: key,
+            text: itemEn(outId),
+            zh: itemName(outId),
+            aliases: ITEM_ALIASES[key] || ITEM_ALIASES[outId] || [itemEn(outId)]
+        };
+    }
+
+    function normCraft(s) {
+        return String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
+    function checkCraftWord(id, typed) {
+        const word = craftWord(id);
+        const got = normCraft(typed);
+        if (!got) return false;
+        if (got === normCraft(word.text)) return true;
+        return (word.aliases || []).some(function (a) { return normCraft(a) === got; });
+    }
+
+    function needsCraftSpell(id, known) {
+        return !(known && known[id]);
+    }
+
     const ITEM_ICON = {
         'oak-log': 'log', plank: 'plank', stick: 'stick', table: 'table',
         cobble: 'cobble', dirt: 'dirt', coal: 'coal', string: 'string',
@@ -106,7 +171,8 @@
         fence: 'fence', ladder: 'ladder', bowl: 'bowl', boat: 'boat',
         shears: 'shears', fishing_rod: 'rod', bucket: 'bucket',
         sand: 'dirt', glass: 'gold', wool: 'string',
-        pork: 'dirt', beef: 'dirt', mutton: 'dirt', chicken: 'dirt'
+        tnt: 'gold', flint_and_steel: 'ingot',
+        pork: 'dirt', beef: 'dirt', mutton: 'dirt', chicken: 'dirt', egg: 'dirt'
     };
 
     function itemIcon(id) {
@@ -127,6 +193,8 @@
         if (key === 'plank' || key === 'table') return './assets/atlas/oak_top.png';
         if (key === 'sand') return './assets/atlas/sand.png';
         if (key === 'glass') return './assets/atlas/ice.png';
+        if (key === 'tnt') return './assets/atlas/stone.png';
+        if (key === 'flint_and_steel') return './assets/ui/axe.png';
         return '';
     }
 
@@ -324,6 +392,10 @@
         craft: craft,
         smelt: smelt,
         itemName: itemName,
+        itemEn: itemEn,
+        craftWord: craftWord,
+        checkCraftWord: checkCraftWord,
+        needsCraftSpell: needsCraftSpell,
         itemIcon: itemIcon,
         itemArt: itemArt,
         ITEM_ICON: ITEM_ICON,

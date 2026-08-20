@@ -32,18 +32,20 @@
         return Math.max(1, (Number(contact) || 1) - (Number(def) || 0));
     }
 
-    function buy(state, itemId) {
+    function buy(state, itemId, opts) {
         const item = itemOf(itemId);
         const coined = Number(state && state.coined) || 0;
         const gear = Object.assign({}, (state && state.gear) || {});
+        const rate = opts && Number(opts.discount);
+        const cost = (rate > 0 && rate < 1) ? Math.max(1, Math.round(item ? item.cost * rate : 0)) : (item ? item.cost : 0);
         if (!item) return { ok: false, reason: 'unknown', coined: coined, gear: gear, heal: 0 };
-        if (coined < item.cost) return { ok: false, reason: 'poor', coined: coined, gear: gear, heal: 0 };
+        if (coined < cost) return { ok: false, reason: 'poor', coined: coined, gear: gear, heal: 0 };
         if (item.slot === 'consumable') {
-            return { ok: true, coined: coined - item.cost, gear: gear, heal: item.heal, item: item };
+            return { ok: true, coined: coined - cost, gear: gear, heal: item.heal, item: item, cost: cost };
         }
         const next = Object.assign({}, gear);
         next[item.slot] = item.id;
-        return { ok: true, coined: coined - item.cost, gear: next, heal: 0, item: item };
+        return { ok: true, coined: coined - cost, gear: next, heal: 0, item: item, cost: cost };
     }
 
     global.BlockLegendShop = {

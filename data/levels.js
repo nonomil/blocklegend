@@ -14,7 +14,7 @@
         {
             level: 1, waves: 5, bossHp: 80, bossShield: 3, climate: 'plains', worldSeed: 7,
             bossId: 'wither', bossMechanic: 'speak-break', missionType: 'chop-craft-fight',
-            waveKinds: ['slime', 'cube', 'creeper'], targetWords: 50, reviewRatio: 0.2,
+            waveKinds: ['slime', 'cube', 'creeper'], targetWords: 50, reviewRatio: 0.2, // reviewRatio = 复习占比上限
             wordThemes: ['颜色', '自然', '物品', '动物'],
             climateWords: ['sun'],
             focusWords: ['tree', 'sword', 'slime', 'apple', 'jump', 'sun', 'flower', 'run', 'bed', 'home', 'teacher'],
@@ -50,10 +50,10 @@
         {
             level: 5, waves: 4, bossHp: 200, bossShield: 5, climate: 'deep_dark', worldSeed: 59,
             bossId: 'warden', bossMechanic: 'listen-pair', missionType: 'deep-listen',
-            waveKinds: ['spider', 'witch', 'shulker', 'warden', 'golem', 'sculk_worm'], targetWords: 50, reviewRatio: 0.5,
+            waveKinds: ['spider', 'witch', 'vindicator', 'warden', 'golem', 'sculk_worm'], targetWords: 50, reviewRatio: 0.5,
             wordThemes: ['描述', '颜色', '自然'],
             climateWords: ['black', 'light'],
-            focusWords: ['black', 'light', 'blue', 'red', 'shulker', 'sculk worm'],
+            focusWords: ['black', 'light', 'blue', 'red', 'vindicator', 'sculk worm'],
             unlock: { coins: 500, recallWords: 5 }
         },
         {
@@ -113,7 +113,7 @@
         {
             level: 12, waves: 5, bossHp: 380, bossShield: 8, climate: 'end', worldSeed: 157,
             bossId: 'dragon', bossMechanic: 'action-potion', missionType: 'end-ascent',
-            waveKinds: ['enderman', 'shulker', 'phantom', 'warden', 'sculk_worm'], targetWords: 50, reviewRatio: 0.7,
+            waveKinds: ['enderman', 'vindicator', 'phantom', 'warden', 'sculk_worm'], targetWords: 50, reviewRatio: 0.7,
             wordThemes: ['动作', '描述', '高频词'],
             climateWords: ['cool'],
             focusWords: ['dark', 'jump', 'end', 'hard', 'help', 'light', 'sculk worm'],
@@ -550,6 +550,237 @@
         };
     }
 
+    const CLIMATE_ZH = {
+        plains: '平原', forest: '密林', desert: '沙漠', snow: '雪原',
+        deep_dark: '深暗', nether: '下界', quarry: '采石', astral: '星空',
+        ocean: '海洋', crystal: '晶簇', volcano: '火山', end: '末地'
+    };
+    const HUB_RING = 140;
+    const HUB_SPOTS = (function () {
+        const out = [];
+        for (let i = 0; i < 12; i += 1) {
+            const a = -Math.PI / 2 + i * (Math.PI / 6);
+            out.push({
+                dx: Math.round(Math.cos(a) * HUB_RING),
+                dz: Math.round(Math.sin(a) * HUB_RING)
+            });
+        }
+        return out;
+    }());
+    const HUB_STATION = {
+        plains: { frame: 'gold', wall: 'plank', roof: 'leaf', shape: 'house', line: '砍树合成 · 打史莱姆' },
+        forest: { frame: 'leaf', wall: 'log', roof: 'leaf', shape: 'cabin', line: '密林找路 · 跟着狐狸' },
+        desert: { frame: 'sand', wall: 'sand', roof: 'sand', shape: 'hut', line: '热风沙丘 · 找钥匙' },
+        snow: { frame: 'iron', wall: 'snow', roof: 'snow', shape: 'igloo', line: '雪夜护送 · 带上火把' },
+        deep_dark: { frame: 'coal', wall: 'coal', roof: 'stone', shape: 'bunker', line: '深暗听声 · 别出声' },
+        nether: { frame: 'table', wall: 'stone', roof: 'table', shape: 'forge', line: '下界火路 · 复习过关' },
+        quarry: { frame: 'iron', wall: 'stone', roof: 'iron', shape: 'mine', line: '采石挖掘 · 大声破盾' },
+        astral: { frame: 'diamond', wall: 'iron', roof: 'diamond', shape: 'spire', line: '星空小径 · 听一对词' },
+        ocean: { frame: 'diamond', wall: 'plank', roof: 'iron', shape: 'dock', line: '涨潮捞宝 · 拼出钥匙' },
+        crystal: { frame: 'diamond', wall: 'diamond', roof: 'leaf', shape: 'crystal', line: '晶簇指路 · 说左右' },
+        volcano: { frame: 'table', wall: 'stone', roof: 'gold', shape: 'forge', line: '火山复习 · 别掉进岩浆' },
+        end: { frame: 'coal', wall: 'stone', roof: 'coal', shape: 'end', line: '末地登高 · 喝下药水' }
+    };
+    const MAP_SPOTS = {
+        camp: { x: 16, y: 60 },
+        1: { x: 28, y: 58 },
+        2: { x: 30, y: 40 },
+        3: { x: 44, y: 68 },
+        4: { x: 22, y: 24 },
+        5: { x: 46, y: 40 },
+        6: { x: 56, y: 54 },
+        7: { x: 62, y: 32 },
+        8: { x: 52, y: 16 },
+        9: { x: 70, y: 74 },
+        10: { x: 78, y: 38 },
+        11: { x: 84, y: 60 },
+        12: { x: 90, y: 18 },
+        secret: { x: 12, y: 32 }
+    };
+    const CAMP_BUILDINGS = [
+        { id: 'trade', x: 11, y: 54, label: '商人摊' },
+        { id: 'dummy', x: 20, y: 54, label: '训练假人' },
+        { id: 'chest', x: 16, y: 66, label: '奖励箱' }
+    ];
+
+    function campMapOf(opts) {
+        const o = opts || {};
+        const unlocked = Number(o.unlockedLevel) || 1;
+        const cleared = (o.clearedLevels || []).map(Number);
+        const due = (o.dueLevelIds || []).map(Number);
+        const campAt = MAP_SPOTS.camp;
+        const nodes = LEVELS.map(function (lv) {
+            let state = 'locked';
+            if (lv.level > unlocked) state = 'locked';
+            else if (due.indexOf(lv.level) >= 0) state = 'due';
+            else if (cleared.indexOf(lv.level) >= 0 || lv.level < unlocked) state = 'cleared';
+            else state = 'open';
+            const at = MAP_SPOTS[lv.level] || campAt;
+            return {
+                level: lv.level,
+                climate: lv.climate,
+                title: CLIMATE_ZH[lv.climate] || lv.climate,
+                state: state,
+                x: at.x,
+                y: at.y
+            };
+        });
+        return {
+            camp: {
+                chest: Number(o.campChest) || 0,
+                secret: !!o.secret,
+                x: campAt.x,
+                y: campAt.y,
+                secretX: MAP_SPOTS.secret.x,
+                secretY: MAP_SPOTS.secret.y,
+                buildings: CAMP_BUILDINGS.map(function (b) {
+                    return { id: b.id, x: b.x, y: b.y, label: b.label };
+                })
+            },
+            nodes: nodes
+        };
+    }
+
+    function hubPortalsOf(opts) {
+        const o = opts || {};
+        const map = campMapOf(o);
+        const cx = Number(o.cx);
+        const cz = Number(o.cz);
+        const ox = Number.isFinite(cx) ? cx : 192;
+        const oz = Number.isFinite(cz) ? cz : 192;
+        return map.nodes.map(function (n, i) {
+            const station = HUB_STATION[n.climate] || HUB_STATION.plains;
+            const spot = HUB_SPOTS[i] || { dx: 0, dz: -16 };
+            const unlocked = n.state !== 'locked';
+            return {
+                level: n.level,
+                climate: n.climate,
+                title: n.title,
+                state: n.state,
+                x: ox + spot.dx,
+                z: oz + spot.dz,
+                frame: unlocked ? 'leaf' : 'gold',
+                wall: station.wall,
+                roof: station.roof,
+                shape: station.shape,
+                line: station.line,
+                mark: String(n.level)
+            };
+        });
+    }
+
+    function canJumpHub(opts, level) {
+        const o = opts || {};
+        const lv = Number(level) || 0;
+        const unlocked = Math.max(1, Number(o.unlockedLevel) || 1);
+        if (lv < 1 || lv > LEVEL_TOTAL) return { ok: false, reason: 'missing' };
+        if (lv > unlocked) {
+            return {
+                ok: false,
+                reason: 'locked',
+                unlockAt: lv,
+                message: '第' + lv + '关 · 通完第' + (lv - 1) + '关后解锁'
+            };
+        }
+        const due = (o.dueLevelIds || []).map(Number);
+        if (due.indexOf(lv) >= 0) return { ok: true, reason: 'due' };
+        if (lv < unlocked) return { ok: true, reason: 'cleared' };
+        return { ok: true, reason: 'open' };
+    }
+
+    function nextUnlockOf(opts) {
+        const o = opts || {};
+        const unlocked = Math.max(1, Number(o.unlockedLevel) || 1);
+        const next = unlocked + 1;
+        if (next > LEVEL_TOTAL) return null;
+        const cleared = (o.clearedLevels || []).map(Number);
+        if (cleared.indexOf(unlocked) < 0) return null;
+        return { level: next, cost: UNLOCK_COST[next - 1] || 0 };
+    }
+
+    function guideMarkOf(opts) {
+        const o = opts || {};
+        if (o.settleAt && o.settleAt.x != null) {
+            return {
+                kind: 'settle',
+                x: Number(o.settleAt.x),
+                z: Number(o.settleAt.z),
+                label: '走到黄点结算金币',
+                hint: '小地图黄点 · 走过去开下一关'
+            };
+        }
+        if (o.hub) {
+            const next = nextUnlockOf(o);
+            const post = o.unlockPost;
+            if (next && post && post.x != null) {
+                return {
+                    kind: 'unlock',
+                    x: Number(post.x),
+                    z: Number(post.z),
+                    level: next.level,
+                    cost: next.cost,
+                    label: '走到黄点解锁第' + next.level + '关',
+                    hint: '花 ' + next.cost + ' 金币 · 跟着小地图黄点走'
+                };
+            }
+            const portals = o.portals || [];
+            let i;
+            let jump = null;
+            for (i = 0; i < portals.length; i += 1) {
+                if (portals[i].state === 'open' || portals[i].state === 'due') {
+                    jump = portals[i];
+                    break;
+                }
+            }
+            if (!jump) {
+                for (i = 0; i < portals.length; i += 1) {
+                    if (portals[i].state === 'cleared') {
+                        jump = portals[i];
+                        break;
+                    }
+                }
+            }
+            if (jump) {
+                return {
+                    kind: 'portal',
+                    x: Number(jump.x),
+                    z: Number(jump.z),
+                    level: jump.level,
+                    label: '走到黄点进第' + jump.level + '关 · ' + (jump.title || ''),
+                    hint: '小地图黄点是传送门'
+                };
+            }
+            return null;
+        }
+        const boss = o.bossMob || o.boss;
+        if (boss && (boss.hp == null || boss.hp > 0) && boss.x != null) {
+            return {
+                kind: 'boss',
+                x: Number(boss.x),
+                z: Number(boss.z),
+                label: '走到黄点打 Boss',
+                hint: '清完波次后，黄点就是 Boss'
+            };
+        }
+        const player = o.player || { x: 0, z: 0 };
+        const mobs = (o.monsters || []).filter(function (m) {
+            return m && m.hp > 0 && !m.peaceful && !m.isBoss;
+        });
+        if (mobs.length) {
+            mobs.sort(function (a, b) {
+                return Math.hypot(a.x - player.x, a.z - player.z) - Math.hypot(b.x - player.x, b.z - player.z);
+            });
+            return {
+                kind: 'mob',
+                x: Number(mobs[0].x),
+                z: Number(mobs[0].z),
+                label: '走到黄点打怪',
+                hint: '清光黄点附近的怪，下一波会来'
+            };
+        }
+        return null;
+    }
+
     global.BlockLegendLevels = {
         UNLOCK_COST: UNLOCK_COST,
         SUN_PER_LEVEL: SUN_PER_LEVEL,
@@ -583,6 +814,12 @@
         chipShield: chipShield,
         tickBoss: tickBoss,
         tryUnlock: tryUnlock,
+        campMapOf: campMapOf,
+        hubPortalsOf: hubPortalsOf,
+        HUB_SPOTS: HUB_SPOTS,
+        canJumpHub: canJumpHub,
+        nextUnlockOf: nextUnlockOf,
+        guideMarkOf: guideMarkOf,
         bossPhase: bossPhase,
         buildSettlement: buildSettlement,
         streakFromDates: streakFromDates

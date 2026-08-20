@@ -13,6 +13,7 @@ export async function applyStandalonePaths(root) {
         ['href="../../preschool-workbench/index.html"', 'href="./"'],
         ['src="../shared/workbench-bridge.js', 'src="./shared/workbench-bridge.js'],
         ['src="../shared/game-sfx.js', 'src="./shared/game-sfx.js'],
+        ['src="../shared/speech-match.js', 'src="./shared/speech-match.js'],
         ['src="../../preschool-english-vocab.js', 'src="./preschool-english-vocab.js'],
         ['src="../../child-courses.js', 'src="./child-courses.js']
       ]
@@ -23,6 +24,10 @@ export async function applyStandalonePaths(root) {
         [
           "const PACK_BASE = '../../assets/vocab/core-english-2026.08.15';",
           "const PACK_BASE = './vocab/core-english-2026.08.15';"
+        ],
+        [
+          "const PACK_MC = '../../assets/vocab/minecraft-english-2026.08.15';",
+          "const PACK_MC = './vocab/minecraft-english-2026.08.15';"
         ]
       ]
     },

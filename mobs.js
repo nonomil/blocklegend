@@ -287,11 +287,11 @@
             g.add(rig);
             anim.rig = rig;
             height = 1.7;
-        } else if (kind === 'shulker' && window.BlockLegendShulkerModel) {
-            const rig = window.BlockLegendShulkerModel.create(THREE);
+        } else if (kind === 'vindicator' && window.BlockLegendVindicatorModel) {
+            const rig = window.BlockLegendVindicatorModel.create(THREE);
             g.add(rig);
             anim.rig = rig;
-            height = 1.0;
+            height = 2;
         } else if (kind === 'guardian' && window.BlockLegendGuardianModel) {
             const rig = window.BlockLegendGuardianModel.create(THREE);
             if (o.boss) {
@@ -302,6 +302,11 @@
             }
             g.add(rig);
             anim.rig = rig;
+        } else if (kind === 'elder_guardian' && window.BlockLegendElderGuardianModel) {
+            const rig = window.BlockLegendElderGuardianModel.create(THREE);
+            g.add(rig);
+            anim.rig = rig;
+            height = 1.45;
         } else if (kind === 'spore_bug' && window.BlockLegendSporeBugModel) {
             const rig = window.BlockLegendSporeBugModel.create(THREE);
             g.add(rig);
@@ -579,9 +584,20 @@
             map: blockTex(k),
             color: 0xffffff
         });
-        const cube = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.18), mat);
+        const cubeMat = k === 'tnt'
+            ? new THREE.MeshLambertMaterial({ color: 0xc44528 })
+            : mat;
+        const cube = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 0.18), cubeMat);
         cube.position.y = 0.09;
         g.add(cube);
+        if (k === 'tnt') {
+            const band = new THREE.Mesh(
+                new THREE.BoxGeometry(0.181, 0.04, 0.181),
+                new THREE.MeshLambertMaterial({ color: 0xf4f0ea })
+            );
+            band.position.y = 0.09;
+            g.add(band);
+        }
         if (k === 'table') {
             const top = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.03, 0.2), mat);
             top.position.y = 0.195;
@@ -629,6 +645,8 @@
         if (window.BlockLegendTools3d) {
             const T3 = window.BlockLegendTools3d;
             tools.bow = T3.createBow(THREE);
+            if (T3.createArrow) tools.arrow = T3.createArrow(THREE);
+            if (T3.createFlintAndSteel) tools.flint = T3.createFlintAndSteel(THREE);
             // keep explicit names for playtest roster wiring (createDiamondSword / createIronAxe)
             ['iron', 'gold', 'diamond'].forEach(function (tier) {
                 ['sword', 'axe', 'pickaxe', 'shovel'].forEach(function (tool) {
@@ -647,6 +665,25 @@
         offhand.rotation.set(0.15, 0.85, 0.12);
         offhand.visible = false;
         g.add(offhand);
+        const slashSpec0 = window.BlockLegendFx && window.BlockLegendFx.slashFlash
+            ? window.BlockLegendFx.slashFlash('swing')
+            : null;
+        const slash = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.1, 0.62),
+            new THREE.MeshBasicMaterial({
+                color: slashSpec0 ? slashSpec0.flashColor : 0xfff4dc,
+                transparent: true,
+                opacity: 0,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                side: THREE.DoubleSide,
+                fog: false
+            })
+        );
+        slash.position.set(0.12, 0.18, 0.04);
+        slash.rotation.set(0.15, -0.35, -0.55);
+        slash.visible = false;
+        grip.add(slash);
         Object.keys(tools).forEach(function (id) {
             const t = tools[id];
             if (id.indexOf('place') === 0) {
@@ -674,6 +711,8 @@
                 return tools[pk] ? pk : 'place_dirt';
             }
             if (tool === 'bow' && tools.bow) return 'bow';
+            if (tool === 'arrow' && tools.arrow) return 'arrow';
+            if ((tool === 'flint' || tool === 'flint_and_steel') && tools.flint) return 'flint';
             const tier = state.tiers[tool] || (tool === 'sword' ? state.blade : 'wood');
             const keyed = tier + '_' + tool;
             if ((tier === 'iron' || tier === 'diamond' || tier === 'gold') && tools[keyed]) return keyed;
@@ -689,6 +728,7 @@
             bladeGlow: tools.sword.userData.glow,
             setTool: function (id) {
                 if (id && String(id).indexOf('place') === 0) state.tool = 'place';
+                else if (id === 'flint_and_steel' && tools.flint) state.tool = 'flint';
                 else state.tool = tools[id] ? id : (id === 'bow' && tools.bow ? 'bow' : 'sword');
                 paintTools();
             },
@@ -744,6 +784,18 @@
                     glowMesh.material.emissive.setRGB(0.53 + glow * 0.4, 0.6 - glow * 0.2, 0.73 - glow * 0.3);
                     glowMesh.material.color.setRGB(1, 1 - glow * 0.35, 1 - glow * 0.55);
                 }
+                const FX = window.BlockLegendFx;
+                const swingFx = FX && FX.slashFlash ? FX.slashFlash('swing') : null;
+                const castFx = FX && FX.slashFlash ? FX.slashFlash('cast') : null;
+                const slashOn = swArc > 0.04 || glow > 0.06;
+                slash.visible = slashOn;
+                if (slashOn && slash.material) {
+                    const useCast = glow > 0.18 && castFx;
+                    slash.material.color.setHex(useCast ? castFx.flashColor : (swingFx ? swingFx.flashColor : 0xfff4dc));
+                    slash.material.opacity = Math.min(0.88, swArc * 0.92 + glow * 0.4);
+                    slash.scale.set(1 + swArc * 0.45, 0.55 + swArc * 1.35, 1);
+                    slash.rotation.z = -0.35 - swArc * 0.95;
+                }
             }
         };
     }
@@ -794,6 +846,96 @@
         fx.push({ kind: 'death', obj: mesh, life: 0.28, maxLife: 0.28 });
     }
 
+    function spawnSpecFlash(scene, fx, mob, spec) {
+        if (!spec || !scene || !fx || !THREE) return;
+        const x = mob && mob.x != null ? mob.x : 0;
+        const y = mob && mob.y != null ? mob.y : 0;
+        const z = mob && mob.z != null ? mob.z : 0;
+        const h = Number(mob && mob.height) || 1.6;
+        const add = spec.additive && THREE.AdditiveBlending ? THREE.AdditiveBlending : THREE.NormalBlending;
+
+        if (spec.flashScale > 0 && spec.flashLife > 0) {
+            const flash = new THREE.Sprite(new THREE.SpriteMaterial({
+                color: spec.flashColor,
+                transparent: true,
+                opacity: 0.92,
+                depthWrite: false,
+                blending: add
+            }));
+            flash.position.set(x, y + h * 0.55, z);
+            flash.scale.set(spec.flashScale, spec.flashScale, 1);
+            flash.renderOrder = 900;
+            scene.add(flash);
+            fx.push({
+                kind: 'flash', obj: flash, life: spec.flashLife, maxLife: spec.flashLife, s0: spec.flashScale
+            });
+        }
+
+        if (spec.ringGrow > 0 && spec.ringLife > 0) {
+            const ring = new THREE.Mesh(
+                new THREE.RingGeometry(0.42, 0.62, 28),
+                new THREE.MeshBasicMaterial({
+                    color: spec.ringColor,
+                    transparent: true,
+                    opacity: 0.82,
+                    side: THREE.DoubleSide,
+                    depthWrite: false,
+                    blending: add
+                })
+            );
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.set(x, y + 0.06, z);
+            scene.add(ring);
+            fx.push({
+                kind: 'ring', obj: ring, life: spec.ringLife, maxLife: spec.ringLife,
+                r0: spec.ringR0, grow: spec.ringGrow
+            });
+        }
+    }
+
+    function spawnWordFlash(scene, fx, mob, kind) {
+        const FX = window.BlockLegendFx;
+        const spec = FX && FX.wordFlash ? FX.wordFlash(kind || 'word') : null;
+        spawnSpecFlash(scene, fx, mob, spec);
+    }
+
+    function spawnHitFlash(scene, fx, mob, kind) {
+        const FX = window.BlockLegendFx;
+        const spec = FX && FX.hitFlash ? FX.hitFlash(kind || 'hit') : null;
+        spawnSpecFlash(scene, fx, mob, spec);
+    }
+
+    function acquireHitLight(scene) {
+        if (scene.userData.hitLight) return scene.userData.hitLight;
+        const light = new THREE.PointLight(0xffffff, 0, 4);
+        light.castShadow = false;
+        scene.add(light);
+        scene.userData.hitLight = light;
+        return light;
+    }
+
+    function spawnHitLight(scene, fx, mob, kind) {
+        const FX = window.BlockLegendFx;
+        const spec = FX && FX.hitLight ? FX.hitLight(kind || 'word') : null;
+        if (!spec || !scene || !fx || !THREE.PointLight) return;
+        const light = acquireHitLight(scene);
+        const x = mob && mob.x != null ? mob.x : 0;
+        const y = mob && mob.y != null ? mob.y : 0;
+        const z = mob && mob.z != null ? mob.z : 0;
+        const h = Number(mob && mob.height) || 1.6;
+        light.color.setHex(spec.color);
+        light.intensity = spec.intensity;
+        light.distance = spec.range;
+        light.position.set(x, y + h * 0.7, z);
+        for (let i = fx.length - 1; i >= 0; i -= 1) {
+            if (fx[i].kind === 'light') fx.splice(i, 1);
+        }
+        fx.push({
+            kind: 'light', obj: light, life: spec.life, maxLife: spec.life,
+            i0: spec.intensity, pooled: true
+        });
+    }
+
     function spawnBurst(scene, fx, x, y, z, colorHex, n) {
         for (let i = 0; i < (n || 10); i += 1) {
             const p = box(0.1 + Math.random() * 0.1, 0.1 + Math.random() * 0.1, 0.1 + Math.random() * 0.1, colorHex);
@@ -816,18 +958,35 @@
         return boltMesh();
     }
 
-    function boltMesh() {
+    function boltMesh(kind) {
+        const FX = window.BlockLegendFx;
+        const spec = FX && FX.boltGlow ? FX.boltGlow(kind || 'bolt') : null;
+        const add = spec && spec.additive && THREE.AdditiveBlending
+            ? THREE.AdditiveBlending
+            : THREE.NormalBlending;
         const g = new THREE.Group();
         const core = new THREE.Mesh(
             new THREE.IcosahedronGeometry(0.14, 0),
-            new THREE.MeshBasicMaterial({ color: 0xd9b3ff })
+            new THREE.MeshBasicMaterial({
+                color: spec ? spec.coreColor : 0xd9b3ff,
+                blending: add,
+                depthWrite: false
+            })
         );
         const halo = new THREE.Mesh(
             new THREE.IcosahedronGeometry(0.26, 1),
-            new THREE.MeshBasicMaterial({ color: 0x7a3ce0, transparent: true, opacity: 0.4 })
+            new THREE.MeshBasicMaterial({
+                color: spec ? spec.haloColor : 0x7a3ce0,
+                transparent: true,
+                opacity: spec ? spec.haloOpacity : 0.4,
+                blending: add,
+                depthWrite: false
+            })
         );
         g.add(core); g.add(halo);
         g.userData.spin = { core: core, halo: halo };
+        g.userData.stretch = spec && spec.stretch > 1 ? spec.stretch : 1;
+        g.userData.trail = spec ? spec.trail : true;
         return g;
     }
 
@@ -907,7 +1066,8 @@
         fx.forEach(function (e) {
             e.life -= dt;
             if (e.life <= 0) {
-                scene.remove(e.obj);
+                if (e.pooled && e.obj && e.obj.intensity != null) e.obj.intensity = 0;
+                else scene.remove(e.obj);
                 return;
             }
             if (e.kind === 'text') {
@@ -925,11 +1085,19 @@
             } else if (e.kind === 'death') {
                 const s = Math.max(0.01, e.life / (e.maxLife || 0.28));
                 e.obj.scale.set(s, s * (0.85 + s * 0.15), s);
+            } else if (e.kind === 'flash') {
+                const t = 1 - e.life / (e.maxLife || 0.32);
+                const s = (e.s0 || 1.6) * (1 + t * 0.75);
+                e.obj.scale.set(s, s, 1);
+                if (e.obj.material) e.obj.material.opacity = Math.max(0, 0.92 * (1 - t));
             } else if (e.kind === 'ring') {
                 const t = 1 - e.life / (e.maxLife || 0.7);
                 const s = (e.r0 || 1) + t * (e.grow || 3);
                 e.obj.scale.set(s, 1, s);
                 if (e.obj.material) e.obj.material.opacity = Math.max(0, 0.75 * (1 - t));
+            } else if (e.kind === 'light') {
+                const t = 1 - e.life / (e.maxLife || 0.28);
+                if (e.obj) e.obj.intensity = Math.max(0, (e.i0 || 1) * (1 - t));
             }
             keep.push(e);
         });
@@ -943,6 +1111,9 @@
         createViewModel: createViewModel,
         spawnDamageText: spawnDamageText,
         spawnBurst: spawnBurst,
+        spawnWordFlash: spawnWordFlash,
+        spawnHitFlash: spawnHitFlash,
+        spawnHitLight: spawnHitLight,
         beginDeath: beginDeath,
         boltMesh: boltMesh,
         skillShotMesh: skillShotMesh,

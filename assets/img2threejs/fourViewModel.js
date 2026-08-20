@@ -65,7 +65,8 @@
             if (opts.emissive && part.name.indexOf(opts.emissive.match) === 0) {
                 matOpts.emissive = opts.emissive.color;
             }
-            var mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial(matOpts));
+            var Mat = opts.flat ? THREE.MeshBasicMaterial : THREE.MeshLambertMaterial;
+            var mesh = new THREE.Mesh(geo, new Mat(matOpts));
             mesh.name = part.name;
             nodes[part.name] = mesh;
 

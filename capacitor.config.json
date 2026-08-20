@@ -1,6 +1,6 @@
 {
   "appId": "com.nonomil.blocklegend",
-  "appName": "方块传奇",
+  "appName": "我的方块学园",
   "webDir": "www",
   "bundledWebRuntime": false,
   "server": {

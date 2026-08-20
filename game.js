@@ -18,17 +18,18 @@
         iron_pick: 10, iron_axe: 10, iron_shovel: 9, iron_ore: 3, iron_ingot: 6, coal: 2, torch: 1, chest: 8, furnace: 8,
         gold: 5, gold_ingot: 8, diamond: 12,
         gold_sword: 9, gold_pick: 9, gold_axe: 9, gold_shovel: 8,
+        tnt: 6, flint_and_steel: 7,
         diamond_sword: 14, diamond_pick: 14, diamond_axe: 14, diamond_shovel: 13,
         door: 6, fence: 3, ladder: 3, bowl: 2, boat: 7, shears: 5, bucket: 5, fishing_rod: 7,
         'ender-pearl': 8, 'gold-nugget': 6, 'glow-dust': 5,
         'iron-ingot': 6, saddle: 8, 'phantom-membrane': 6, 'vex-wing': 6,
-        'trident-shard': 7, snowball: 2, 'shulker-shell': 8, prismarine: 7,
+        'trident-shard': 7, snowball: 2, prismarine: 7,
         'puffer-spine': 4, 'spore-cap': 5, 'ember-core': 6, 'sculk-thread': 6, 'shadow-hood': 7,
         'crossbow-bolt': 6
     };
     const DROP_COLOR = {
         'oak-log': 0x6b4a28, 'stick': 0x8a6234, 'dirt': 0x8a6a3c, 'cobble': 0x7a7a80, 'plank': 0xe0b46a,
-        sand: 0xe8d090, glass: 0xa8e0f0, wool: 0xf4f0ea, pork: 0xe07070, beef: 0x8a3030, mutton: 0xc06060, chicken: 0xf0c080
+        sand: 0xe8d090, glass: 0xa8e0f0, tnt: 0xc44528, flint_and_steel: 0x8a929c, wool: 0xf4f0ea, pork: 0xe07070, beef: 0x8a3030, mutton: 0xc06060, chicken: 0xf0c080, egg: 0xf4e8c0
     };
     const CHAPTERS = [
         '',
@@ -49,15 +50,26 @@
     const ENG = window.BlockLegendEngine;
     const C = window.BlockLegendCombat;
     const W = window.BlockLegendWords;
+    const P = window.BlockLegendQuestionPort;
+    const SIDE_PACK = {
+        literacy: 'core-literacy-2026.08.19',
+        pinyin: 'core-pinyin-2026.08.19',
+        phonics: 'core-phonics-2026.08.19',
+        math: 'core-math-2026.08.19'
+    };
     const SP = window.BlockLegendSpeech;
     const SC = window.BlockLegendScenes;
-    const P = window.BlockLegendCompanion;
+    const SL = window.BlockLegendSceneLoop;
+    const BU = window.BlockLegendCompanion;
     const L = window.BlockLegendLevels;
     const Q = window.BlockLegendQuests;
     const MOBS = window.BlockLegendMobs;
     const T = window.BlockLegendTools;
     const CR = window.BlockLegendCraft;
     const S = window.BlockLegendShop;
+    const RS = window.BlockLegendReviewSchedule;
+    const WM = window.BlockLegendWordMemory;
+    const D = window.BlockLegendDifficulty;
     const sfx = window.WorkbenchGameSfx;
     const THEME_BGM = './assets/audio/minecraft-theme.mp3';
     const THREE = window.THREE;
@@ -77,6 +89,7 @@
         lastHitAt: 0,
         lastDamage: 0,
         lastCrit: false,
+        wordAt: 0,
         monsters: [],
         bolts: [],
         bossShots: [],
@@ -112,6 +125,7 @@
         mining: false,
         mine: null,
         lookKey: '',
+        lookRow: null,
         lookSince: 0,
         lookSpoken: false,
         placeLoot: 'dirt',
@@ -119,6 +133,7 @@
         hotbar: T && T.emptyHotbar ? T.emptyHotbar() : ['fist', null, null, null, 'oak-log', 'plank', null, null, null],
         craftQuizOk: false,
         hotIndex: 0,
+        tntFuses: [],
         invPick: null,
         helpPage: 0,
         atTable: false,
@@ -131,7 +146,30 @@
         choiceOnly: {},
         seenByWord: {},
         themeAwarded: {},
-        waveTheme: ''
+        waveTheme: '',
+        sideCards: [],
+        sideByKind: {},
+        sideAvoid: [],
+        sideReady: false,
+        mathDiscount: 0,
+        mathAsked: false,
+        sideBoundToast: false,
+        sideMiss: {},
+        sideDone: 0,
+        sideSitToast: false,
+        sideSkip: {},
+        reviewRun: null,
+        reviewCoinsStart: 0,
+        debugNow: '',
+        tier: 'default',
+        secretRun: false,
+        askedCount: 0,
+        levelStartedAt: 0,
+        bossNeed: 1,
+        bossHitsOnShield: 0,
+        todayShown: false,
+        sceneLoop: null,
+        sceneTimer: 0
     };
 
     function emptyProgress() {
@@ -145,7 +183,19 @@
             rightCount: 0,
             wrongCount: 0,
             clearedLevels: [],
+            levelReview: {},
+            hardWords: [],
+            hardTally: {},
+            wordMemory: {},
+            memoryVersion: 1,
+            clearedTiers: {},
+            scrolls: [],
+            campChest: 0,
+            secretLooted: 0,
+            stats: { inputWords: 0, outputWords: 0, sessionDensity: [] },
+            sceneSentences: {},
             bag: {},
+            craftKnown: {},
             gear: {},
             hotbar: null,
             playDates: [],
@@ -154,7 +204,8 @@
             dailyId: '',
             dailyDay: '',
             dailyDoneId: '',
-            dailyDoneDay: ''
+            dailyDoneDay: '',
+            wordPack: 'core'
         };
     }
 
@@ -200,7 +251,8 @@
             else ensureLevelStarted();
             paintSayStrip();
             syncHud();
-        });
+            maybeShowToday();
+        }, { base: W.packBaseOf ? W.packBaseOf(progress.wordPack) : W.PACK_BASE });
         window.__blDebug = {
             player: engine.player,
             look: engine.look,
@@ -216,6 +268,65 @@
                 const p = engine.player;
                 return spawnMonster(kind, x != null ? x : p.x + 3, z != null ? z : p.z + 2);
             },
+            skipHours: function (hours) {
+                const t = new Date(nowIso()).getTime() + Math.max(0, Number(hours) || 0) * 3600000;
+                session.debugNow = new Date(t).toISOString();
+                paintDoors();
+                paintToday();
+                return session.debugNow;
+            },
+            skipDays: function (days) {
+                return window.__blDebug.skipHours(Math.max(0, Number(days) || 0) * 24);
+            },
+            seedBox: function (word, box) {
+                const mem = memNow();
+                const key = String(word || '').toLowerCase();
+                if (!key) return null;
+                mem.words[key] = Object.assign({}, mem.words[key] || {}, {
+                    box: Math.max(1, Math.min(5, Number(box) || 1)),
+                    streak: 0,
+                    lastSeen: Date.parse(nowIso()),
+                    dueAt: Date.parse(nowIso()) + 86400000
+                });
+                writeMem(mem);
+                persist();
+                return mem.words[key];
+            },
+            pickupScroll: function (levelId) {
+                return tryPickupScroll(levelId || session.level);
+            },
+            memory: function () { return memNow(); },
+            openDoors: function () { paintDoors(); toggleLayer('doors-layer', true); },
+            openToday: function () { paintToday(); toggleLayer('today-layer', true); },
+            openSettle: function () { toggleLayer('settle-layer', true); },
+            startLevel: function (level, extra) { return startLevel(level, extra || {}); },
+            finishLevel: function () { return finishLevel(); },
+            openTrade: function () { return openTrade(); },
+            askWord: function (text, extra) {
+                const key = String(text || '').toLowerCase();
+                const word = (pool || bank || []).filter(function (w) {
+                    return w && String(w.text || '').toLowerCase() === key;
+                })[0] || (pool || bank || [])[0];
+                if (!word) return null;
+                const quiz = nextLearnQuiz(word, extra || null);
+                fillQuizCard(quiz, quiz.scaffold ? '难词支架' : ('梯度 · ' + (quiz.mode || '')));
+                return { text: word.text, mode: quiz.mode, scaffold: !!quiz.scaffold, phonetic: quiz.phonetic || '', phraseZh: quiz.phraseZh || '' };
+            },
+            openGate: function (text) {
+                const key = String(text || '').toLowerCase();
+                const word = (pool || bank || []).filter(function (w) {
+                    return w && String(w.text || '').toLowerCase() === key;
+                })[0] || (pool || bank || [])[0];
+                const gate = { x: 0, z: 0, word: word, opened: false };
+                openGateQuiz(gate);
+                return {
+                    text: word && word.text,
+                    limitMs: session.quiz && session.quiz.limitMs,
+                    endsIn: session.quizEndsAt ? (session.quizEndsAt - Date.now()) : 0,
+                    tier: session.tier
+                };
+            },
+            now: nowIso,
             spawnBossId: function (bossId, x, z) {
                 const p = engine.player;
                 const id = bossId || 'wither';
@@ -228,7 +339,7 @@
         };
         selectTool(0);
         engine.startLoop();
-        toast('空手开局 · 砍树合成木镐 · 吃肉回血');
+        toast('空手开局 · 左键打猪牛羊鸡掉肉 · 走过去捡起来回血');
     }
 
     function loadProgress() {
@@ -241,6 +352,23 @@
         if (!Array.isArray(progress.spokenWordIds)) progress.spokenWordIds = [];
         if (!Array.isArray(progress.reviewWords)) progress.reviewWords = [];
         if (!Array.isArray(progress.clearedLevels)) progress.clearedLevels = [];
+        if (!progress.levelReview || typeof progress.levelReview !== 'object') progress.levelReview = {};
+        if (!Array.isArray(progress.hardWords)) progress.hardWords = [];
+        if (!progress.hardTally || typeof progress.hardTally !== 'object') progress.hardTally = {};
+        if (!progress.wordMemory || typeof progress.wordMemory !== 'object') progress.wordMemory = {};
+        progress.memoryVersion = Number(progress.memoryVersion) || 1;
+        if (!progress.clearedTiers || typeof progress.clearedTiers !== 'object') progress.clearedTiers = {};
+        if (!Array.isArray(progress.scrolls)) progress.scrolls = [];
+        progress.campChest = Number(progress.campChest) || 0;
+        progress.secretLooted = Number(progress.secretLooted) || 0;
+        if (!progress.stats || typeof progress.stats !== 'object') progress.stats = { inputWords: 0, outputWords: 0, sessionDensity: [] };
+        if (!Array.isArray(progress.stats.sessionDensity)) progress.stats.sessionDensity = [];
+        let hydratedMemory = false;
+        if (WM && !Object.keys(progress.wordMemory).length && (progress.learnedIds || []).length) {
+            WM.attachToProgress(progress, WM.hydrateFromLearned(progress.learnedIds, Date.now()));
+            hydratedMemory = true;
+        }
+        if (!progress.sceneSentences || typeof progress.sceneSentences !== 'object') progress.sceneSentences = {};
         if (!Array.isArray(progress.playDates)) progress.playDates = [];
         progress.dailyId = progress.dailyId || '';
         progress.dailyDay = progress.dailyDay || '';
@@ -249,6 +377,8 @@
         if (!progress.speakByDay || typeof progress.speakByDay !== 'object') progress.speakByDay = {};
         progress.speakCount = Number(progress.speakCount) || 0;
         if (!progress.gear || typeof progress.gear !== 'object') progress.gear = {};
+        if (!progress.craftKnown || typeof progress.craftKnown !== 'object') progress.craftKnown = {};
+        progress.wordPack = progress.wordPack === 'mc' ? 'mc' : 'core';
         stampPlayDate();
         session.coins = Number(progress.coined) || 0;
         session.bag = Object.assign({}, progress.bag || C.emptyBag());
@@ -263,6 +393,7 @@
         }
         session.hotIndex = 0;
         session.invPick = null;
+        if (hydratedMemory) persist();
     }
 
     function persist() {
@@ -272,6 +403,27 @@
         progress.gear = progress.gear || {};
         if (bridge && bridge.saveProgress) bridge.saveProgress(GAME_ID, progress);
         syncHud();
+    }
+
+    function memNow() {
+        return WM ? WM.memoryFromProgress(progress, nowIso()) : { words: {}, hardWords: progress.hardWords || [] };
+    }
+
+    function writeMem(mem) {
+        if (WM && mem) WM.attachToProgress(progress, mem);
+    }
+
+    function recordWordMemory(word, correct) {
+        if (!WM || !word || word.side) return;
+        writeMem(WM.recordAnswer(memNow(), word.text || word.id, {
+            correct: !!correct,
+            context: session.reviewRun ? 'review' : 'play',
+            meet: true
+        }, nowIso()));
+    }
+
+    function startCamp() {
+        startHub();
     }
 
     function startTheme() {
@@ -305,6 +457,101 @@
         const helpNext = document.getElementById('help-next');
         if (helpPrev) helpPrev.addEventListener('click', function () { showHelpPage(session.helpPage - 1); });
         if (helpNext) helpNext.addEventListener('click', function () { showHelpPage(session.helpPage + 1); });
+        const hubPicks = document.getElementById('hub-picks');
+        if (hubPicks) {
+            hubPicks.addEventListener('click', function (e) {
+                const btn = e.target.closest('[data-hub-level]');
+                if (!btn) return;
+                jumpHubLevel(Number(btn.getAttribute('data-hub-level')));
+            });
+        }
+        const todayBtn = document.getElementById('today-btn');
+        if (todayBtn) todayBtn.addEventListener('click', function () {
+            toggleLayer('today-layer', false);
+            startHub();
+        });
+        const todayClose = document.getElementById('today-close');
+        if (todayClose) todayClose.addEventListener('click', function () { toggleLayer('today-layer', false); });
+        const todayList = document.getElementById('today-list');
+        if (todayList) {
+            todayList.addEventListener('click', function (e) {
+                const btn = e.target.closest('[data-today]');
+                if (!btn) return;
+                takeTodayItem(btn.getAttribute('data-today'), btn.getAttribute('data-level'));
+            });
+        }
+        const campPad = document.getElementById('camp-pad');
+        if (campPad) {
+            campPad.addEventListener('click', function (e) {
+                const btn = e.target.closest('[data-today]');
+                if (!btn) return;
+                takeTodayItem(btn.getAttribute('data-today'), btn.getAttribute('data-level'));
+            });
+        }
+        const campMap = document.getElementById('camp-map');
+        if (campMap) {
+            campMap.addEventListener('click', function (e) {
+                const extra = e.target.closest('[data-today]');
+                if (extra) {
+                    takeTodayItem(extra.getAttribute('data-today'), extra.getAttribute('data-level'));
+                    return;
+                }
+                const btn = e.target.closest('[data-map-level]');
+                if (!btn) return;
+                if (btn.disabled || btn.getAttribute('data-state') === 'locked') {
+                    toast('先通前面的关');
+                    return;
+                }
+                const lv = Number(btn.getAttribute('data-map-level')) || 1;
+                const state = btn.getAttribute('data-state');
+                toggleLayer('today-layer', false);
+                if (state === 'due') enterReviewDoor(lv);
+                else startLevel(lv);
+            });
+        }
+        const doorsBtn = document.getElementById('doors-btn');
+        if (doorsBtn) doorsBtn.addEventListener('click', function () {
+            paintDoors();
+            toggleLayer('doors-layer', true);
+        });
+        const doorsClose = document.getElementById('doors-close');
+        if (doorsClose) doorsClose.addEventListener('click', function () { toggleLayer('doors-layer', false); });
+        const doorsList = document.getElementById('doors-list');
+        if (doorsList) {
+            doorsList.addEventListener('click', function (e) {
+                const scrollBtn = e.target.closest('[data-scroll]');
+                if (scrollBtn) {
+                    tryPickupScroll(scrollBtn.getAttribute('data-scroll'));
+                    return;
+                }
+                const secret = e.target.closest('[data-secret]');
+                if (secret) {
+                    toggleLayer('doors-layer', false);
+                    startLevel(1, { secret: true });
+                    return;
+                }
+                const tierBtn = e.target.closest('[data-tier]');
+                if (tierBtn && !tierBtn.disabled) {
+                    toggleLayer('doors-layer', false);
+                    startLevel(Number(tierBtn.getAttribute('data-level')) || 1, {
+                        tier: tierBtn.getAttribute('data-tier')
+                    });
+                    return;
+                }
+                const btn = e.target.closest('[data-door]');
+                if (!btn || btn.disabled) return;
+                enterReviewDoor(btn.getAttribute('data-door'));
+            });
+        }
+        const campSkip = document.getElementById('camp-skip');
+        if (campSkip) campSkip.addEventListener('click', function () {
+            toggleLayer('today-layer', false);
+            startLevel(progress.unlockedLevel || 1);
+        });
+        const dummyBtn = document.getElementById('dummy-btn');
+        if (dummyBtn) dummyBtn.addEventListener('click', function () { askDummy(); });
+        const tierClose = document.getElementById('tier-close');
+        if (tierClose) tierClose.addEventListener('click', function () { toggleLayer('tier-layer', false); });
         const dexBtn = document.getElementById('dex-btn');
         if (dexBtn) dexBtn.addEventListener('click', function () {
             paintDex();
@@ -318,6 +565,19 @@
         if (sceneClose) sceneClose.addEventListener('click', function () { toggleLayer('scene-layer', false); });
         const sceneMic = document.getElementById('scene-mic');
         if (sceneMic) sceneMic.addEventListener('click', function () { listenScene(); });
+        const sceneAgain = document.getElementById('scene-again');
+        if (sceneAgain) sceneAgain.addEventListener('click', function () {
+            if (!SL || !session.sceneLoop) return;
+            session.sceneLoop = SL.again(session.sceneLoop);
+            syncSceneFromLoop();
+            playScenePrompt();
+        });
+        const sceneSkip = document.getElementById('scene-skip');
+        if (sceneSkip) sceneSkip.addEventListener('click', function () {
+            if (!SL || !session.sceneLoop) return;
+            session.sceneLoop = SL.skipWait(session.sceneLoop);
+            finishSceneWait(80);
+        });
         const sceneForm = document.getElementById('scene-form');
         if (sceneForm) {
             sceneForm.addEventListener('submit', function (e) {
@@ -334,8 +594,7 @@
             scenePicks.addEventListener('click', function (e) {
                 const btn = e.target.closest('[data-scene]');
                 if (!btn || !SC) return;
-                session.scene = SC.start(btn.getAttribute('data-scene'));
-                paintScene();
+                beginScene(btn.getAttribute('data-scene'));
             });
         }
         const parentBtn = document.getElementById('parent-btn');
@@ -345,6 +604,14 @@
         });
         const parentClose = document.getElementById('parent-close');
         if (parentClose) parentClose.addEventListener('click', function () { toggleLayer('parent-layer', false); });
+        const packBox = document.getElementById('word-pack');
+        if (packBox) {
+            packBox.addEventListener('click', function (e) {
+                const btn = e.target.closest('[data-pack]');
+                if (!btn) return;
+                setWordPack(btn.getAttribute('data-pack'));
+            });
+        }
         const audioBtn = document.getElementById('audio-btn');
         if (audioBtn) {
             audioBtn.addEventListener('click', function () {
@@ -380,7 +647,7 @@
                 applyBuddySettings();
             });
         }
-        document.getElementById('trade-close').addEventListener('click', function () { toggleLayer('trade-layer', false); });
+        document.getElementById('trade-close').addEventListener('click', function () { closeTrade(); });
         const craftClose = document.getElementById('craft-close');
         if (craftClose) craftClose.addEventListener('click', function () { toggleCraft(false); });
         const craftLayer = document.getElementById('craft-layer');
@@ -569,7 +836,7 @@
                 if (!overlayOpen()) {
                     e.preventDefault();
                     setCasting(true);
-                    if (!session.casting) toast('先对准怪物按 V；听不清两次后再按 T 打字');
+                    if (!session.casting) toast('先对准怪物或村民按 V / T');
                     else toast('Esc 取消 · 再按字母拼单词');
                     return;
                 }
@@ -598,6 +865,7 @@
                 return;
             }
             if (e.key === 'f' || e.key === 'F') {
+                if (tryMountToggle()) return;
                 if (session.nearMerchant) openTrade();
             }
             if (e.key === 'c' || e.key === 'C') {
@@ -607,14 +875,16 @@
             }
             if (session.paused) return;
             if (e.key >= '1' && e.key <= '9') selectSlot(Number(e.key));
-            if (e.key === 'q' || e.key === 'Q') tryBolt();
+            const riding = !!(engine && engine.player && engine.player.mounted);
+            if ((e.key === 'q' || e.key === 'Q') && !riding) tryBolt();
+            if ((e.key === 'e' || e.key === 'E') && !riding) tryEat();
             if (e.key === 'Escape') {
                 const gateOpen = document.getElementById('buddy-gate');
                 if (gateOpen && !gateOpen.classList.contains('is-hidden')) {
                     return;
                 }
                 toggleLayer('help-layer', false);
-                toggleLayer('trade-layer', false);
+                closeTrade();
                 toggleLayer('buddy-layer', false);
                 toggleCraft(false);
                 showBuddyType(false);
@@ -643,14 +913,18 @@
     function recordBridgeAnswer(word, correct) {
         try {
             const bridge = globalThis.WorkbenchGameBridge;
+            if (word && word.side && bridge && bridge.recordSubjectAnswer) {
+                bridge.recordSubjectAnswer(word.side.masteryTrack, word.side.masteryKey, correct);
+                return;
+            }
             if (word && word.text && bridge && bridge.recordWordAnswer) {
-                bridge.recordWordAnswer(word.text, correct);
+                bridge.recordWordAnswer(word.text, correct, { source: 'blocklegend' });
             }
         } catch (e) { /* 工作台桥接失败不能拦住本局出题/伤害 */ }
     }
 
     function overlayOpen() {
-        return ['quiz-layer', 'settle-layer', 'trade-layer', 'help-layer', 'craft-layer', 'buddy-layer', 'buddy-gate', 'scene-layer'].some(function (id) {
+        return ['quiz-layer', 'settle-layer', 'trade-layer', 'help-layer', 'craft-layer', 'buddy-layer', 'buddy-gate', 'scene-layer', 'doors-layer', 'today-layer', 'tier-layer', 'dex-layer', 'parent-layer'].some(function (id) {
             const el = document.getElementById(id);
             return el && !el.classList.contains('is-hidden');
         });
@@ -695,29 +969,10 @@
         return false;
     }
 
-    function openCraftQuiz() {
-        if (session.pending || session.quiz) return;
-        const skip = sessionSkipKeys().concat(progress.learnedIds || []);
-        const word = (W.nextWord && (W.nextWord(pool, skip) || W.nextWord(pool, progress.learnedIds))) || (pool && pool[0]);
-        if (!word) {
-            session.craftQuizOk = true;
-            toggleCraft(true);
-            return;
-        }
-        rememberBoundWord(word);
-        session.pending = { craft: true };
-        fillQuizCard(nextLearnQuiz(word), '合成台 · 先做一题再制作');
-    }
-
     function toggleCraft(forceOn, atTable) {
         const el = document.getElementById('craft-layer');
         if (!el) return;
         const on = forceOn == null ? el.classList.contains('is-hidden') : !!forceOn;
-        if (on && !session.craftQuizOk) {
-            openCraftQuiz();
-            return;
-        }
-        if (!on) session.craftQuizOk = false;
         session.atTable = true;
         const nextSize = 3;
         if (!on || session.craftSize !== nextSize) {
@@ -757,7 +1012,7 @@
     function paintCraft() {
         const tip = document.getElementById('craft-tip');
         if (tip) {
-            tip.textContent = '左边点配方一键做。点背包再点合成格放材料；点背包再点下面物品栏，把合成的东西装到 1–9。';
+            tip.textContent = '点配方，拼出英文才能做出。同一件拼对过就记住了。点背包再点合成格放材料，再点物品栏装到 1–9。';
         }
         paintCraftGrid();
         paintCraftBook();
@@ -919,6 +1174,12 @@
         if (!CR) return;
         const hit = CR.matchGrid(session.craftCells, session.craftSize);
         if (!hit) return;
+        askCraftSpell('grid', hit.recipe.id);
+    }
+
+    function finishTakeCraft() {
+        const hit = CR.matchGrid(session.craftCells, session.craftSize);
+        if (!hit) return;
         session.craftCells = CR.consumeGrid(session.craftCells, session.craftSize, hit);
         Object.keys(hit.recipe.outputs).forEach(function (k) {
             session.bag = C.addLoot(session.bag, k, hit.recipe.outputs[k]);
@@ -932,6 +1193,14 @@
 
     function doCraft(id) {
         if (!CR) return;
+        if (!CR.canCraft(session.bag, id, { atTable: session.atTable })) {
+            toast('材料不够');
+            return;
+        }
+        askCraftSpell('book', id);
+    }
+
+    function finishDoCraft(id) {
         const r = CR.craft(session.bag, id, { atTable: session.atTable });
         if (!r.ok) {
             toast(r.reason || '材料不够');
@@ -943,6 +1212,18 @@
         if (sfx && sfx.craft) sfx.craft();
         toast(craftDoneTip(r.recipe || { id: id, name: id }));
         noteQuest({ type: 'craft', id: id });
+    }
+
+    function askCraftSpell(via, id) {
+        if (CR.needsCraftSpell && !CR.needsCraftSpell(id, progress.craftKnown)) {
+            if (via === 'grid') finishTakeCraft();
+            else finishDoCraft(id);
+            return;
+        }
+        const word = CR.craftWord ? CR.craftWord(id) : { id: id, text: id, zh: id };
+        rememberBoundWord(word);
+        session.pending = { craftItem: id, craftVia: via };
+        fillQuizCard(nextLearnQuiz(word, { mode: 'spell' }), '合成 · 拼出 ' + (word.zh || word.text));
     }
 
     function craftDoneTip(recipe) {
@@ -959,6 +1240,19 @@
         return !!(document.querySelector('.bl-layer:not(.is-hidden), .bl-quiz-layer:not(.is-hidden)'));
     }
 
+    function tryAutoEat(id) {
+        if (!id || !engine || !engine.player) return false;
+        if (engine.player.hp >= engine.player.hpMax) return false;
+        const plan = T.applyEat ? T.applyEat(engine.player.hp, engine.player.hpMax, id) : { ok: false };
+        if (!plan.ok) return false;
+        engine.player.hp = plan.hp;
+        persist();
+        paintHearts();
+        if (sfx && sfx.eat) sfx.eat();
+        toast('吃了' + itemLabel(id) + ' · +' + plan.heal + 'HP');
+        return true;
+    }
+
     function tryEat() {
         const id = session.hotbar && session.hotbar[session.hotIndex];
         const plan = T.applyEat ? T.applyEat(engine.player.hp, engine.player.hpMax, id) : { ok: false };
@@ -973,14 +1267,54 @@
         persist();
         paintHearts();
         paintHotbar();
+        if (sfx && sfx.eat) sfx.eat();
         toast('吃了' + itemLabel(id) + ' · +' + plan.heal + 'HP');
         return true;
+    }
+
+    // —— 龙息：骑乘时左键从龙头喷火球，命中怪走 hurtMonster（HUD 伤害数字），冷却 1s ——
+    function tryDragonBreath() {
+        if (!engine || !engine.player || !engine.player.mounted) return false;
+        const now = nowMs();
+        if (session.breathAt && now - session.breathAt < 1000) return true;
+        session.breathAt = now;
+        const p = engine.player;
+        const aim = nearestLookMob();
+        // 龙头近似位置：玩家(骑手)前方一点
+        const fx = -Math.sin(engine.look.yaw), fz = -Math.cos(engine.look.yaw);
+        const head = { x: p.x + fx * 1.2, y: (p.y || 0) + 0.6, z: p.z + fz * 1.2, height: 0 };
+        const target = aim || { x: p.x + fx * 8, z: p.z + fz * 8 };
+        const dmg = C.breathDamage
+            ? C.breathDamage({ now: now, wordAt: session.wordAt })
+            : 4;
+        fireBossShot(head, {
+            aim: target,
+            shot: 'fireball', color: 0xff6a2a, halo: 0xffd24a,
+            track: !!aim, friendly: true, aimMob: aim || null,
+            dmg: dmg
+        });
+        if (MOBS.spawnBurst) MOBS.spawnBurst(engine.scene, session.fx, head.x, head.y, head.z, dmg > 4 ? 0xffe27a : 0xff8a3a, dmg > 4 ? 9 : 6);
+        if (sfx && sfx.fireball) sfx.fireball(); else if (sfx && sfx.shoot) sfx.shoot();
+        toast(dmg > 4 ? '龙息暴击！说中了' : '龙息！');
+        return true;
+    }
+
+    // —— 急速尾迹：骑乘且 boost(speedFactor>1.25)时在龙尾喷粒子流 ——
+    function tickRideTrail(now) {
+        const m = engine && engine.player && engine.player.mounted;
+        if (!m || !(m.speedFactor > 1.25)) return;
+        if (session.trailAt && now - session.trailAt < 90) return;
+        session.trailAt = now;
+        const fx = -Math.sin(engine.look.yaw), fz = -Math.cos(engine.look.yaw);
+        const tx = m.x - fx * 2.2, tz = m.z - fz * 2.2, ty = (m.y != null ? m.y : 0) + 1.2;
+        if (MOBS.spawnBurst) MOBS.spawnBurst(engine.scene, session.fx, tx, ty, tz, 0xbfd8ff, 3);
     }
 
     function beginMine() {
         hideLookTip();
         if (session.paused || uiBlocksWorld()) return;
-        if (meleeTarget()) {
+        if (engine.player.mounted && tryDragonBreath()) return;
+        if (overlappingFarm() || meleeTarget()) {
             session.mining = true;
             tryMelee();
             return;
@@ -997,6 +1331,7 @@
         hideLookTip();
         if (session.paused || uiBlocksWorld()) return;
         if (tryInteract()) return;
+        if (tryEat()) return;
         const hit = lookHit();
         if (hit && hit.hit && hit.kind === 'table') {
             toggleCraft(true, true);
@@ -1156,7 +1491,62 @@
     function ensureLevelStarted() {
         if (session.levelStarted) return;
         session.levelStarted = true;
-        startLevel(progress.unlockedLevel || session.level || 1);
+        if (isPlaytest()) startLevel(progress.unlockedLevel || session.level || 1);
+        else startHub();
+    }
+
+    function reviewDueIds() {
+        const doors = RS && RS.listReviewDoors ? RS.listReviewDoors(progress, nowIso()) : [];
+        return doors.filter(function (d) {
+            return d.canEnter || d.status === 'ready' || d.status === 'overdue';
+        }).map(function (d) { return Number(d.levelId); });
+    }
+
+    function startHub() {
+        clearEntities();
+        session.hub = true;
+        session.hubEntering = false;
+        session.hubUnlocking = false;
+        session.levelStarted = true;
+        session.combo = 0;
+        session.wave = 0;
+        session.wavesLeft = 0;
+        session.boss = null;
+        session.bossMob = null;
+        session.pending = null;
+        session.gateAsked = null;
+        session.reviewRun = null;
+        session.secretRun = false;
+        session.quiz = null;
+        setCasting(false);
+        toggleLayer('today-layer', false);
+        toggleLayer('settle-layer', false);
+        const cx = 192;
+        const cz = 192;
+        const portals = L.hubPortalsOf ? L.hubPortalsOf({
+            unlockedLevel: progress.unlockedLevel || 1,
+            clearedLevels: progress.clearedLevels || [],
+            dueLevelIds: reviewDueIds(),
+            secret: !!(D && D.secretUnlocked(progress.scrolls || [])),
+            cx: cx,
+            cz: cz
+        }) : [];
+        if (engine && engine.reloadWorld) {
+            engine.reloadWorld(ENG.createWorld(3, {
+                climate: 'plains',
+                hub: true,
+                portals: portals
+            }));
+            if (session.merchant && session.merchant.mesh) engine.scene.remove(session.merchant.mesh);
+            spawnMerchant();
+            refreshSideTablets();
+        }
+        if (engine) engine.player.hp = engine.player.hpMax;
+        session.lastHitAt = 0;
+        toast('小地图黄点 · 走过去就能解锁或进下一关');
+        paintHubPicks(true);
+        paintSayStrip();
+        syncHud();
     }
 
     function applyLoadedBank() {
@@ -1183,8 +1573,11 @@
         syncHud();
     }
 
-    function startLevel(level) {
+    function startLevel(level, extra) {
         clearEntities();
+        session.hub = false;
+        session.hubEntering = false;
+        paintHubPicks(false);
         session.level = Math.max(1, Number(level) || 1);
         session.combo = 0;
         session.wave = 0;
@@ -1203,23 +1596,48 @@
         session.themeAwarded = {};
         session.waveTheme = '';
         session.missByWord = {};
+        session.reviewRun = null;
+        session.reviewCoinsStart = session.coins;
+        session.tier = (extra && extra.tier) || 'default';
+        session.secretRun = !!(extra && extra.secret);
+        session.askedCount = 0;
+        session.levelStartedAt = nowMs();
+        session.bossHitsOnShield = 0;
+        session.bossNeed = (D && D.tierOf(session.tier).bossAnswers) || 1;
         setCasting(false);
-        const cfg = L.levelOf(session.level);
-        session.wavesLeft = cfg.waves;
-        session.quest = Q ? Q.create(session.level) : null;
+        const cfg = L.levelOf(session.secretRun ? 1 : session.level);
+        const review = !!(extra && extra.review);
+        if (review && RS && RS.reviewRunConfig) {
+            const entry = (progress.levelReview || {})[String(session.level)] || {};
+            const run = RS.reviewRunConfig(cfg);
+            session.reviewRun = { level: session.level, round: Number(entry.round) || 0 };
+            session.wavesLeft = run.waves;
+        } else if (session.secretRun && D) {
+            session.wavesLeft = D.secretRunConfig().waves;
+        } else {
+            session.wavesLeft = cfg.waves;
+        }
+        session.quest = Q ? Q.create(session.secretRun ? 99 : session.level) : null;
         refreshPool();
         bootDaily();
         if (engine && engine.reloadWorld) {
-            engine.reloadWorld(ENG.createWorld(cfg.worldSeed || (7 + session.level * 13), {
+            const seed = session.secretRun && D ? D.secretRunConfig().worldSeed : (cfg.worldSeed || (7 + session.level * 13));
+            engine.reloadWorld(ENG.createWorld(seed, {
                 climate: cfg.climate || 'plains',
-                level: session.level,
+                level: session.secretRun ? 99 : session.level,
                 words: W.layoutWorldWords ? W.layoutWorldWords(pool || [], sessionReviewKeys()) : (pool || [])
             }));
             if (session.merchant && session.merchant.mesh) engine.scene.remove(session.merchant.mesh);
             spawnMerchant();
+            refreshSideTablets();
         }
         if (engine) engine.player.hp = engine.player.hpMax;
         session.lastHitAt = 0;
+        if (session.reviewRun) toast('复习之门 · ' + session.wavesLeft + ' 波后再打小 Boss');
+        else if (session.secretRun) toast('词灵回廊 · 三波混怪，没有 Boss');
+        else if (session.tier === 'adventure') toast('冒险档 · 只复习旧词');
+        else if (session.tier === 'apocalypse') toast('天启档 · 词门限时，蓝罩要连答 3 题');
+        maybeOfferScroll();
         if (isPlaytest()) spawnPlaytestRoster();
         else spawnWave();
         paintSayStrip();
@@ -1271,10 +1689,187 @@
 
     function rebindFarWordCubes() {
         if (!engine || !engine.world || !engine.world.wordCells || !W.rebindWorldReviewWords) return;
-        const n = Number(engine.world.size) || 384;
+        const n = Number(engine.world.size) || 512;
         W.rebindWorldReviewWords(engine.world.wordCells, pool || bank, sessionReviewKeys(), {
             cx: Math.floor(n / 2),
             cz: Math.floor(n / 2)
+        });
+        refreshSideTablets();
+    }
+
+    function readSubjectTracks() {
+        try {
+            const st = bridge && typeof bridge.readState === 'function' ? bridge.readState() : null;
+            const root = (st && st.courseProgress) || {};
+            return {
+                literacy: root.literacy || { mastery: {} },
+                pinyin: root.pinyin || { mastery: {} },
+                phonics: root.phonics || { mastery: {} },
+                math: root.math || { mastery: {} }
+            };
+        } catch (e) {
+            return { literacy: { mastery: {} }, pinyin: { mastery: {} }, phonics: { mastery: {} }, math: { mastery: {} } };
+        }
+    }
+
+    function enFamiliarCount() {
+        const sessionN = (session.familiarIds || []).length;
+        const mastery = readMastery();
+        const career = P && P.careerFamiliar
+            ? P.careerFamiliar(mastery)
+            : Object.keys(mastery).filter(function (key) {
+                const state = mastery[key] && mastery[key].state;
+                return state === 'ready' || state === 'maintenance';
+            }).length;
+        return Math.max(sessionN, career);
+    }
+
+    function sittingDoneNow() {
+        return Number(session.sideDone) || 0;
+    }
+
+    function sittingRoom() {
+        return P && P.sittingLeft ? P.sittingLeft({ done: sittingDoneNow() }) : 6;
+    }
+
+    function noteSideSit() {
+        session.sideDone = sittingDoneNow() + 1;
+        paintSideDue(sideDueNow());
+        if (sittingRoom() <= 0 && !session.sideSitToast) {
+            session.sideSitToast = true;
+            toast('配菜先到这儿 · 继续打英语');
+        }
+    }
+
+    function paintSideDue(due) {
+        const el = document.getElementById('side-due');
+        if (el && P && P.hudDueLine) el.textContent = P.hudDueLine(due, { done: sittingDoneNow() });
+        const n = ['literacy', 'pinyin', 'phonics', 'math'].reduce(function (sum, kind) {
+            return sum + (Number(due && due[kind]) || 0);
+        }, 0);
+        if (n > 0 && sittingRoom() > 0 && !session.sideDebtToast) {
+            session.sideDebtToast = true;
+            toast('村里老师有新字卡 · 找他按 F');
+        }
+    }
+
+    function sideDueNow() {
+        return P && P.sideDue
+            ? P.sideDue({ enFamiliar: enFamiliarCount(), tracks: readSubjectTracks() })
+            : { literacy: 0, pinyin: 0, phonics: 0, math: 0 };
+    }
+
+    function allSideCards() {
+        const by = session.sideByKind || {};
+        return ['literacy', 'pinyin', 'phonics', 'math'].reduce(function (list, kind) {
+            return list.concat(by[kind] || []);
+        }, []);
+    }
+
+    function sideReviewKeys() {
+        const tracks = readSubjectTracks();
+        const today = todayIso();
+        if (!P || !P.reviewKeys) return [];
+        return P.reviewKeys(tracks.literacy, today)
+            .concat(P.reviewKeys(tracks.pinyin, today))
+            .concat(P.reviewKeys(tracks.phonics, today))
+            .concat(P.reviewKeys(tracks.math, today));
+    }
+
+    function loadSideKinds(kinds, done) {
+        const want = (kinds || []).filter(function (kind) {
+            return SIDE_PACK[kind] && !(session.sideSkip && session.sideSkip[kind]);
+        });
+        if (!session.sideByKind) session.sideByKind = {};
+        if (!session.sideSkip) session.sideSkip = {};
+        const missing = want.filter(function (kind) {
+            return !session.sideByKind[kind] || !session.sideByKind[kind].length;
+        });
+        if (!missing.length) {
+            finishSideLoad(want, done);
+            return;
+        }
+        if (typeof fetch !== 'function') {
+            finishSideLoad(want, done);
+            return;
+        }
+        Promise.all(missing.map(function (kind) {
+            return fetch('../../assets/vocab/' + SIDE_PACK[kind] + '/catalog.json').then(function (res) {
+                if (!res.ok) throw new Error(kind + ' catalog ' + res.status);
+                return res.json();
+            }).then(function (json) {
+                session.sideByKind[kind] = P && P.cardsFromCatalog ? P.cardsFromCatalog(json) : [];
+            }).catch(function () {
+                session.sideSkip[kind] = true;
+                toast(P && P.loadFailLine ? P.loadFailLine(kind) : '识字板暂时没有');
+            });
+        })).then(function () {
+            finishSideLoad(want, done);
+        });
+    }
+
+    function finishSideLoad(want, done) {
+        loadLiteracyEngine(want, function () {
+            session.sideReady = true;
+            session.sideCards = allSideCards();
+            if (done) done();
+        });
+    }
+
+    function loadLiteracyEngine(want, done) {
+        if (!want || want.indexOf('literacy') < 0) {
+            if (done) done();
+            return;
+        }
+        if (window.PersonalWorkbenchPreschoolLiteracy) {
+            if (done) done();
+            return;
+        }
+        const s = document.createElement('script');
+        s.src = '../../preschool-literacy.js?v=20260819-bl-side7';
+        s.onload = function () { if (done) done(); };
+        s.onerror = function () { if (done) done(); };
+        document.head.appendChild(s);
+    }
+
+    function refreshSideTablets() {
+        if (!P || !engine || !engine.world || !engine.world.wordCells) return;
+        const due = sideDueNow();
+        paintSideDue(due);
+        const kinds = ['literacy', 'pinyin', 'phonics'].filter(function (kind) {
+            return (Number(due[kind]) || 0) > 0 && !(session.sideSkip && session.sideSkip[kind]);
+        });
+        if (!kinds.length || sittingRoom() <= 0) {
+            P.bindFarSideCells(engine.world.wordCells, [], {
+                cx: engine.player ? engine.player.x : 0,
+                cz: engine.player ? engine.player.z : 0
+            });
+            return;
+        }
+        loadSideKinds(kinds, function () {
+            const tracks = readSubjectTracks();
+            const qs = P.pickTabletQuestions
+                ? P.pickTabletQuestions(due, {
+                    cards: allSideCards(),
+                    avoidKeys: session.sideAvoid || [],
+                    dueKeys: sideReviewKeys(),
+                    tracks: tracks,
+                    literacyBand: P.literacyBand
+                        ? P.literacyBand(P.knownCount ? P.knownCount(tracks.literacy) : 0)
+                        : 'L1',
+                    sittingDone: sittingDoneNow(),
+                    salt: 0
+                })
+                : [];
+            P.bindFarSideCells(engine.world.wordCells, qs, {
+                cx: engine.player ? engine.player.x : 0,
+                cz: engine.player ? engine.player.z : 0,
+                cap: 6
+            });
+            if (qs.length && !session.sideBoundToast) {
+                session.sideBoundToast = true;
+                toast('远处金块变成石碑了 · 看向挖开认字');
+            }
         });
     }
 
@@ -1333,7 +1928,315 @@
                 today: todayStr()
             })
             : chapter;
+        if (WM && WM.buildWaveWords) {
+            const mem = memNow();
+            const cap = session.secretRun ? 1
+                : (session.reviewRun ? 1
+                    : (D && session.tier ? D.tierOf(session.tier).reviewCap : 0.6));
+            const keys = WM.buildWaveWords({
+                size: Math.max(8, (pool || []).length),
+                mem: mem,
+                now: nowIso(),
+                levelWords: ((cfg && cfg.focusWords) || []).concat((cfg && cfg.climateWords) || []),
+                otherDue: WM.dueWords(mem, nowIso()),
+                reviewWords: progress.reviewWords || [],
+                focusWords: (cfg && cfg.focusWords) || [],
+                reviewCap: cap
+            });
+            if (keys.length) {
+                const byText = {};
+                src.forEach(function (item) {
+                    const key = String((item && item.text) || '').toLowerCase();
+                    if (key && !byText[key]) byText[key] = item;
+                });
+                const picked = keys.map(function (key) { return byText[key]; }).filter(Boolean);
+                if (picked.length) {
+                    const rest = (pool || []).filter(function (w) {
+                        return w && keys.indexOf(String(w.text || '').toLowerCase()) < 0;
+                    });
+                    pool = cap >= 1 ? picked : picked.concat(rest);
+                }
+            }
+        }
+        if (session.reviewRun && RS && RS.buildReviewPool) {
+            const keys = RS.buildReviewPool({
+                hardWords: progress.hardWords || [],
+                reviewWords: progress.reviewWords || [],
+                dueWords: reviewDueWords()
+            });
+            if (keys.length) {
+                const byText = {};
+                src.forEach(function (item) {
+                    const key = String((item && item.text) || '').toLowerCase();
+                    if (key && !byText[key]) byText[key] = item;
+                });
+                const picked = keys.map(function (key) { return byText[key]; }).filter(Boolean);
+                if (picked.length) pool = picked;
+            }
+        }
         if (!pool.length) pool = src.slice();
+    }
+
+    function reviewDueWords() {
+        const fromMem = WM ? WM.dueWords(memNow(), nowIso()) : [];
+        const mastery = readMastery();
+        const cfg = L.levelOf(session.level);
+        const focus = ((cfg && cfg.focusWords) || []).concat((cfg && cfg.climateWords) || []);
+        const vocab = window.PersonalWorkbenchPreschoolEnglishVocab;
+        const today = todayStr();
+        const fromMastery = focus.map(function (word) {
+            return String(word || '').toLowerCase();
+        }).filter(function (word) {
+            const item = mastery[word];
+            if (!item) return false;
+            if (vocab && typeof vocab.isDue === 'function') return vocab.isDue(item, today);
+            return !!(item.nextReview && String(item.nextReview).slice(0, 10) <= today);
+        });
+        const seen = {};
+        const out = [];
+        fromMem.concat(fromMastery).forEach(function (w) {
+            const k = String(w || '').toLowerCase();
+            if (!k || seen[k]) return;
+            seen[k] = true;
+            out.push(k);
+        });
+        return out;
+    }
+
+    function nowIso() {
+        return session.debugNow || new Date().toISOString();
+    }
+
+    function paintDoors() {
+        const box = document.getElementById('doors-list');
+        if (!box) return;
+        if (!RS || typeof RS.listReviewDoors !== 'function') {
+            box.innerHTML = '<p class="bl-door-empty">复习之门还没准备好</p>';
+            return;
+        }
+        const doors = RS.listReviewDoors(progress, nowIso());
+        if (!doors.length) {
+            box.innerHTML = '<p class="bl-door-empty">先通关一关，就会出现复习之门</p>';
+            return;
+        }
+        const apoOn = D ? D.apocalypseUnlocked({
+            clearedTiers: progress.clearedTiers,
+            levels: L.LEVELS
+        }) : false;
+        const apoCount = apoOn ? 3 : Object.keys(progress.clearedTiers || {}).filter(function (id) {
+            return (progress.clearedTiers[id] || []).indexOf('adventure') >= 0;
+        }).length;
+        box.innerHTML = doors.map(function (door) {
+            const lv = L.levelOf(door.levelId);
+            const stars = WM ? WM.levelStars(memNow(), (lv && lv.focusWords) || []) : 0;
+            const rec = D ? D.recommendTier({
+                avgBox: WM ? WM.avgBox(memNow(), (lv && lv.focusWords) || []) : 0,
+                unlocked: apoOn
+            }) : 'default';
+            const cleared = (progress.clearedTiers || {})[String(door.levelId)] || [];
+            const defaultDone = (progress.clearedLevels || []).indexOf(Number(door.levelId)) >= 0
+                || cleared.indexOf('default') >= 0;
+            const tiers = ['default', 'adventure', 'apocalypse'].map(function (id) {
+                const t = D ? D.tierOf(id) : { label: id };
+                const locked = id === 'adventure' ? !defaultDone
+                    : id === 'apocalypse' ? !apoOn : false;
+                const recCls = rec === id ? ' is-rec' : '';
+                return '<button type="button" class="bl-tier' + recCls + (locked ? ' is-locked' : '') + '" data-tier="' + id + '" data-level="' + door.levelId + '"' + (locked ? ' disabled' : '') + '>' + (t.label || id) + (rec === id ? ' ★' : '') + '</button>';
+            }).join('');
+            return '<div class="bl-door-wrap"><button type="button" class="bl-door is-' + door.status + (door.canEnter ? ' is-open' : '') + '" data-door="' + door.levelId + '"' + (door.canEnter ? '' : ' disabled') + '><strong>第' + door.levelId + '关 · ' + '★'.repeat(stars) + '</strong><span>' + door.label + '</span>' + (door.status === 'overdue' ? '<i>待复习</i>' : '') + '</button><div class="bl-tiers">' + tiers + '</div></div>';
+        }).join('');
+        box.innerHTML += doors.map(function (door) {
+            const lv = L.levelOf(door.levelId);
+            const line = D ? D.scrollLine({
+                levelId: door.levelId,
+                climateWords: (lv && lv.climateWords) || [],
+                words: memNow().words,
+                scrolls: progress.scrolls || []
+            }) : { kind: 'gray', text: '' };
+            if (!line.text) return '';
+            const can = line.kind === 'ready';
+            return '<button type="button" class="bl-scroll is-' + line.kind + '"' + (can ? ' data-scroll="' + door.levelId + '"' : ' disabled') + '><strong>第' + door.levelId + '关卷轴</strong><span>' + line.text + '</span></button>';
+        }).join('');
+        if (D && D.secretUnlocked(progress.scrolls || [])) {
+            box.innerHTML += '<button type="button" class="bl-door is-ready is-open" data-secret="1"><strong>词灵回廊</strong><span>隐藏关 · 纯复习</span></button>';
+        }
+        const hint = document.getElementById('tier-hint');
+        if (hint) hint.textContent = apoOn ? '天启已解锁' : ('冒险档通过 3 个不同 Boss 关（已 ' + apoCount + '/3）');
+    }
+
+    function paintToday() {
+        const box = document.getElementById('today-list');
+        if (!box) return;
+        if (!RS || typeof RS.selectTodayAdventure !== 'function') {
+            box.innerHTML = '<p class="bl-door-empty">今日冒险还没准备好</p>';
+            return;
+        }
+        const picked = RS.selectTodayAdventure(progress, nowIso(), progress.unlockedLevel);
+        const items = (picked && picked.items) || [];
+        if (!items.length) {
+            box.innerHTML = '<p class="bl-door-empty">今天先去推进新关</p>';
+            return;
+        }
+        box.innerHTML = items.map(function (item) {
+            return '<button type="button" class="bl-today-card is-' + item.kind + '" data-today="' + item.kind + '" data-level="' + item.levelId + '"><strong>' + item.label + '</strong><small>' + (item.kind === 'advance' ? ('第' + item.levelId + '关') : ('第' + item.levelId + '关 · ' + item.status)) + '</small></button>';
+        }).join('');
+        if (D && D.secretUnlocked(progress.scrolls || [])) {
+            box.innerHTML += '<button type="button" class="bl-today-card is-secret" data-today="secret" data-level="99"><strong>词灵回廊</strong><small>隐藏关</small></button>';
+        }
+        box.innerHTML += '<button type="button" class="bl-today-card is-trade" data-today="trade" data-level="0"><strong>商人摊</strong><small>雷奥 · 买卖装备</small></button>';
+        box.innerHTML += '<button type="button" class="bl-today-card is-dummy" data-today="dummy" data-level="0"><strong>训练假人</strong><small>难词本优先 · +1 金币</small></button>';
+        if (Number(progress.campChest) > 0) {
+            box.innerHTML += '<button type="button" class="bl-today-card is-chest" data-today="chest" data-level="0"><strong>营地奖励箱</strong><small>+' + progress.campChest + ' 金币</small></button>';
+        }
+        paintCampMap();
+    }
+
+    function paintCampMap() {
+        const pad = document.getElementById('camp-pad');
+        const map = document.getElementById('camp-map');
+        if (!pad || !map || !L.campMapOf) return;
+        const dueIds = reviewDueIds();
+        const view = L.campMapOf({
+            unlockedLevel: progress.unlockedLevel || 1,
+            clearedLevels: progress.clearedLevels || [],
+            dueLevelIds: dueIds,
+            campChest: progress.campChest,
+            secret: !!(D && D.secretUnlocked(progress.scrolls || []))
+        });
+        pad.style.left = view.camp.x + '%';
+        pad.style.top = view.camp.y + '%';
+        pad.innerHTML = '<span class="bl-camp-home">营地大门</span>';
+        const pins = (view.camp.buildings || []).map(function (b) {
+            if (b.id === 'chest' && !(view.camp.chest > 0)) return '';
+            const extra = b.id === 'chest' ? (' +' + view.camp.chest) : '';
+            return '<button type="button" class="bl-camp-pin is-' + b.id + '" data-today="' + b.id + '" data-level="0" style="left:' + b.x + '%;top:' + b.y + '%;">' + b.label + extra + '</button>';
+        });
+        view.nodes.forEach(function (n) {
+            const locked = n.state === 'locked';
+            const mark = n.state === 'due' ? '待复习' : n.state === 'cleared' ? '可重玩' : n.state === 'open' ? '去探险' : '未解锁';
+            pins.push('<button type="button" class="bl-map-node is-' + n.climate + ' is-' + n.state + '" data-map-level="' + n.level + '" data-state="' + n.state + '"'
+                + (locked ? ' disabled' : '') + ' style="left:' + n.x + '%;top:' + n.y + '%;">'
+                + '<b>' + n.level + '</b><strong>' + n.title + '</strong><small>' + mark + '</small></button>');
+        });
+        if (view.camp.secret) {
+            pins.push('<button type="button" class="bl-map-node is-secret is-open" data-today="secret" data-level="99" style="left:' + view.camp.secretX + '%;top:' + view.camp.secretY + '%;"><b>隐</b><strong>词灵回廊</strong><small>隐藏关</small></button>');
+        }
+        map.innerHTML = pins.join('');
+        const road = document.getElementById('camp-path');
+        if (road) {
+            const byLv = {};
+            view.nodes.forEach(function (n) { byLv[n.level] = n; });
+            const spine = [1, 2, 5, 7, 10, 12];
+            const pts = [[view.camp.x, view.camp.y]].concat(spine.map(function (lv) {
+                const n = byLv[lv];
+                return n ? [n.x, n.y] : null;
+            }).filter(Boolean));
+            road.setAttribute('points', pts.map(function (p) { return p[0] + ',' + p[1]; }).join(' '));
+        }
+    }
+
+    function maybeShowToday() {
+        if (session.todayShown) return;
+        session.todayShown = true;
+        if (/[?&]map=1(?:&|$)/.test(window.location.search || '')) {
+            paintToday();
+            toggleLayer('today-layer', true);
+        }
+    }
+
+    function takeTodayItem(kind, levelId) {
+        toggleLayer('today-layer', false);
+        if (kind === 'door') {
+            enterReviewDoor(levelId);
+            return;
+        }
+        if (kind === 'secret') {
+            startLevel(1, { secret: true });
+            return;
+        }
+        if (kind === 'trade') {
+            openTrade();
+            return;
+        }
+        if (kind === 'dummy') {
+            askDummy();
+            return;
+        }
+        if (kind === 'chest') {
+            const n = Number(progress.campChest) || 0;
+            if (n) {
+                session.coins = (Number(session.coins) || 0) + n;
+                progress.campChest = 0;
+                persist();
+                toast('打开奖励箱 · +' + n + ' 金币');
+            }
+            return;
+        }
+        startLevel(Number(levelId) || progress.unlockedLevel || 1);
+    }
+
+    function askDummy() {
+        const key = D ? D.dummyWord({
+            hardWords: progress.hardWords || [],
+            dueWords: WM ? WM.dueWords(memNow(), nowIso()) : []
+        }) : '';
+        const word = (pool || bank || []).filter(function (w) {
+            return w && String(w.text || '').toLowerCase() === key;
+        })[0] || (pool || bank || [])[0];
+        if (!word) {
+            toast('假人还没词可练');
+            return;
+        }
+        session.pending = { dummy: true };
+        fillQuizCard(nextLearnQuiz(word, { mode: 'choice' }), '训练假人 · 答对 +1 金币');
+    }
+
+    function maybeOfferScroll() {
+        if (!D) return;
+        const cfg = L.levelOf(session.level);
+        const line = D.scrollLine({
+            levelId: session.level,
+            climateWords: (cfg && cfg.climateWords) || [],
+            words: memNow().words,
+            scrolls: progress.scrolls || []
+        });
+        session.scrollHint = line.text || '';
+        if (line.kind === 'gray') toast(line.text);
+    }
+
+    function tryPickupScroll(levelId) {
+        if (!D) return false;
+        const id = levelId || session.level;
+        const cfg = L.levelOf(id);
+        const line = D.scrollLine({
+            levelId: id,
+            climateWords: (cfg && cfg.climateWords) || [],
+            words: memNow().words,
+            scrolls: progress.scrolls || []
+        });
+        if (line.kind !== 'ready') {
+            toast(line.text || '卷轴还不能捡');
+            return false;
+        }
+        progress.scrolls = D.collectScroll(progress.scrolls, id);
+        persist();
+        toast(D.secretUnlocked(progress.scrolls)
+            ? '卷轴齐了 · 词灵回廊开了'
+            : ('捡到第' + id + '关卷轴 · 还差 ' + (3 - progress.scrolls.length) + ' 张'));
+        paintDoors();
+        paintToday();
+        return true;
+    }
+
+    function enterReviewDoor(levelId) {
+        const doors = RS && RS.listReviewDoors ? RS.listReviewDoors(progress, nowIso()) : [];
+        const door = doors.filter(function (item) { return String(item.levelId) === String(levelId); })[0];
+        if (!door || !door.canEnter) {
+            toast('这扇门还没到时间');
+            return;
+        }
+        toggleLayer('doors-layer', false);
+        startLevel(Number(door.levelId), { review: true });
     }
 
     function isPlaytest() {
@@ -1389,6 +2292,8 @@
         session.bolts = [];
         session.pickups = [];
         session.fx = [];
+        clearSettleFlag();
+        dropGuideBeacon();
         const hud = document.getElementById('boss-hud');
         if (hud) hud.classList.add('is-hidden');
         paintCastHud();
@@ -1407,15 +2312,20 @@
             bossId: bossId
         });
         const mesh = model.group;
-        const y = engine.world.surfaceAt(Math.floor(x), Math.floor(z));
+        const ground = engine.world.surfaceAt(Math.floor(x), Math.floor(z));
+        const y = C.stanceAltitude
+            ? C.stanceAltitude(spec.kind, ground, 0, { isBoss: isBoss, bossId: bossId })
+            : ground;
         mesh.position.set(x, y, z);
         engine.scene.add(mesh);
+        const scaledHp = (!isBoss && D) ? D.applyHpScale(spec.hp, session.tier) : spec.hp;
+        const scaledCoins = (!isBoss && D) ? D.tierCoins(spec.coins, session.tier) : spec.coins;
         const mob = {
             id: 'm' + nowMs() + '-' + session.monsters.length,
             kind: spec.kind,
-            hp: spec.hp,
-            maxHp: spec.hp,
-            coins: spec.coins,
+            hp: scaledHp,
+            maxHp: scaledHp,
+            coins: scaledCoins,
             contact: spec.contact,
             behavior: behavior,
             speed: spec.speed * (C.behaviorSpeedScale ? C.behaviorSpeedScale(behavior) : 1),
@@ -1429,8 +2339,15 @@
             height: model.height || 1.6,
             hitRadius: isBoss ? 1.2 : (spec.hitRadius || 0.45),
             bossHits: 0,
-            reviewFirst: !!(extra && extra.reviewFirst)
+            reviewFirst: !!(extra && extra.reviewFirst),
+            gen: extra && extra.gen ? extra.gen : 0
         };
+        if (extra && extra.hp) {
+            mob.hp = extra.hp;
+            mob.maxHp = extra.hp;
+        }
+        if (extra && extra.scale && mesh) mesh.scale.setScalar(extra.scale);
+        if (extra && extra.coins != null) mob.coins = extra.coins;
         if (mob.isBoss) {
             if (session.boss) {
                 mob.hp = session.boss.hp;
@@ -1498,7 +2415,18 @@
     }
 
     function spawnBoss() {
+        if (session.secretRun) {
+            finishLevel();
+            return;
+        }
         session.boss = L.createBoss(session.level);
+        if (session.reviewRun && RS && RS.reviewRunConfig) {
+            const run = RS.reviewRunConfig(L.levelOf(session.level));
+            session.boss.hp = run.bossHp;
+            session.boss.maxHp = run.bossHp;
+            session.boss.shield = run.bossShield;
+            session.boss.shieldMax = run.bossShield;
+        }
         const p = engine.player;
         const open = openMobSpot(p.x + 16, p.z + 4);
         const cfg = L.levelOf(session.level);
@@ -1525,16 +2453,19 @@
     function bindFarmAnimals() {
         if (!engine || !engine.world) return;
         (engine.world.animals || []).forEach(function (a) {
-            const row = C.animalOf && C.animalOf(a.kind);
-            if (!row) return;
-            a.hp = row.hp;
-            a.maxHp = row.hp;
-            a.coins = row.coins;
-            a.loot = row.loot[0];
-            a.peaceful = true;
-            a.contact = 0;
-            a.hitRadius = 0.45;
-            a.y = engine.world.surfaceAt(Math.floor(a.x), Math.floor(a.z));
+            const row = (C.worldAnimalOf && C.worldAnimalOf(a.kind)) || (C.animalOf && C.animalOf(a.kind));
+            if (row) {
+                a.hp = row.hp;
+                a.maxHp = row.hp;
+                a.coins = row.coins;
+                a.loot = row.loot[0];
+                a.peaceful = true;
+                a.contact = 0;
+                a.hitRadius = (C.animalBodyRadius && C.animalBodyRadius(a.kind)) || 1.1;
+                a.height = a.kind === 'chicken' ? 0.7 : 1.35;
+            }
+            a.y = ENG.lifeAltitude ? ENG.lifeAltitude(a, engine.world)
+                : engine.world.surfaceAt(Math.floor(a.x), Math.floor(a.z));
             bindMobWord(a);
         });
     }
@@ -1553,11 +2484,56 @@
 
     function farmTargets() {
         return ((engine.world && engine.world.animals) || []).filter(function (a) {
-            return !!(a && a.peaceful && a.hp > 0);
+            return !!(a && a.hp > 0 && C.isFarmAnimal && C.isFarmAnimal(a.kind));
         });
     }
 
+    function overlappingFarm() {
+        const p = engine && engine.player;
+        if (!p) return null;
+        let best = null;
+        let bestSlack = 0;
+        farmTargets().forEach(function (a) {
+            const rad = (C.animalBodyRadius && C.animalBodyRadius(a.kind)) || a.hitRadius || 0.9;
+            const d = Math.hypot(a.x - p.x, a.z - p.z);
+            const slack = rad + 0.25 - d;
+            if (slack > bestSlack) {
+                best = a;
+                bestSlack = slack;
+            }
+        });
+        return best;
+    }
+
+    function separateFromAnimals() {
+        const p = engine && engine.player;
+        if (!p) return;
+        farmTargets().forEach(function (a) {
+            const min = ((C.animalBodyRadius && C.animalBodyRadius(a.kind)) || a.hitRadius || 0.9) + 0.35;
+            const dx = p.x - a.x;
+            const dz = p.z - a.z;
+            const dist = Math.hypot(dx, dz);
+            if (dist >= min) return;
+            const nx = dist < 0.001 ? 1 : dx / dist;
+            const nz = dist < 0.001 ? 0 : dz / dist;
+            const push = min - dist;
+            p.x += nx * push;
+            p.z += nz * push;
+        });
+    }
+
+    function regenOutOfCombat(dt) {
+        const p = engine && engine.player;
+        if (!p || p.hp >= p.hpMax) return;
+        const since = session.lastHitAt ? (nowMs() - session.lastHitAt) : 99999;
+        if (since < 6000) return;
+        p.hp = Math.min(p.hpMax, p.hp + 0.35 * dt);
+        paintHearts();
+    }
+
     function meleeHits() {
+        const overlap = overlappingFarm();
+        if (overlap) return [overlap];
         const living = session.monsters.concat(farmTargets());
         const arc = living.filter(function (m) {
             return m.hp > 0 && C.inMeleeArc(engine.player, engine.look.yaw, m);
@@ -1689,7 +2665,7 @@
     }
 
     function nextPlaceLoot() {
-        const order = [session.placeLoot, 'dirt', 'cobble', 'sand', 'glass', 'oak-log', 'plank', 'table', 'chest', 'furnace', 'torch'];
+        const order = [session.placeLoot, 'dirt', 'cobble', 'sand', 'glass', 'tnt', 'oak-log', 'plank', 'table', 'chest', 'furnace', 'torch'];
         for (let i = 0; i < order.length; i += 1) {
             const loot = order[i];
             if (loot && (Number(session.bag[loot]) || 0) > 0) return loot;
@@ -1725,6 +2701,7 @@
             persist();
             if (viewModel) viewModel.triggerSwing();
             if (sfx && sfx.place) sfx.place();
+            spawnPlaceChips(hit.prev.x, hit.prev.y, hit.prev.z, kind);
             noteWorldAct();
             return;
         }
@@ -1740,6 +2717,7 @@
         persist();
         if (viewModel) viewModel.triggerSwing();
         if (sfx && sfx.place) sfx.place();
+        spawnPlaceChips(res.x, res.y, res.z, kind);
         noteWorldAct();
     }
 
@@ -1844,6 +2822,59 @@
         box.visible = true;
     }
 
+    function igniteTnt(hit) {
+        if (!hit) return;
+        session.tntFuses = session.tntFuses || [];
+        const key = hit.x + ',' + hit.y + ',' + hit.z;
+        if (session.tntFuses.some(function (f) { return f.key === key; })) return;
+        session.tntFuses.push({ key: key, x: hit.x, y: hit.y, z: hit.z, life: 1.15 });
+        toast('TNT 点燃了');
+        if (viewModel) viewModel.triggerSwing();
+    }
+
+    function explodeTnt(f) {
+        const r = 2;
+        for (let y = f.y - r; y <= f.y + r; y += 1) {
+            for (let z = f.z - r; z <= f.z + r; z += 1) {
+                for (let x = f.x - r; x <= f.x + r; x += 1) {
+                    if (Math.hypot(x - f.x, y - f.y, z - f.z) > r + 0.15) continue;
+                    const kind = ENG.voxelAt(engine.world, x, y, z);
+                    if (!kind || y <= 0) continue;
+                    if (kind === 'tnt' && !(x === f.x && y === f.y && z === f.z)) {
+                        igniteTnt({ x: x, y: y, z: z });
+                        continue;
+                    }
+                    ENG.breakVoxel(engine.world, x, y, z);
+                    if (engine.remeshAt) engine.remeshAt(x, z);
+                }
+            }
+        }
+        if (MOBS.spawnBurst) {
+            MOBS.spawnBurst(engine.scene, session.fx, f.x + 0.5, f.y + 0.5, f.z + 0.5, 0xff7040, 16);
+        }
+        const dist = Math.hypot(engine.player.x - (f.x + 0.5), engine.player.y - f.y, engine.player.z - (f.z + 0.5));
+        if (dist < 3.2) {
+            engine.player.hp = Math.max(0, (Number(engine.player.hp) || 0) - (dist < 1.6 ? 4 : 2));
+            paintHearts();
+            if (engine.player.hp <= 0) respawn();
+        }
+        (session.monsters || []).forEach(function (m) {
+            if (!m || m.hp <= 0) return;
+            if (Math.hypot(m.x - f.x, m.z - f.z) < 3) m.hp = Math.max(0, m.hp - 6);
+        });
+    }
+
+    function tickTnt(dt) {
+        if (!session.tntFuses || !session.tntFuses.length) return;
+        const keep = [];
+        session.tntFuses.forEach(function (f) {
+            f.life -= dt;
+            if (f.life > 0) keep.push(f);
+            else explodeTnt(f);
+        });
+        session.tntFuses = keep;
+    }
+
     function stepMining(dt) {
         if (!session.mining || session.paused) {
             paintBreakBar(0, false);
@@ -1874,6 +2905,14 @@
             return;
         }
         if (action !== 'mine' || !hit.hit || hit.y <= 0) {
+            session.mine = null;
+            paintBreakBar(0, false);
+            hideTarget();
+            hideCrack();
+            return;
+        }
+        if ((session.tool === 'flint' || session.tool === 'flint_and_steel') && hit.kind === 'tnt') {
+            igniteTnt(hit);
             session.mine = null;
             paintBreakBar(0, false);
             hideTarget();
@@ -1926,7 +2965,9 @@
             }
             session.pending = { wordBlock: { cell: cell, key: key } };
             const cubeQuiz = nextLearnQuiz(cell);
-            fillQuizCard(cubeQuiz, cubeQuiz.mode === 'spell'
+            fillQuizCard(cubeQuiz, cell.side
+                ? ('石碑 · ' + (cell.zh || '认一认'))
+                : cubeQuiz.mode === 'spell'
                 ? '单词方块 · 拼出来'
                 : cubeQuiz.mode === 'enpick'
                     ? '单词方块 · 跟读或选英文'
@@ -1943,19 +2984,6 @@
 
     function noteWorldAct() {
         session.worldActs = (Number(session.worldActs) || 0) + 1;
-        maybeOpenWorldQuiz();
-    }
-
-    function maybeOpenWorldQuiz() {
-        if (session.pending || session.quiz) return;
-        if (!(W.shouldAskWorldQuiz && W.shouldAskWorldQuiz(session.worldActs))) return;
-        const skip = sessionSkipKeys().concat(progress.learnedIds || []);
-        const word = (W.nextWord && (W.nextWord(pool, skip) || W.nextWord(pool, progress.learnedIds))) || (pool && pool[0]);
-        if (!word) return;
-        rememberBoundWord(word);
-        session.pending = { worldAct: true };
-        const quiz = nextLearnQuiz(word);
-        fillQuizCard(quiz, '砍挖建 · 学一个词再继续');
     }
 
     function spawnMineChips(hit, n) {
@@ -1964,6 +2992,14 @@
         const sfxKind = FX && FX.mineSfxKind ? FX.mineSfxKind(hit.kind) : 'dirt';
         MOBS.spawnBurst(engine.scene, session.fx, hit.x + 0.5, hit.y + 0.5, hit.z + 0.5, color, n);
         if (sfx && sfx.mine) sfx.mine(sfxKind);
+    }
+
+    function spawnPlaceChips(x, y, z, kind) {
+        const FX = globalThis.BlockLegendFx;
+        const spec = FX && FX.placeBurst ? FX.placeBurst(kind) : { n: 5, color: 0xc8b48a };
+        if (MOBS.spawnBurst) {
+            MOBS.spawnBurst(engine.scene, session.fx, x + 0.5, y + 0.5, z + 0.5, spec.color, spec.n);
+        }
     }
 
     function nearestLookMob() {
@@ -2007,16 +3043,21 @@
             const aim = lookAim(origin, dir, row.x, y, row.z, maxDist || 6, minDot == null ? 0.7 : minDot);
             if (!aim) return;
             if (aim.dot > bestDot && aim.dist < bestDist) {
-                best = { type: type, kind: kind, row: row };
+                best = { type: type, kind: kind, row: row, word: row.word };
                 bestDot = aim.dot;
                 bestDist = aim.dist;
             }
         }
         (engine.world.animals || []).forEach(function (a) {
-            consider(a, 'animal', a.kind, engine.world.surfaceAt(Math.floor(a.x), Math.floor(a.z)) + 0.4);
+            const y0 = a.y != null ? a.y : engine.world.surfaceAt(Math.floor(a.x), Math.floor(a.z));
+            const lift = a.kind === 'dragon' ? 1.25 : 0.4;
+            consider(a, 'animal', a.kind, y0 + lift, a.kind === 'dragon' ? 8 : 6, a.kind === 'dragon' ? 0.52 : 0.7);
         });
         (engine.world.villagers || []).forEach(function (v) {
-            const npcKind = v.role === 'trader' ? 'trader' : v.role === 'teacher' ? 'teacher' : 'villager';
+            const npcKind = v.role === 'trader' ? 'trader'
+                : v.role === 'teacher' ? 'teacher'
+                    : v.role === 'farmer' ? 'farmer'
+                        : 'villager';
             consider(v, 'npc', npcKind, engine.world.surfaceAt(Math.floor(v.x), Math.floor(v.z)) + 1.1);
         });
         (engine.world.golems || []).forEach(function (g) {
@@ -2034,7 +3075,29 @@
             const doorX = h.x + Math.floor((h.w || 4) / 2) + 0.5;
             const doorZ = h.z + (h.d || 4) - 0.15;
             const y0 = h.y0 != null ? h.y0 : engine.world.surfaceAt(Math.floor(h.x), Math.floor(h.z));
-            consider({ x: doorX, z: doorZ, y: y0 }, 'prop', 'house', y0 + 1.15);
+            const houseKind = h.role === 'word' ? 'wordhouse'
+                : h.role === 'trader' ? 'traderhouse'
+                    : h.role === 'farm' ? 'farmhouse'
+                        : 'house';
+            consider({ x: doorX, z: doorZ, y: y0 }, 'prop', houseKind, y0 + 1.15);
+        });
+        (engine.world.wells || []).forEach(function (w) {
+            const y0 = engine.world.surfaceAt(Math.floor(w.x), Math.floor(w.z));
+            consider({ x: w.x + 0.5, z: w.z + 0.5, y: y0 }, 'prop', 'well', y0 + 1.05);
+        });
+        (engine.world.pens || []).forEach(function (p) {
+            const y0 = engine.world.surfaceAt(Math.floor(p.x + p.w / 2), Math.floor(p.z + p.d / 2));
+            consider({
+                x: p.x + (p.w || 3) / 2,
+                z: p.z + (p.d || 3) / 2,
+                y: y0
+            }, 'prop', 'pen', y0 + 0.7);
+        });
+        Object.keys(engine.world.paths || {}).forEach(function (key) {
+            const parts = key.split(',');
+            const px = Number(parts[0]), pz = Number(parts[1]);
+            const y0 = engine.world.surfaceAt(px, pz);
+            consider({ x: px + 0.5, z: pz + 0.5, y: y0 }, 'prop', 'path', y0 + 0.12, 3.2, 0.88);
         });
         (engine.world.trees || []).forEach(function (t) {
             const y0 = engine.world.surfaceAt(t.x, t.z);
@@ -2054,15 +3117,181 @@
         return best;
     }
 
+    function isVillageLook(sub) {
+        if (!sub || sub.type === 'mob') return false;
+        const kind = String(sub.kind || '');
+        return /^(villager|farmer|teacher|trader|well|house|farmhouse|wordhouse|traderhouse|pen|wheat|pig|cow|sheep|golem)$/.test(kind);
+    }
+
+    function villageLookWord(sub) {
+        const label = W.labelFor((sub && sub.kind) || 'villager', bank);
+        const text = String((label && label.en) || (sub && sub.kind) || 'villager');
+        return { text: text, zh: (label && label.zh) || '', id: text };
+    }
+
+    function applyVillageSpeak(lock, heard) {
+        const word = lock && lock.word;
+        const sub = (lock && lock.look) || lookSubject();
+        noteWordSpoken(word);
+        if (typeof noteFamiliarWord === 'function') noteFamiliarWord(word, 'speak');
+        if (typeof recordWordMemory === 'function') recordWordMemory(word, true);
+        if (typeof recordBridgeAnswer === 'function') recordBridgeAnswer(word, true);
+        blessVillageWord(word);
+        if (sub && sub.type === 'npc' && sub.kind !== 'trader' && sub.kind !== 'merchant') {
+            greetVillager(sub);
+        } else {
+            toast((heard || (word && word.text) || '') + ' · ' + ((word && word.zh) || ''));
+            if (sub && sub.kind) noteQuest({ type: 'look', kind: sub.kind });
+        }
+        hideVoiceFallback();
+        setVoiceState('matched');
+        if (sfx && sfx.reward) sfx.reward();
+    }
+
+    function blessVillageWord(word) {
+        const text = String((word && word.text) || '').toLowerCase();
+        if (text === 'wheat' && engine && engine.world && ENG && typeof ENG.growWheat === 'function') {
+            ENG.growWheat(engine.world);
+        }
+    }
+
+    function startTeacherLesson(sub) {
+        const due = sideDueNow();
+        const kinds = ['literacy', 'pinyin', 'phonics'].filter(function (kind) {
+            return (Number(due[kind]) || 0) > 0 && !(session.sideSkip && session.sideSkip[kind]);
+        });
+        if (!kinds.length || sittingRoom() <= 0 || !P || !P.nextDue) {
+            greetVillager(sub);
+            noteQuest({ type: 'teacher' });
+            return;
+        }
+        loadSideKinds(kinds, function () {
+            const kind = kinds[0];
+            const tracks = readSubjectTracks();
+            const q = P.nextDue(due, {
+                cards: allSideCards(),
+                kind: kind,
+                band: kind === 'literacy' && P.literacyBand
+                    ? P.literacyBand(P.knownCount ? P.knownCount(tracks.literacy) : 0)
+                    : undefined,
+                avoidKeys: session.sideAvoid || [],
+                dueKeys: sideReviewKeys(),
+                salt: sittingDoneNow()
+            });
+            if (!q) {
+                greetVillager(sub);
+                noteQuest({ type: 'teacher' });
+                return;
+            }
+            const label = kind === 'literacy' ? '识字' : kind === 'pinyin' ? '拼音' : '拼读';
+            session.pending = { teacherSide: q, look: sub };
+            fillQuizCard(P.quizFromSide(q), '老师 · ' + label);
+        });
+    }
+
+    function greetVillager(sub) {
+        const kind = (sub && sub.kind) || 'villager';
+        const label = W.labelFor(kind, bank);
+        const hello = kind === 'farmer' ? 'Hello, farmer'
+            : kind === 'teacher' ? 'Hello, teacher'
+                : 'Hello, villager';
+        const row = sub && (sub.row || (session.lookRow));
+        if (row && row.mesh) {
+            row.mesh.userData.waveUntil = nowMs() + 900;
+            row.mesh.rotation.z = 0.18;
+        }
+        toast(hello + ' · ' + (label.zh || ''));
+        noteQuest({ type: 'look', kind: kind });
+    }
+
+    function interactFarm(mob) {
+        if (!mob || !(C.isFarmAnimal && C.isFarmAnimal(mob.kind))) return false;
+        if (mob.kind === 'chicken') {
+            const t = nowMs() / 1000;
+            if (!mob.handEggAt || t - mob.handEggAt >= 8) {
+                mob.handEggAt = t;
+                mob.eggAt = t;
+                if (tryAutoEat('egg')) return true;
+                session.bag = C.addLoot(session.bag, 'egg', 1);
+                persist();
+                paintHotbar();
+                toast('捡到鸡蛋 · 掉血时走过去会自动吃');
+                return true;
+            }
+            toast('这只鸡刚下过蛋，等一会儿再摸');
+            return true;
+        }
+        toast('左键打它掉肉，走过去捡起来就能回血');
+        return true;
+    }
+
+    function nearestRideable(maxDist) {
+        const lim = maxDist == null ? 4.2 : maxDist;
+        let best = null, bestD = lim;
+        (engine.world.animals || []).forEach(function (a) {
+            if (!a || !a.rideable) return;
+            const d = Math.hypot(engine.player.x - a.x, engine.player.z - a.z);
+            if (d < bestD) {
+                best = a;
+                bestD = d;
+            }
+        });
+        return best;
+    }
+
+    function toggleMount(row) {
+        const FX = globalThis.BlockLegendFx;
+        if (engine.player.mounted) {
+            if (engine.dismount) engine.dismount();
+            else {
+                engine.player.mounted = null;
+                engine.player.y = engine.world.surfaceAt(Math.floor(engine.player.x), Math.floor(engine.player.z));
+                engine.player.vy = 0;
+            }
+            if (engine.fovKick && FX && FX.rideFov) engine.fovKick(FX.rideFov('down'));
+            toast('从龙背下来了 · 右键或 F 还能再骑');
+            return true;
+        }
+        const dragon = row || nearestRideable(4.6);
+        if (!dragon) return false;
+        engine.player.mounted = dragon;
+        engine.player.x = dragon.x;
+        engine.player.z = dragon.z;
+        engine.player.y = (dragon.y != null ? dragon.y : engine.world.surfaceAt(Math.floor(dragon.x), Math.floor(dragon.z))) + 1.32;
+        engine.player.vy = 0;
+        if (engine.fovKick && FX && FX.rideFov) engine.fovKick(FX.rideFov('up'));
+        toast('骑上龙了 · 空格升高 · Shift 或低头下降 · F 下来');
+        noteQuest({ type: 'look', kind: 'dragon' });
+        return true;
+    }
+
+    function tryMountToggle() {
+        if (session.paused || uiBlocksWorld()) return false;
+        if (engine.player.mounted) return toggleMount();
+        const sub = lookSubject();
+        if (sub && sub.row && sub.row.rideable) return toggleMount(sub.row);
+        const near = nearestRideable(3.8);
+        return near ? toggleMount(near) : false;
+    }
+
     function tryInteract() {
+        if (engine.player.mounted) return toggleMount();
         const sub = lookSubject();
         if (!sub) return false;
+        if (sub.type === 'portal') {
+            enterHubPortal(sub.portal);
+            return true;
+        }
         if (sub.type === 'npc') {
             if (sub.kind === 'trader' || sub.kind === 'merchant') {
                 openTrade();
                 return true;
             }
-            toast((W.labelFor(sub.kind, bank).en || sub.kind) + ' · ' + (W.labelFor(sub.kind, bank).zh || ''));
+            if (sub.kind === 'teacher') {
+                startTeacherLesson(sub);
+                return true;
+            }
+            greetVillager(sub);
             return true;
         }
         if (sub.type === 'prop' && sub.prop && sub.prop.mesh && sub.prop.mesh.userData.toggle) {
@@ -2072,14 +3301,45 @@
                     : '互动了');
             return true;
         }
-        if (sub.type === 'animal') {
-            toast((W.labelFor(sub.kind, bank).en || sub.kind) + ' · ' + (W.labelFor(sub.kind, bank).zh || ''));
+        if (sub.type === 'animal' && sub.row && sub.row.rideable) {
+            return toggleMount(sub.row);
+        }
+        if (sub.type === 'animal' || (sub.type === 'mob' && sub.mob && C.isFarmAnimal && C.isFarmAnimal(sub.mob.kind))) {
+            const farm = sub.mob || sub.row;
+            if (interactFarm(farm)) return true;
+            const label = sub.word
+                ? { en: sub.word.text, zh: sub.word.zh || '' }
+                : W.labelFor(sub.kind, bank);
+            toast((label.en || sub.kind) + ' · ' + (label.zh || ''));
             return true;
+        }
+        if (sub.type === 'mob' && C.barterOf) {
+            const deal = C.barterOf(sub.kind, { gold: heldGold(), salt: nowMs() });
+            if (deal) {
+                if (!spendHeldGold()) return false;
+                spawnPickup(sub.mob.x, sub.mob.z, 0, deal.give);
+                persist();
+                toast('猪灵换出了 ' + deal.give);
+                return true;
+            }
         }
         return false;
     }
 
     function lookSubject() {
+        if (session.hub) {
+            const portal = nearestLevelPortal(3.2);
+            if (portal) {
+                const st = portal.state === 'locked' ? '还锁着' : portal.state === 'due' ? '该复习了' : '走进去';
+                const line = portal.line ? (portal.line + ' · ' + st) : st;
+                return {
+                    type: 'portal',
+                    kind: portal.climate,
+                    portal: portal,
+                    word: { text: '第' + portal.level + '关 · ' + (portal.title || ''), zh: line }
+                };
+            }
+        }
         const mob = nearestLookMob();
         if (mob) {
             const bossKind = L.bossModelOf ? L.bossModelOf(mob.bossId) : 'boss';
@@ -2140,7 +3400,7 @@
         if (session.tool === 'place') {
             tip.textContent = '右键对准方块邻面放置 · 左键仍是徒手敲 · 格子上的数字是背包数量';
         } else {
-            tip.textContent = '左键挖/打 · 右键只互动（箱子/熔炉/工作台）· 换 5–9 才能放方块';
+            tip.textContent = '左键挖/打猪牛羊鸡掉肉 · 走过去捡肉回血 · 右键摸鸡捡蛋 · E 吃手上的食物';
         }
         tip.classList.remove('is-hidden');
     }
@@ -2157,13 +3417,22 @@
         if (!sub || (W.shouldShowLookLabel && !W.shouldShowLookLabel(sub.kind, sub.type) && !sub.word)) {
             card.classList.add('is-hidden');
             session.lookKey = '';
+            session.lookRow = null;
             if (session.targetRing) session.targetRing.visible = false;
             hideVoiceFallback();
             return;
         }
-        const label = sub.word
-            ? { en: sub.word.text, zh: sub.word.zh || '', word: sub.word }
-            : W.labelFor(sub.kind, bank);
+        const sideLook = sub.word && sub.word.side && P && P.lookLabel ? P.lookLabel(sub.word) : null;
+        const label = sideLook
+            ? {
+                en: sideLook.en,
+                zh: sideLook.zh,
+                who: sideLook.who,
+                word: { text: sideLook.speak, lang: sideLook.lang, side: sub.word.side }
+            }
+            : (sub.word
+                ? { en: sub.word.text, zh: sub.word.zh || '', word: sub.word }
+                : W.labelFor(sub.kind, bank));
         const key = sub.type + ':' + sub.kind + (sub.mob ? ':' + sub.mob.x.toFixed(1) : '');
         const revealZh = !W.shouldRevealLookZh || W.shouldRevealLookZh({
             type: sub.type,
@@ -2202,13 +3471,38 @@
             const ring = ensureRing();
             ring.position.set(sub.mob.x, sub.mob.y + 0.04, sub.mob.z);
             ring.visible = true;
+            if (C.lookBlink && C.lookBlink(sub.mob.kind, true) && (!sub.mob.lookBlinkAt || now - sub.mob.lookBlinkAt >= 1600)) {
+                sub.mob.lookBlinkAt = now;
+                blinkMob(sub.mob);
+            }
         } else {
-            if (who) who.textContent = sub.type === 'npc' ? 'Merchant Leo · 商人雷奥' : '';
+            if (who) {
+                who.textContent = sub.type === 'portal'
+                    ? (sub.portal && sub.portal.state === 'locked' ? '传送门 · 还锁着'
+                        : sub.portal && sub.portal.state === 'due' ? '传送门 · 复习'
+                            : '传送门 · 走进去')
+                    : (sub.row && sub.row.rideable
+                        ? (engine.player.mounted ? '骑着 · 左键龙息 / Q·E 回旋 / R 急速 / F 下来' : '坐骑 · 右键或 F 骑上去')
+                        : (sub.type === 'npc' ? 'Merchant Leo · 商人雷奥' : (label.who || '')));
+            }
             if (hpBar) hpBar.classList.add('is-hidden');
             meta.textContent = '';
+            if (sub.kind === 'word' && D) {
+                const cfg = L.levelOf(session.level);
+                const line = D.scrollLine({
+                    levelId: session.level,
+                    climateWords: (cfg && cfg.climateWords) || [],
+                    words: memNow().words,
+                    scrolls: progress.scrolls || []
+                });
+                meta.textContent = line.text || '';
+                if (who && line.kind === 'gray') who.textContent = '灰卷轴';
+                if (who && line.kind === 'ready') who.textContent = '发光卷轴';
+            }
             if (session.targetRing) session.targetRing.visible = false;
         }
         card.classList.remove('is-hidden');
+        session.lookRow = sub.row || sub.mob || null;
         hideLookTip();
         if (session.lookKey !== key) {
             session.lookKey = key;
@@ -2255,7 +3549,7 @@
             }
             mesh = MOBS.arrowMesh();
         } else {
-            mesh = MOBS.boltMesh();
+            mesh = MOBS.boltMesh((opts && opts.glow) || (cosmetic ? 'word' : 'bolt'));
         }
         const y = engine.player.y + ENG.EYE_HEIGHT * 0.7;
         mesh.position.set(engine.player.x + f.x * 0.6, y, engine.player.z + f.z * 0.6);
@@ -2278,6 +3572,10 @@
 
     function requestHit(mob, kind) {
         if (session.pending) return;
+        if (mob.peaceful && C.isFarmAnimal && C.isFarmAnimal(mob.kind)) {
+            applyResolvedHit(mob, kind, { answered: false, correct: false });
+            return;
+        }
         if (mob.isBoss) mob.bossHits = (Number(mob.bossHits) || 0) + 1;
         if (W.shouldAsk({
             firstHit: !mob.asked,
@@ -2401,9 +3699,21 @@
         noteWordShown(word);
         persist();
         const mic = document.getElementById('quiz-mic');
-        if (mic) mic.classList.toggle('is-hidden', !(SP && SP.canSpeak && SP.canSpeak()));
+        const hideMic = (word && word.side && !(P && P.canSpeakSide && P.canSpeakSide(word.side)))
+            || !(SP && SP.canSpeak && SP.canSpeak());
+        if (mic) mic.classList.toggle('is-hidden', hideMic);
         if (mode !== 'picture') speakWord(word);
         if (kick && bossType) kick.textContent = '说出来或打英文打碎蓝罩 · 点中文也能过';
+        if (quiz.scaffold && kick) {
+            kick.textContent = (quiz.phonetic ? ('难词支架 · ' + quiz.phonetic) : '难词支架') + (quiz.phraseZh ? (' · ' + quiz.phraseZh) : '');
+        }
+        if (session.pending && session.pending.gate && D && session.tier) {
+            const gateMs = D.tierOf(session.tier).gateMs;
+            if (gateMs) {
+                quiz.limitMs = gateMs;
+                session.quizEndsAt = nowMs() + gateMs;
+            }
+        }
     }
 
     function histMisses(word) {
@@ -2436,16 +3746,49 @@
     }
 
     function nextLearnQuiz(word, extra) {
+        if (word && word.side && P && P.quizFromSide) return P.quizFromSide(word.side);
         session.quizTurn = (Number(session.quizTurn) || 0) + 1;
+        session.askedCount = (Number(session.askedCount) || 0) + 1;
+        if (WM && WM.needsScaffold(memNow(), word) && !(extra && extra.mode)) {
+            const built = W.makeQuiz(word, bank, { mode: 'choice' });
+            const sc = WM.scaffoldQuiz({
+                text: word && word.text,
+                zh: word && word.zh,
+                phraseZh: word && word.phraseZh,
+                phonetic: W.phoneticOf ? W.phoneticOf(word) : ''
+            }, memNow());
+            built.phraseZh = sc.phraseZh;
+            built.phonetic = sc.phonetic;
+            built.scaffold = true;
+            return built;
+        }
         const mastery = readMastery();
         const key = String((word && word.text) || '').toLowerCase();
         const rec = mastery[key] || mastery[(word && (word.id || word.text)) || ''] || {};
-        return W.makeQuiz(word, bank, Object.assign({
+        if (D && session.tier && D.tierOf(session.tier).questionTier >= 2 && !(extra && extra.mode) && !session.reviewRun) {
+            extra = Object.assign({
+                mode: (W.isShortWord && W.isShortWord(word)) ? 'spell' : 'enpick'
+            }, extra || {});
+        }
+        const quiz = W.makeQuiz(word, bank, Object.assign({
             turn: session.quizTurn,
             missStreak: missStreakOf(word),
             seen: Number((session.seenByWord || {})[key]) || 0,
             stage: W.masteryStage ? W.masteryStage(rec, todayStr()) : 'new'
         }, extra || {}));
+        if (session.reviewRun && RS && RS.bumpQuestionKind && !(extra && extra.mode)) {
+            const mode = RS.bumpQuestionKind(quiz.mode);
+            if (mode !== quiz.mode) {
+                return W.makeQuiz(word, bank, Object.assign({
+                    turn: session.quizTurn,
+                    missStreak: missStreakOf(word),
+                    seen: Number((session.seenByWord || {})[key]) || 0,
+                    stage: W.masteryStage ? W.masteryStage(rec, todayStr()) : 'new',
+                    mode: mode
+                }, extra || {}));
+            }
+        }
+        return quiz;
     }
 
     function openQuiz(mob, kind) {
@@ -2576,7 +3919,7 @@
     }
 
     function liveCastTargets() {
-        return session.monsters.filter(function (m) {
+        const mobs = session.monsters.filter(function (m) {
             return m && m.hp > 0 && m.word && m.word.text
                 && W.canTypeCast({
                     boss: !!m.isBoss,
@@ -2584,6 +3927,19 @@
                     missStreak: missStreakOf(m.word)
                 });
         });
+        const sub = lookSubject();
+        if (isVillageLook(sub)) {
+            const word = villageLookWord(sub);
+            if (word && word.text) {
+                mobs.unshift({
+                    village: true,
+                    look: sub,
+                    word: word,
+                    hp: 1
+                });
+            }
+        }
+        return mobs;
     }
 
     function wordKey(word) {
@@ -2629,9 +3985,14 @@
 
     function bindMobWord(mob) {
         if (!mob) return;
-        const used = session.monsters.map(function (m) {
-            return m !== mob && m.word ? (m.word.id || m.word.text) : '';
-        }).filter(Boolean);
+        const used = [];
+        function takeUsed(m) {
+            if (!m || m === mob || !m.word) return;
+            if (m.word.id) used.push(m.word.id);
+            if (m.word.text) used.push(m.word.text);
+        }
+        session.monsters.forEach(takeUsed);
+        ((engine && engine.world && engine.world.animals) || []).forEach(takeUsed);
         const kind = mob.isBoss
             ? ((L.bossModelOf && L.bossModelOf(mob.bossId)) || 'boss')
             : mob.kind;
@@ -2741,12 +4102,24 @@
     }
 
     function fireCast(mob) {
+        if (mob && mob.village) {
+            const word = mob.word;
+            session.castBuf = '';
+            if (word && word.id && progress.learnedIds.indexOf(word.id) === -1) progress.learnedIds.push(word.id);
+            progress.rightCount = (Number(progress.rightCount) || 0) + 1;
+            if (typeof noteFamiliarWord === 'function') noteFamiliarWord(word, 'spell');
+            persist();
+            applyVillageSpeak({ look: mob.look, word: word }, word && word.text);
+            setCasting(false);
+            return;
+        }
         const word = mob && mob.word;
         session.castBuf = '';
         if (word && word.id && progress.learnedIds.indexOf(word.id) === -1) progress.learnedIds.push(word.id);
         progress.rightCount = (Number(progress.rightCount) || 0) + 1;
         noteFamiliarWord(word, 'spell');
         noteWordResult(word, true);
+        recordWordMemory(word, true);
         recordBridgeAnswer(word, true);
         persist();
         if (sfx && sfx.reward) sfx.reward();
@@ -2767,6 +4140,11 @@
 
     function attemptQuiz(input) {
         if (!session.quiz || !session.pending) return;
+        if (session.quiz.word && session.quiz.word.side && P && P.grade) {
+            const sideHit = P.grade(session.quiz.word.side, input);
+            resolveQuiz(!!sideHit.ok, { record: true, crit: false, comboKeep: false, channel: 'choice' });
+            return;
+        }
         const result = W.resolveAttempt
             ? W.resolveAttempt(session.quiz, input, { retried: !!session.quizRetry })
             : { correct: W.checkQuiz(session.quiz, input), retry: false, record: true, crit: true, comboKeep: true };
@@ -2800,27 +4178,94 @@
         paintQuizKeyboard();
         if (rec.record) {
             const seenKey = String((word && word.text) || '').toLowerCase();
-            if (seenKey) {
+            if (seenKey && !(word && word.side)) {
                 if (!session.seenByWord) session.seenByWord = {};
                 session.seenByWord[seenKey] = (Number(session.seenByWord[seenKey]) || 0) + 1;
             }
             if (correct) {
+                session.wordAt = nowMs();
                 progress.rightCount = (Number(progress.rightCount) || 0) + 1;
-                if (word && word.id && progress.learnedIds.indexOf(word.id) === -1) progress.learnedIds.push(word.id);
-                noteFamiliarWord(word, rec.channel);
+                if (word && word.side && word.side.masteryKey) {
+                    noteSideResult(word, true);
+                } else {
+                    if (word && word.id && progress.learnedIds.indexOf(word.id) === -1) progress.learnedIds.push(word.id);
+                    noteFamiliarWord(word, rec.channel);
+                }
                 if (sfx && sfx.celebrate) sfx.celebrate();
             } else {
                 progress.wrongCount = (Number(progress.wrongCount) || 0) + 1;
+                if (word && word.side) noteSideResult(word, false);
             }
-            noteWordResult(word, correct);
+            noteWordResult(word && word.side ? null : word, correct);
+            recordWordMemory(word && word.side ? null : word, correct);
+            if (RS && RS.noteHardWord && word && !word.side) {
+                RS.noteHardWord(progress, word.text, correct, {
+                    now: nowIso(),
+                    inReview: !!session.reviewRun
+                });
+            }
+            if (RS && RS.noteHearSpeak && rec.channel) RS.noteHearSpeak(progress, rec.channel);
             recordBridgeAnswer(word, correct);
-            if (correct && rec.channel === 'spell') maybeCompleteDaily(word, 'spell');
-            if (correct) grantHouseAwards();
+            if (word && word.side) {
+                refreshSideTablets();
+                if (correct) noteQuest({ type: 'side', kind: word.side.kind });
+            }
+            if (correct && rec.channel === 'spell' && !(word && word.side)) maybeCompleteDaily(word, 'spell');
+            if (correct && !(word && word.side)) grantHouseAwards();
         }
         persist();
         paintCastHud();
+        if (pending.dummy) {
+            if (correct) {
+                session.coins = (Number(session.coins) || 0) + 1;
+                persist();
+                toast('假人倒下 · +1 金币');
+            } else {
+                toast('再打一次假人');
+            }
+            return;
+        }
+        if (pending.merchantMath) {
+            if (correct) {
+                session.mathDiscount = pending.merchantMath.discount || 0.9;
+                toast('算对了 · 本单九折');
+            } else {
+                toast('原价也能买');
+            }
+            openTrade();
+            return;
+        }
+        if (pending.teacherSide) {
+            if (correct) {
+                const pay = P && P.tabletReward ? P.tabletReward() : { coins: 3 };
+                session.coins = (Number(session.coins) || 0) + (Number(pay.coins) || 0);
+                persist();
+                syncHud();
+                greetVillager(pending.look);
+                noteQuest({ type: 'teacher' });
+            } else {
+                toast('老师：再试一张');
+            }
+            return;
+        }
+        if (pending.sceneSide) {
+            toast(correct ? '拼读做到了' : '再听一次');
+            return;
+        }
         if (pending.wordBlock) {
             const cell = pending.wordBlock.cell || {};
+            if (cell.side) {
+                if (correct) {
+                    const pay = P && P.tabletReward ? P.tabletReward() : { coins: 3 };
+                    session.coins = (Number(session.coins) || 0) + (Number(pay.coins) || 0);
+                    persist();
+                    syncHud();
+                    toast((cell.zh || '石碑') + ' · +' + (pay.coins || 0) + '金币');
+                } else {
+                    toast('再挖一块石碑试试');
+                }
+                return;
+            }
             if (correct && W.commitWordBlock) {
                 const r = W.commitWordBlock({
                     coins: session.coins,
@@ -2849,19 +4294,17 @@
             }
             return;
         }
-        if (pending.worldAct) {
-            toast(correct
-                ? (((word && word.text) || '好') + ' · 继续砍挖建')
-                : '先记住这个词，再继续');
-            return;
-        }
-        if (pending.craft) {
+        if (pending.craftItem) {
             if (correct) {
-                session.craftQuizOk = true;
+                if (!progress.craftKnown) progress.craftKnown = {};
+                progress.craftKnown[pending.craftItem] = 1;
+                persist();
+                if (pending.craftVia === 'grid') finishTakeCraft();
+                else finishDoCraft(pending.craftItem);
                 toggleCraft(true);
-                toast('合成台开了 · 用木头做木棍和木镐');
             } else {
-                toast('先答对才能合成');
+                toast('再拼一次 ' + ((word && word.text) || '') + ' 才能合成');
+                toggleCraft(true);
             }
             return;
         }
@@ -2871,7 +4314,13 @@
         pending.mob.voiceFails = 0;
         if (correct && rec.channel === 'speak') noteWordSpoken(word);
         if (correct && pending.mob.isBoss && session.boss) {
-            chipBossShield(rec.channel, rec.channel === 'speak' ? 2 : 1);
+            session.bossHitsOnShield = (Number(session.bossHitsOnShield) || 0) + 1;
+            if (session.bossHitsOnShield >= (session.bossNeed || 1)) {
+                chipBossShield(rec.channel, rec.channel === 'speak' ? 2 : 1);
+                session.bossHitsOnShield = 0;
+            } else {
+                toast('再答 ' + ((session.bossNeed || 1) - session.bossHitsOnShield) + ' 题破这层罩');
+            }
         }
         const stillShield = !!(pending.mob.isBoss && session.boss && session.boss.state === 'shielded');
         if (correct) pending.mob.quizPassed = !stillShield;
@@ -2897,6 +4346,12 @@
     function paintQuest() {
         const goal = document.getElementById('quest-goal');
         const hint = document.getElementById('quest-hint');
+        const mark = session.guideMark || currentGuideMark();
+        if (mark) {
+            if (goal) goal.textContent = mark.label;
+            if (hint) hint.textContent = mark.hint;
+            return;
+        }
         if (!Q || !session.quest) return;
         const cur = Q.current(session.quest);
         if (goal) goal.textContent = cur.title || '';
@@ -2924,6 +4379,7 @@
             dmg = Math.max(1, Math.round(dmg * (bonus.bolt || 1)));
         }
         const crit = !!(verdict.answered && verdict.correct);
+        if (verdict.correct) session.wordAt = nowMs();
         if (mob.isBoss && session.boss) {
             const r = L.applyBossDamage(session.boss, dmg, { now: nowMs(), channel: verdict.channel });
             session.boss = r.boss;
@@ -2946,6 +4402,10 @@
             session.lastDamage = r.dealt;
             session.lastCrit = crit;
             MOBS.spawnDamageText(engine.scene, session.fx, mob, r.dealt, crit);
+            spawnCombatHitFx(mob, {
+                correct: verdict.correct,
+                shield: session.boss.state === 'broken'
+            });
             flashMesh(mob.mesh);
             mob.hurtFlash = 0.1;
             if (mob.model) mob.model.setHp(session.boss.hp / (session.boss.maxHp || 1), true);
@@ -2956,6 +4416,29 @@
             return;
         }
         hurtMonster(mob, dmg, crit);
+    }
+
+    function spawnCombatHitFx(mob, opts) {
+        const o = opts || {};
+        const FX = globalThis.BlockLegendFx;
+        if (o.correct && MOBS.spawnWordFlash) {
+            const wordKind = o.shield ? 'shield' : 'word';
+            MOBS.spawnWordFlash(engine.scene, session.fx, mob, wordKind);
+            const comboOn = (Number(session.combo) || 0) >= 3;
+            if (comboOn && MOBS.spawnHitFlash) {
+                MOBS.spawnHitFlash(engine.scene, session.fx, mob, 'combo');
+            }
+            const punchKind = o.shield ? 'shield' : (comboOn ? 'combo' : 'word');
+            const punch = FX && FX.hitPunch ? FX.hitPunch(punchKind) : null;
+            if (punch && engine.punch) engine.punch(punch);
+            if (MOBS.spawnHitLight) MOBS.spawnHitLight(engine.scene, session.fx, mob, punchKind);
+            wordFlash();
+            return;
+        }
+        if (MOBS.spawnHitFlash) {
+            MOBS.spawnHitFlash(engine.scene, session.fx, mob, 'hit');
+        }
+        if (MOBS.spawnHitLight) MOBS.spawnHitLight(engine.scene, session.fx, mob, 'hit');
     }
 
     function playCombatHit(crit) {
@@ -2981,9 +4464,10 @@
     function fireBossShot(mob, opts) {
         if (!mob || !engine || !MOBS) return;
         const o = opts || {};
+        const aim = (opts && opts.aim) || engine.player;
         const p = engine.player;
-        const dx = p.x - mob.x;
-        const dz = p.z - mob.z;
+        const dx = aim.x - mob.x;
+        const dz = aim.z - mob.z;
         const len = Math.hypot(dx, dz) || 1;
         let ux = dx / len, uz = dz / len;
         const ang = Number(o.angle) || 0;
@@ -3004,7 +4488,9 @@
         session.bossShots.push({
             x: mob.x, z: mob.z, y: y,
             vx: ux * speed, vz: uz * speed,
-            life: 2.8, mesh: mesh, track: !!o.track, dmg: Number(o.dmg) || 1
+            life: 2.8, mesh: mesh, track: !!o.track, dmg: Number(o.dmg) || 1,
+            friendly: !!o.friendly,
+            aimMob: o.aimMob || null
         });
     }
 
@@ -3096,7 +4582,8 @@
         session.bossShots.forEach(function (b) {
             b.life -= dt;
             if (b.track) {
-                const dx = p.x - b.x, dz = p.z - b.z;
+                const hunt = (b.aimMob && b.aimMob.hp > 0) ? b.aimMob : p;
+                const dx = hunt.x - b.x, dz = hunt.z - b.z;
                 const len = Math.hypot(dx, dz) || 1;
                 b.vx += (dx / len) * 4.2 * dt;
                 b.vz += (dz / len) * 4.2 * dt;
@@ -3112,7 +4599,12 @@
                 b.mesh.position.set(b.x, b.y, b.z);
                 b.mesh.rotation.y = Math.atan2(b.vx, b.vz);
             }
-            if (Math.hypot(p.x - b.x, p.z - b.z) < 0.7) {
+            if (b.aimMob && b.aimMob.hp > 0 && Math.hypot(b.aimMob.x - b.x, b.aimMob.z - b.z) < 0.8) {
+                hurtMonster(b.aimMob, 4, false);
+                if (b.mesh) engine.scene.remove(b.mesh);
+                return;
+            }
+            if (!b.friendly && Math.hypot(p.x - b.x, p.z - b.z) < 0.7) {
                 const hit = C.applyContact({ hp: p.hp, lastHitAt: session.lastHitAt }, { contact: b.dmg || 1 }, nowMs());
                 if (hit.hit) {
                     p.hp = hit.hp;
@@ -3163,14 +4655,44 @@
         if (viewModel) viewModel.triggerSwing();
     }
 
+    function blinkMob(mob) {
+        if (!mob || !C.blinkOffset) return false;
+        const hop = C.blinkOffset(mob.x, mob.z, nowMs());
+        const nx = mob.x + hop.dx, nz = mob.z + hop.dz;
+        if (mobBlocked(nx, nz, mob.y || 0, true, mob.kind)) return false;
+        mob.x = nx;
+        mob.z = nz;
+        if (mob.mesh) mob.mesh.position.set(mob.x, mob.y || 0, mob.z);
+        if (MOBS.spawnBurst) MOBS.spawnBurst(engine.scene, session.fx, mob.x, (mob.y || 0) + 1.1, mob.z, 0x201828, 5);
+        return true;
+    }
+
     function hurtMonster(mob, dmg, crit) {
         const res = C.applyHit(mob.hp, dmg);
         mob.hp = res.hp;
         session.lastDamage = dmg;
         session.lastCrit = !!crit;
         MOBS.spawnDamageText(engine.scene, session.fx, mob, dmg, crit);
+        spawnCombatHitFx(mob, { correct: !!crit });
         flashMesh(mob.mesh);
         mob.hurtFlash = 0.1;
+        if (mob.kind === 'spider') mob.provoked = true;
+        if (C.thornTouch && C.thornTouch(mob.kind, { melee: true }) && engine && engine.player) {
+            const p = engine.player;
+            const hit = C.applyContact({ hp: p.hp, lastHitAt: session.lastHitAt }, { contact: 1 }, nowMs());
+            if (hit.hit) {
+                p.hp = hit.hp;
+                session.lastHitAt = hit.lastHitAt;
+                hurtFlash();
+                if (sfx && sfx.hurt) sfx.hurt();
+                toast('守卫者刺到了你！HP ' + Math.ceil(p.hp));
+                if (p.hp <= 0) respawn();
+            }
+        }
+        if (C.signatureOf && !mob.isBoss) {
+            const sig = C.signatureOf(mob.kind);
+            if (sig.onHurt === 'blink') blinkMob(mob);
+        }
         if (mob.model) mob.model.setHp(mob.hp / (mob.maxHp || 1), true);
         if (res.dead) {
             if (mob.peaceful) killAnimal(mob);
@@ -3183,10 +4705,23 @@
     function killMonster(mob) {
         mob.hp = 0;
         const spec = C.monsterOf(mob.kind);
-        MOBS.spawnBurst(engine.scene, session.fx, mob.x, mob.y, mob.z, spec.color, 12);
+        const burst = C.deathBurstOf ? C.deathBurstOf(mob.kind) : { count: 12, ring: false, color: spec.color };
+        MOBS.spawnBurst(engine.scene, session.fx, mob.x, mob.y, mob.z, burst.color, burst.count);
+        if (burst.ring) spawnBossRing(mob, { color: burst.color, radius: 1.1, grow: 2.8 });
         if (mob.mesh && MOBS.beginDeath) MOBS.beginDeath(engine.scene, session.fx, mob.mesh);
         else if (mob.mesh) engine.scene.remove(mob.mesh);
         session.monsters = session.monsters.filter(function (m) { return m !== mob; });
+        const split = C.splitChildOf ? C.splitChildOf(mob.kind, mob.gen || 0) : null;
+        if (split && !mob.isBoss) {
+            for (let i = 0; i < split.count; i += 1) {
+                spawnMonster(split.kind, mob.x + (i ? 0.55 : -0.55), mob.z + (i ? -0.4 : 0.4), {
+                    gen: split.gen,
+                    hp: Math.max(6, Math.round(spec.hp * split.hpScale)),
+                    scale: split.size,
+                    coins: 1
+                });
+            }
+        }
         spawnPickup(mob.x, mob.z, mob.coins, mob.loot);
         const extra = C.bonusBuildDrop && C.bonusBuildDrop(mob.kind);
         if (extra) spawnPickup(mob.x + 0.35, mob.z, 0, extra);
@@ -3194,6 +4729,7 @@
         noteQuest({ type: 'kill', kind: mob.kind, quizCorrect: !!mob.asked });
         if (!session.boss && session.monsters.length === 0) {
             if (session.wavesLeft > 0) spawnWave();
+            else if (session.secretRun) finishLevel();
             else spawnBoss();
         }
     }
@@ -3221,25 +4757,80 @@
         else if (mob.mesh) engine.scene.remove(mob.mesh);
         session.monsters = session.monsters.filter(function (m) { return m !== mob; });
         spawnPickup(mob.x, mob.z, 20, 'cube-shard');
-        finishLevel();
+        spawnSettleFlag(mob.x, mob.z);
     }
 
     function finishLevel() {
-        if (progress.clearedLevels.indexOf(session.level) === -1) progress.clearedLevels.push(session.level);
+        const reviewing = !!(session.reviewRun && RS);
+        const secret = !!session.secretRun;
+        const tier = session.tier || 'default';
+        if (!reviewing && !secret && progress.clearedLevels.indexOf(session.level) === -1) {
+            progress.clearedLevels.push(session.level);
+        }
+        if (D && !reviewing && !secret) {
+            progress.clearedTiers = D.markClearedTier(progress.clearedTiers, session.level, tier);
+        }
+        const minutes = Math.max(1, Math.round((nowMs() - (session.levelStartedAt || nowMs())) / 60000));
+        if (WM) {
+            progress.stats.sessionDensity = WM.pushSessionDensity(progress.stats.sessionDensity, {
+                asked: session.askedCount || 0,
+                minutes: minutes
+            });
+        }
         let sun = L.SUN_PER_LEVEL;
         let capped = false;
-        if (bridge && bridge.awardSunlight) {
+        if (secret && D) {
+            const earned = Math.max(0, (Number(session.coins) || 0) - (Number(session.reviewCoinsStart) || 0));
+            session.coins = (Number(session.reviewCoinsStart) || 0) + D.tierCoins(earned, 'apocalypse');
+            if (bridge && bridge.awardSunlight) {
+                const res = bridge.awardSunlight({
+                    gameId: GAME_ID,
+                    eventKey: 'bl-secret-1',
+                    amount: L.SUN_PER_LEVEL,
+                    reason: '我的方块学园词灵回廊'
+                });
+                sun = res && res.awarded === false ? 0 : (res && res.amount) || L.SUN_PER_LEVEL;
+                capped = !!(res && res.awarded === false);
+            }
+            if (!capped && !progress.secretLooted) {
+                session.bag = C.addLoot(session.bag, 'diamond', 1);
+                progress.secretLooted = 1;
+            }
+        } else if (reviewing) {
+            const earned = Math.max(0, (Number(session.coins) || 0) - (Number(session.reviewCoinsStart) || 0));
+            session.coins = (Number(session.reviewCoinsStart) || 0) + RS.reviewCoins(earned);
+            if (bridge && bridge.awardSunlight) {
+                const res = bridge.awardSunlight({
+                    gameId: GAME_ID,
+                    eventKey: RS.reviewSunlightKey(session.level, session.reviewRun.round),
+                    amount: Math.max(1, Math.floor(L.SUN_PER_LEVEL / 2)),
+                    reason: '我的方块学园复习第' + session.level + '关第' + (session.reviewRun.round + 1) + '轮'
+                });
+                sun = res && res.awarded === false ? 0 : (res && res.amount) || Math.max(1, Math.floor(L.SUN_PER_LEVEL / 2));
+                capped = !!(res && res.awarded === false);
+            } else {
+                sun = Math.max(1, Math.floor(L.SUN_PER_LEVEL / 2));
+            }
+            RS.advanceAfterReview(progress, session.level, nowIso());
+        } else if (bridge && bridge.awardSunlight) {
+            const key = D ? D.tierSunlightKey(tier, session.level) : L.eventKey(session.level);
             const res = bridge.awardSunlight({
                 gameId: GAME_ID,
-                eventKey: L.eventKey(session.level),
+                eventKey: key,
                 amount: L.SUN_PER_LEVEL,
-                reason: '方块传奇通关第' + session.level + '关'
+                reason: '我的方块学园通关第' + session.level + '关' + (tier === 'default' ? '' : ('·' + (D.tierOf(tier).label || tier)))
             });
             sun = res && res.awarded === false ? 0 : (res && res.amount) || L.SUN_PER_LEVEL;
             capped = !!(res && res.awarded === false);
         }
         const reviewWords = sessionMissed();
         progress.reviewWords = reviewWords;
+        if (!reviewing && RS && RS.stampFirstClear) {
+            RS.stampFirstClear(progress, session.level, nowIso());
+        }
+        session.reviewRun = null;
+        session.secretRun = false;
+        if (!reviewing) progress.campChest = Math.max(Number(progress.campChest) || 0, 20);
         stampPlayDate();
         persist();
         const lines = L.buildSettlement({
@@ -3249,9 +4840,20 @@
             newWords: session.wordCorrect || 0,
             reviewWords: reviewWords
         });
+        const settleTitle = document.querySelector('#settle-layer h2');
+        if (settleTitle) settleTitle.textContent = secret ? '词灵回廊完成' : (reviewing ? '复习完成' : '通关啦');
         document.getElementById('settle-gain').textContent = lines.gain;
         document.getElementById('settle-progress').textContent = lines.progressLabel;
-        document.getElementById('settle-next').textContent = lines.nextGoal;
+        document.getElementById('settle-next').textContent = reviewing ? '这扇门下次到期才会再亮' : lines.nextGoal;
+        const densityEl = document.getElementById('settle-density');
+        if (densityEl && WM) {
+            densityEl.textContent = WM.densityLine({ asked: session.askedCount || 0, minutes: minutes });
+        }
+        const tierEl = document.getElementById('settle-tier');
+        if (tierEl) {
+            const lab = secret ? '词灵回廊' : ((D && D.tierOf(tier).label) || '默认');
+            tierEl.textContent = '本局档位 · ' + lab + (sun ? (capped ? ' · 阳光已领过' : ' · 阳光 +' + sun) : '');
+        }
         const next = session.level + 1;
         const unlockState = { unlockedLevel: progress.unlockedLevel, coined: session.coins, recallWords: recallWordCount() };
         const can = L.tryUnlock(unlockState, next);
@@ -3286,7 +4888,8 @@
             persist();
         }
         toggleLayer('settle-layer', false);
-        startLevel(next);
+        startHub();
+        toast(next <= L.LEVEL_TOTAL ? ('第 ' + next + ' 关的门开了 · 回营地找传送门') : '全部关卡都打完啦');
     }
 
     function spawnPickup(x, z, coins, loot) {
@@ -3316,20 +4919,34 @@
         if (mob) MOBS.spawnDamageText(engine.scene, session.fx, mob, amount, crit);
     }
 
+    function speakLangOf(word) {
+        if (!word) return 'en-US';
+        if (word.lang) return word.lang;
+        if (word.side && word.side.lang) return word.side.lang;
+        return 'en-US';
+    }
+
+    function speakTextOf(word) {
+        if (word && word.side && word.side.speak) return word.side.speak;
+        return word && word.text;
+    }
+
     function speakWord(word) {
         if (!word) return;
         if (session.speakTimer) {
             clearTimeout(session.speakTimer);
             session.speakTimer = 0;
         }
-        const queue = W.speakQueue ? W.speakQueue(word) : [{ text: word.text, delayMs: 0 }];
+        const spoken = { text: speakTextOf(word) || word.text };
+        const lang = speakLangOf(word);
+        const queue = W.speakQueue ? W.speakQueue(spoken) : [{ text: spoken.text, delayMs: 0 }];
         const first = queue[0];
         if (!first) return;
         const rest = queue.slice(1);
         function speakRest() {
             rest.forEach(function (item) {
                 session.speakTimer = setTimeout(function () {
-                    speakFallback(item.text);
+                    speakFallback(item.text, lang);
                 }, item.delayMs || 900);
             });
         }
@@ -3340,28 +4957,55 @@
             audio.addEventListener('ended', speakRest);
             const p = audio.play();
             if (p && p.catch) p.catch(function () {
-                speakFallback(first.text);
+                speakFallback(first.text, lang);
                 speakRest();
             });
             return;
         }
-        speakFallback(first.text);
+        speakFallback(first.text, lang);
         speakRest();
     }
 
-    function speakFallback(text) {
+    function speakFallback(text, lang) {
         try {
             if (!window.speechSynthesis) return;
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'en-US';
+            u.lang = lang || 'en-US';
             window.speechSynthesis.speak(u);
         } catch (e) { /* 静音不阻塞 */ }
     }
 
-    function paintHeard(text) {
+    function escapeHtml(s) {
+        return String(s || '').replace(/[&<>"']/g, function (ch) {
+            return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch];
+        });
+    }
+
+    function paintSegments(el, segments, fallback) {
+        if (!el) return;
+        if (!segments || !segments.length) {
+            el.textContent = fallback || '';
+            return;
+        }
+        el.innerHTML = segments.map(function (seg) {
+            const t = escapeHtml(seg.text);
+            return seg.isMatched ? ('<em class="bl-hit">' + t + '</em>') : t;
+        }).join('');
+    }
+
+    function paintHeard(text, ev) {
         const el = document.getElementById('heard-text');
-        if (el) el.textContent = text ? ('"' + text + '"') : '""';
+        if (el) {
+            if (ev && ev.transcriptSegments && ev.transcriptSegments.length && text && text !== '…') {
+                el.innerHTML = '"' + ev.transcriptSegments.map(function (seg) {
+                    const t = escapeHtml(seg.text);
+                    return seg.isMatched ? ('<em class="bl-hit">' + t + '</em>') : t;
+                }).join('') + '"';
+            } else {
+                el.textContent = text ? ('"' + text + '"') : '""';
+            }
+        }
         const quizHeard = document.getElementById('quiz-heard');
         if (quizHeard) {
             if (text === '…') quizHeard.textContent = '正在听…';
@@ -3369,10 +5013,11 @@
             quizHeard.classList.toggle('is-hidden', !text);
         }
         if (text && text !== '…') session.lastHeard = text;
+        if (ev) session.lastSpeechEval = ev;
     }
 
     function readBuddyConfig() {
-        if (!P || !P.resolveBuddyConfig) return { enabled: false };
+        if (!BU || !BU.resolveBuddyConfig) return { enabled: false };
         const q = {};
         try {
             const usp = new URLSearchParams(window.location.search);
@@ -3381,7 +5026,7 @@
             q.buddyTts = usp.get('buddyTts') || '';
             q.buddyStt = usp.get('buddyStt') || '';
         } catch (e) { /* ignore */ }
-        return P.resolveBuddyConfig({ query: q, window: window });
+        return BU.resolveBuddyConfig({ query: q, window: window });
     }
 
     function fieldVal(id) {
@@ -3414,7 +5059,7 @@
 
     function maybeShowBuddyGate() {
         const search = window.location.search || '';
-        if (P && P.shouldSkipBuddyGate && P.shouldSkipBuddyGate(search)) {
+        if (BU && BU.shouldSkipBuddyGate && BU.shouldSkipBuddyGate(search)) {
             toggleLayer('buddy-gate', false);
             ensureLevelStarted();
             return;
@@ -3444,7 +5089,7 @@
     }
 
     function choosePlayMode(pick) {
-        const plan = P && P.applyPlayMode ? P.applyPlayMode(pick) : {
+        const plan = BU && BU.applyPlayMode ? BU.applyPlayMode(pick) : {
             mode: 'desktop', pad: false, lockLook: true, label: '电脑模式 · 键鼠'
         };
         session.playMode = plan.mode;
@@ -3457,7 +5102,7 @@
     }
 
     function chooseBuddy(pick) {
-        const plan = P && P.applyBuddyPick ? P.applyBuddyPick(pick) : {
+        const plan = BU && BU.applyBuddyPick ? BU.applyBuddyPick(pick) : {
             pick: 'play', typeOnly: false, openForm: false, clearModel: true
         };
         session.buddyPick = plan.pick;
@@ -3480,7 +5125,7 @@
         const cfg = session.buddyConfig || readBuddyConfig();
         const pasted = (window.BLOCKLEGEND_BUDDY) || {};
         setField('buddy-endpoint', cfg.endpoint || '');
-        setField('buddy-model', cfg.model || (P && P.DEFAULT_MODEL) || 'llama3.2:3b');
+        setField('buddy-model', cfg.model || (BU && BU.DEFAULT_MODEL) || 'llama3.2:3b');
         setField('buddy-api-key', pasted.apiKey || cfg.apiKey || '');
         setField('buddy-tts', cfg.ttsUrl || '');
         setField('buddy-stt', cfg.sttUrl || '');
@@ -3491,7 +5136,7 @@
     function applyBuddySettings() {
         window.BLOCKLEGEND_BUDDY = {
             endpoint: fieldVal('buddy-endpoint'),
-            model: fieldVal('buddy-model') || (P && P.DEFAULT_MODEL) || 'llama3.2:3b',
+            model: fieldVal('buddy-model') || (BU && BU.DEFAULT_MODEL) || 'llama3.2:3b',
             apiKey: fieldVal('buddy-api-key'),
             ttsUrl: fieldVal('buddy-tts'),
             sttUrl: fieldVal('buddy-stt')
@@ -3511,7 +5156,7 @@
         setField('buddy-api-key', '');
         setField('buddy-tts', '');
         setField('buddy-stt', '');
-        setField('buddy-model', (P && P.DEFAULT_MODEL) || 'llama3.2:3b');
+        setField('buddy-model', (BU && BU.DEFAULT_MODEL) || 'llama3.2:3b');
         session.buddyPick = 'play';
         session.buddyTypeOnly = false;
         session.buddyConfig = readBuddyConfig();
@@ -3544,7 +5189,7 @@
     }
 
     function maybeBuddyCue(extra) {
-        if (!P || !P.decideCue) return;
+        if (!BU || !BU.decideCue) return;
         const snap = Object.assign(collectSnapshot(), extra || {});
         const key = [
             snap.look && snap.look.word,
@@ -3555,7 +5200,7 @@
         ].join('|');
         if (key === session.buddyKey && !(extra && extra.force)) return;
         session.buddyKey = key;
-        const cue = P.decideCue(snap);
+        const cue = BU.decideCue(snap);
         if (!cue || cue.kind === 'silent') return;
         session.buddyAt = snap.now;
         showBuddy(cue.say);
@@ -3573,8 +5218,8 @@
     }
 
     function speakBuddy(text) {
-        if (!P || !P.planSpeak || !text) return;
-        const plan = P.planSpeak(text, {
+        if (!BU || !BU.planSpeak || !text) return;
+        const plan = BU.planSpeak(text, {
             voices: window.speechSynthesis ? window.speechSynthesis.getVoices() : [],
             ttsUrl: session.buddyConfig && session.buddyConfig.ttsUrl
         });
@@ -3605,7 +5250,7 @@
             u.lang = 'en-US';
             const voices = window.speechSynthesis.getVoices() || [];
             const picked = voices.filter(function (v) { return v.name === voiceName; })[0]
-                || (P && P.pickTtsVoice ? P.pickTtsVoice(voices) : null);
+                || (BU && BU.pickTtsVoice ? BU.pickTtsVoice(voices) : null);
             if (picked) u.voice = picked;
             window.speechSynthesis.speak(u);
         } catch (e) { /* 静音不阻塞 */ }
@@ -3642,7 +5287,7 @@
     }
 
     function askBuddyModel(heard, snap) {
-        const req = P.buildChatRequest({
+        const req = BU.buildChatRequest({
             snapshot: snap,
             heard: heard,
             config: session.buddyConfig || {}
@@ -3657,7 +5302,7 @@
         }).then(function (res) {
             return res.json();
         }).then(function (json) {
-            return P.parseChatReply(json);
+            return BU.parseChatReply(json);
         }).finally(function () {
             clearTimeout(timer);
         });
@@ -3669,7 +5314,7 @@
         const ask = session.buddyConfig && session.buddyConfig.enabled
             ? function () { return askBuddyModel(heard, snap); }
             : null;
-        P.runBuddyTurn({
+        BU.runBuddyTurn({
             heard: heard,
             snapshot: snap,
             matchHeard: SP && SP.matchHeard,
@@ -3701,6 +5346,10 @@
     }
 
     function voiceLockAlive(lock) {
+        if (lock && lock.look) {
+            const sub = lookSubject();
+            return !!(sub && sub.kind === lock.kind);
+        }
         const mob = lock && lock.mob;
         if (!mob || mob.hp <= 0) return false;
         if (wordKey(mob.word) !== lock.targetKey) return false;
@@ -3710,8 +5359,26 @@
 
     function startVoiceChallenge() {
         const sub = lookSubject();
+        if (isVillageLook(sub)) {
+            const word = villageLookWord(sub);
+            const lock = {
+                look: sub,
+                kind: sub.kind,
+                word: word,
+                targetKey: wordKey(word),
+                startedAt: nowMs()
+            };
+            session.voice.lock = lock;
+            if (session.buddyTypeOnly || session.voice.blocked || !canListen()) {
+                setVoiceState('unsupported');
+                showVoiceFallback(lock, { reason: 'unsupported' });
+                return;
+            }
+            listenOnce({ lock: lock });
+            return;
+        }
         if (!sub || sub.type !== 'mob' || !sub.mob || !sub.mob.word || !sub.mob.word.text) {
-            toast('先对准怪物');
+            toast('先对准怪物或村民');
             return;
         }
         const lock = {
@@ -3730,6 +5397,15 @@
     }
 
     function applySpeakHit(lock, heard) {
+        if (lock && lock.look) {
+            if (!voiceLockAlive(lock)) {
+                setVoiceState('idle');
+                toast('目标已离开');
+                return;
+            }
+            applyVillageSpeak(lock, heard);
+            return;
+        }
         const mob = lock && lock.mob;
         const word = lock && lock.word;
         if (!voiceLockAlive(lock)) {
@@ -3864,7 +5540,7 @@
         }
         if (hit) {
             if (inQuiz) {
-                noteWordSpoken(session.quiz.word);
+                if (!(session.quiz.word && session.quiz.word.side)) noteWordSpoken(session.quiz.word);
                 resolveQuiz(true, { record: true, crit: true, comboKeep: true, channel: 'speak' });
                 setVoiceState('matched');
             } else {
@@ -3944,7 +5620,16 @@
         const target = (lock && lock.word && lock.word.text)
             || (session.quiz && session.quiz.word && session.quiz.word.text)
             || '';
+        if (inQuiz && session.quiz.word && session.quiz.word.side
+            && !(P && P.canSpeakSide && P.canSpeakSide(session.quiz.word.side))) {
+            return;
+        }
         if (!target && !o.buddy && !o.scene) return;
+        if (o.scene && !canListen() && SL && session.sceneLoop && SL.onRecordFail) {
+            session.sceneLoop = SL.onRecordFail(session.sceneLoop);
+            paintScene();
+            return;
+        }
         if (session.voice && session.voice.rec) stopVoiceRec();
         try {
             if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -4112,12 +5797,18 @@
         }
         if (!session.paused) {
             stepMining(dt);
+            tickTnt(dt);
             updateLookCard(t);
             moveMonsters(dt, t);
+            tickMonsterSkills(t);
+            tickVillageGolems(t, dt);
             tickBossCombat(t);
             moveBolts(dt);
             moveBossShots(dt);
+            tickRideTrail(t);
             collectPickups();
+            separateFromAnimals();
+            regenOutOfCombat(dt);
         }
         MOBS.stepFx(engine.scene, session.fx, dt);
         if (session.merchant && session.merchant.model) {
@@ -4138,9 +5829,12 @@
                 viewModel.setBladeKind(toolTierOf('sword'));
             }
             viewModel.update(dt, moving);
+            if (viewModel.group) viewModel.group.visible = !engine.player.mounted;
         }
         updateMerchantTip();
         updateWordGate();
+        updateHubPortal();
+        updateGuideReach();
         syncHud();
         drawMinimap();
     }
@@ -4175,14 +5869,52 @@
             ctx.fillStyle = m.isBoss ? '#3d7dff' : '#e23ad0';
             ctx.fillRect(m.x * scale - 1.2, m.z * scale - 1.2, 3, 3);
         });
+        (w.levelPortals || []).forEach(function (p) {
+            ctx.fillStyle = p.state === 'locked' ? '#3a3a3a' : p.state === 'due' ? '#7ec8ff' : '#f4c542';
+            ctx.fillRect(p.x * scale - 1.4, p.z * scale - 1.4, 3, 3);
+        });
         ctx.fillStyle = '#fff';
         ctx.beginPath();
         ctx.arc(engine.player.x * scale, engine.player.z * scale, 2.2, 0, Math.PI * 2);
         ctx.fill();
+        const mark = session.guideMark || currentGuideMark();
+        if (mark) {
+            const mx = mark.x * scale;
+            const mz = mark.z * scale;
+            const pulse = 11 + Math.sin(Date.now() / 140) * 3;
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 225, 74, 0.85)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(mx, mz, pulse, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = '#ff2a2a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(mx, mz - 16);
+            ctx.lineTo(mx, mz + 16);
+            ctx.moveTo(mx - 16, mz);
+            ctx.lineTo(mx + 16, mz);
+            ctx.stroke();
+            ctx.fillStyle = '#ffe14a';
+            ctx.beginPath();
+            ctx.moveTo(mx, mz - 9);
+            ctx.lineTo(mx + 7, mz);
+            ctx.lineTo(mx, mz + 9);
+            ctx.lineTo(mx - 7, mz);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#7a2200';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+        }
     }
 
-    function mobBlocked(x, z, y, flyer) {
-        if (ENG.inHouse && ENG.inHouse(engine.world, x, z)) return true;
+    function mobBlocked(x, z, y, flyer, kind) {
+        if (C.phaseGhost && C.phaseGhost(kind)) return false;
+        if (ENG.inHouse && ENG.inHouse(engine.world, x, z)
+            && !(C.canEnterHouse && C.canEnterHouse(kind))) return true;
         if (flyer) return false;
         const r = 0.32;
         return engine.columnBlocked(x, z, y)
@@ -4190,6 +5922,120 @@
             || engine.columnBlocked(x - r, z, y)
             || engine.columnBlocked(x, z + r, y)
             || engine.columnBlocked(x, z - r, y);
+    }
+
+    function pulseGlow(mesh, hex, tSec) {
+        if (!mesh || !hex) return;
+        const wave = 0.45 + 0.35 * (0.5 + 0.5 * Math.sin((tSec || 0) * 4));
+        mesh.traverse(function (n) {
+            if (!n.material || !n.material.emissive) return;
+            const name = String(n.name || '').toLowerCase();
+            if (name && name.indexOf('eye') < 0 && name.indexOf('core') < 0 && name.indexOf('glow') < 0
+                && name.indexOf('flame') < 0 && name.indexOf('rod') < 0 && name.indexOf('mouth') < 0) return;
+            n.material.emissive.setHex(hex);
+            n.material.emissive.multiplyScalar(wave);
+        });
+    }
+
+    function applyPresence(m, dist, tSec) {
+        if (!m.mesh || !C.signatureOf || m.isBoss) return;
+        const sig = C.signatureOf(m.kind);
+        if (sig.anim === 'swell') {
+            const s = C.swellScale(dist);
+            m.mesh.scale.setScalar(s);
+        } else if (sig.anim === 'peek') {
+            const open = m.aggro ? 1 : 0.35;
+            m.mesh.scale.set(1, 0.5 + open * 0.5, 1);
+        } else if (C.inflateScale && C.inflateScale(m.kind, dist) > 1) {
+            const s = C.inflateScale(m.kind, dist);
+            m.mesh.scale.setScalar(s);
+        }
+        if (m.kind === 'shadow_stalker' || m.kind === 'sculk_worm') {
+            const fade = m.burrowHidden ? 0.12 : (m.kind === 'shadow_stalker' ? (dist > 6 ? 0.38 : 0.92) : 1);
+            m.mesh.traverse(function (n) {
+                if (!n.material || n.material.opacity == null) return;
+                n.material.transparent = fade < 1;
+                n.material.opacity = fade;
+            });
+        }
+        if (sig.glow) {
+            const charge = C.chargeGlow ? C.chargeGlow(m.kind, (tSec || 0) * 1000, m.skillAt || 0) : 0;
+            pulseGlow(m.mesh, sig.glow, tSec);
+            if (charge > 0) m.mesh.scale.setScalar(1 + charge * 0.12);
+        }
+    }
+
+    function tickMonsterSkills(now) {
+        if (!C.signatureOf || !engine) return;
+        const p = engine.player;
+        session.monsters.forEach(function (m) {
+            if (m.hp <= 0 || m.peaceful || m.isBoss) return;
+            if (C.goldPeace && C.goldPeace(m.kind, { gold: heldGold() })) return;
+            const sig = C.signatureOf(m.kind);
+            const dist = Math.hypot(p.x - m.x, p.z - m.z);
+            const stopAt = C.behaviorStopRange
+                ? C.behaviorStopRange(m.behavior || 'chase', C.CONTACT_RANGE)
+                : C.CONTACT_RANGE;
+            if (C.canFireSkill(sig, now, m.skillAt || 0, dist, stopAt)) {
+                m.skillAt = now;
+                const n = sig.count || 1;
+                if (n <= 1) fireBossShot(m, { shot: sig.shot, color: sig.color, halo: sig.halo, dmg: 1 });
+                else {
+                    for (let i = 0; i < n; i += 1) {
+                        fireBossShot(m, {
+                            shot: sig.shot, color: sig.color, halo: sig.halo, dmg: 1,
+                            angle: (i - (n - 1) / 2) * 0.28
+                        });
+                    }
+                }
+                if (sig.anim === 'puff' && MOBS.spawnBurst) {
+                    MOBS.spawnBurst(engine.scene, session.fx, m.x, (m.y || 0) + 1, m.z, sig.color, 6);
+                }
+            }
+            if (m.kind === 'warden' && dist < 3.2 && (!m.boomAt || now - m.boomAt >= 2800)) {
+                m.boomAt = now;
+                spawnBossRing(m, { color: 0x4ad4e0, radius: 1.3, grow: 3.2 });
+            }
+            if (sig.anim === 'stomp' && dist < 2.6 && (!m.stompAt || now - m.stompAt >= 1800)) {
+                m.stompAt = now;
+                spawnBossRing(m, { color: 0x6a5a48, radius: 1.2, grow: 2.6 });
+            }
+            if (sig.anim === 'swell' && dist < 1.75 && (!m.popAt || now - m.popAt >= 1600)) {
+                m.popAt = now;
+                spawnBossRing(m, { color: 0x6fbf45, radius: 1.1, grow: 2.2 });
+                const hit = C.applyContact({ hp: p.hp, lastHitAt: session.lastHitAt }, { contact: 2 }, now);
+                if (hit.hit) {
+                    p.hp = hit.hp;
+                    session.lastHitAt = hit.lastHitAt;
+                    hurtFlash();
+                    if (sfx && sfx.hurt) sfx.hurt();
+                    toast('苦力怕炸开了！HP ' + Math.ceil(p.hp));
+                    if (p.hp <= 0) respawn();
+                }
+            }
+            if (C.sipHeal) {
+                const heal = C.sipHeal(m.kind, m.hp, m.maxHp);
+                if (heal > 0 && (!m.sipAt || now - m.sipAt >= 4000)) {
+                    m.sipAt = now;
+                    m.hp = Math.min(m.maxHp, m.hp + heal);
+                    if (MOBS.spawnBurst) MOBS.spawnBurst(engine.scene, session.fx, m.x, (m.y || 0) + 1.15, m.z, 0x7a3ce0, 6);
+                    if (m.model) m.model.setHp(m.hp / m.maxHp, true);
+                }
+            }
+            if (C.sporePuff && C.sporePuff(m.kind, dist) && (!m.sporeAt || now - m.sporeAt >= 1600)) {
+                m.sporeAt = now;
+                spawnBossRing(m, { color: 0xb4543a, radius: 1.0, grow: 2.1 });
+                const hit = C.applyContact({ hp: p.hp, lastHitAt: session.lastHitAt }, { contact: 1 }, now);
+                if (hit.hit) {
+                    p.hp = hit.hp;
+                    session.lastHitAt = hit.lastHitAt;
+                    hurtFlash();
+                    if (sfx && sfx.hurt) sfx.hurt();
+                    toast('孢子扑面！HP ' + Math.ceil(p.hp));
+                    if (p.hp <= 0) respawn();
+                }
+            }
+        });
     }
 
     function moveMonsters(dt, t) {
@@ -4200,37 +6046,98 @@
             const dx = p.x - m.x;
             const dz = p.z - m.z;
             const dist = Math.hypot(dx, dz) || 1;
-            const flyer = !!(m.isBoss || m.kind === 'ghast' || m.kind === 'blaze');
+            const loc = C.locomotionOf
+                ? C.locomotionOf(m.kind, { isBoss: m.isBoss, bossId: m.bossId })
+                : { mode: 'walk', flyer: false, hover: 0, hop: 0 };
+            const flyer = !!loc.flyer;
+            const blocked = function (x, z, y, fly) {
+                return mobBlocked(x, z, y, fly, m.kind);
+            };
             let moving = false;
             const ox = m.x, oz = m.z;
             m.aggro = C.tickAggro ? C.tickAggro(!!m.aggro, dist) : dist <= 8;
-            if (m.parked && !m.aggro) {
-                const groundPark = engine.world.surfaceAt(Math.floor(m.x), Math.floor(m.z));
-                m.y = flyer ? groundPark + (m.isBoss ? 1.6 : m.kind === 'ghast' ? 2.3 : 1.35) : groundPark;
-                if (m.mesh) m.mesh.position.set(m.x, m.y, m.z);
-                if (m.hurtFlash) m.hurtFlash = Math.max(0, m.hurtFlash - dt);
-                if (m.model) {
-                    m.model.update(dt, false, tSec);
-                    m.model.faceHpBarTo(engine.camera);
+            if (C.goldPeace && C.goldPeace(m.kind, { gold: heldGold() })) m.aggro = false;
+            if (C.dayCalm && C.dayCalm(m.kind, { exposed: skyExposed(m.x, m.z) }) && !m.provoked) m.aggro = false;
+            const stanceY = function () {
+                const ground = engine.world.surfaceAt(Math.floor(m.x), Math.floor(m.z));
+                return C.stanceAltitude
+                    ? C.stanceAltitude(m.kind, ground, tSec, { isBoss: m.isBoss, bossId: m.bossId })
+                    : (flyer ? ground + (loc.hover || 1.35) : ground);
+            };
+            if (loc.mode === 'anchor' || (m.parked && !m.aggro) || !m.aggro) {
+                if (m.parked && m.aggro && loc.mode !== 'anchor') m.parked = false;
+                else {
+                    m.y = stanceY();
+                    if (m.mesh) m.mesh.position.set(m.x, m.y, m.z);
+                    if (m.hurtFlash) m.hurtFlash = Math.max(0, m.hurtFlash - dt);
+                    if (m.model) {
+                        m.model.update(dt, false, tSec);
+                        m.model.faceHpBarTo(engine.camera);
+                    }
+                    applyPresence(m, dist, tSec);
+                    return;
                 }
-                return;
             }
             if (m.parked && m.aggro) m.parked = false;
-            if (!m.aggro) {
-                const groundIdle = engine.world.surfaceAt(Math.floor(m.x), Math.floor(m.z));
-                m.y = flyer ? groundIdle + (m.isBoss ? 1.6 : m.kind === 'ghast' ? 2.3 : 1.35) : groundIdle;
-                if (m.mesh) m.mesh.position.set(m.x, m.y, m.z);
-                if (m.hurtFlash) m.hurtFlash = Math.max(0, m.hurtFlash - dt);
-                if (m.model) {
-                    m.model.update(dt, false, tSec);
-                    m.model.faceHpBarTo(engine.camera);
-                }
-                return;
-            }
             const stopAt = C.behaviorStopRange
                 ? C.behaviorStopRange(m.behavior || 'chase', C.CONTACT_RANGE)
                 : C.CONTACT_RANGE;
-            if (dist > stopAt) {
+            if (dist > 6) m.wasFar = true;
+            let pose = C.poseStep
+                ? C.poseStep(m.kind, {
+                    dist: dist,
+                    aggro: !!m.aggro,
+                    blocked: false,
+                    playerAbove: p.y - (m.y || 0)
+                })
+                : { dash: 1, lift: 0, climb: 0, lean: 0 };
+            if (C.shadowLunge && m.aggro) {
+                const sl = C.shadowLunge(m.kind, { dist: dist, wasFar: !!m.wasFar });
+                if (sl.dash > 1) {
+                    pose.dash = sl.dash;
+                    pose.lean = 0.28;
+                    if (dist <= 3.2) m.wasFar = false;
+                }
+            }
+            m.pose = pose;
+            if (C.sunBurn && C.sunBurn(m.kind, { exposed: skyExposed(m.x, m.z) })) {
+                pose.dash = (pose.dash || 1) * 0.68;
+            }
+            if (C.strafeStep && m.aggro) {
+                const st = C.strafeStep(m.kind, { dist: dist, aggro: true, dx: dx, dz: dz, t: tSec });
+                if (st.sx || st.sz) {
+                    const sx = m.x + st.sx * dt;
+                    const sz = m.z + st.sz * dt;
+                    if (!blocked(sx, m.z, m.y, flyer)) m.x = sx;
+                    if (!blocked(m.x, sz, m.y, flyer)) m.z = sz;
+                }
+            }
+            if (C.retreatStep && m.aggro) {
+                const rt = C.retreatStep(m.kind, { dist: dist, aggro: true, dx: dx, dz: dz });
+                if (rt.sx || rt.sz) {
+                    const rx = m.x + rt.sx * dt;
+                    const rz = m.z + rt.sz * dt;
+                    if (!blocked(rx, m.z, m.y, flyer)) m.x = rx;
+                    if (!blocked(m.x, rz, m.y, flyer)) m.z = rz;
+                }
+            }
+            let burrow = { sx: 0, sz: 0, lift: 0, hidden: false };
+            if (C.burrowStep && m.aggro) {
+                burrow = C.burrowStep(m.kind, { dist: dist, aggro: true, t: tSec, dx: dx, dz: dz });
+                if (burrow.sx || burrow.sz) {
+                    const bx = m.x + burrow.sx * dt;
+                    const bz = m.z + burrow.sz * dt;
+                    const ghost = !!burrow.hidden;
+                    if (!blocked(bx, m.z, m.y, ghost || flyer)) m.x = bx;
+                    if (!blocked(m.x, bz, m.y, ghost || flyer)) m.z = bz;
+                    if (burrow.hidden) moving = true;
+                }
+                if (m.burrowHidden && !burrow.hidden && MOBS.spawnBurst) {
+                    MOBS.spawnBurst(engine.scene, session.fx, m.x, (m.y || 0) + 0.2, m.z, 0x1a3a40, 8);
+                }
+                m.burrowHidden = !!burrow.hidden;
+            }
+            if (dist > stopAt && !burrow.hidden) {
                 moving = true;
                 const surface = engine.world.surfaceAt(Math.floor(engine.player.x), Math.floor(engine.player.z));
                 const inCave = engine.player.y < surface - 2.2;
@@ -4238,27 +6145,40 @@
                     ? C.torchSlow({ hasTorch: (session.bag.torch || 0) > 0, inCave: inCave })
                     : 1;
                 const dash = (m.isBoss && session.bossDashUntil && nowMs() < session.bossDashUntil) ? 2.35 : 1;
-                const step = Math.max(1.05, m.speed) * dt * slow * dash;
+                const step = Math.max(1.05, m.speed) * dt * slow * dash * (pose.dash || 1);
                 const ux = dx / dist, uz = dz / dist;
                 const nx = m.x + ux * step;
                 const nz = m.z + uz * step;
-                if (!mobBlocked(nx, m.z, m.y, flyer)) m.x = nx;
-                if (!mobBlocked(m.x, nz, m.y, flyer)) m.z = nz;
+                if (!blocked(nx, m.z, m.y, flyer)) m.x = nx;
+                if (!blocked(m.x, nz, m.y, flyer)) m.z = nz;
                 if (m.x === ox && m.z === oz) {
                     const lx = -uz * step, lz = ux * step;
-                    if (!mobBlocked(m.x + lx, m.z + lz, m.y, flyer)) {
+                    if (!blocked(m.x + lx, m.z + lz, m.y, flyer)) {
                         m.x += lx; m.z += lz;
-                    } else if (!mobBlocked(m.x - lx, m.z - lz, m.y, flyer)) {
+                    } else if (!blocked(m.x - lx, m.z - lz, m.y, flyer)) {
                         m.x -= lx; m.z -= lz;
                     } else {
                         for (let a = 0; a < 8; a += 1) {
                             const sx = m.x + Math.cos(a * Math.PI / 4) * 0.7;
                             const sz = m.z + Math.sin(a * Math.PI / 4) * 0.7;
-                            if (!mobBlocked(sx, sz, m.y, flyer)) { m.x = sx; m.z = sz; break; }
+                            if (!blocked(sx, sz, m.y, flyer)) { m.x = sx; m.z = sz; break; }
+                        }
+                    }
+                    if (m.x === ox && m.z === oz && C.poseStep) {
+                        pose = C.poseStep(m.kind, {
+                            dist: dist,
+                            aggro: !!m.aggro,
+                            blocked: true,
+                            playerAbove: p.y - (m.y || 0)
+                        });
+                        m.pose = pose;
+                        if (pose.climb > 0 && !blocked(nx, nz, m.y + pose.climb, true)) {
+                            m.x = nx;
+                            m.z = nz;
                         }
                     }
                 }
-            } else {
+            } else if (!burrow.hidden) {
                 const wall = ENG.wallBetween
                     ? ENG.wallBetween(engine.world, m.x, m.y + 1.1, m.z, p.x, p.y + 1.1, p.z)
                     : false;
@@ -4286,8 +6206,7 @@
                     }
                 }
             }
-            const ground = engine.world.surfaceAt(Math.floor(m.x), Math.floor(m.z));
-            m.y = flyer ? ground + (m.isBoss ? 1.6 : m.kind === 'ghast' ? 2.3 : 1.35) : ground;
+            m.y = stanceY() + (pose.lift || 0) + (pose.climb || 0) + (burrow.lift || 0);
             if (m.isBoss && session.bossAnim && nowMs() < session.bossAnim.until) {
                 const lean = session.bossAnim.lean;
                 if (lean === 'up') m.y += 0.42;
@@ -4301,6 +6220,10 @@
                     else if (lean === 'spin') m.mesh.rotation.y += dt * 8;
                     else if (lean === 'up') m.mesh.rotation.x = -0.22;
                 } else if (m.isBoss) {
+                    m.mesh.rotation.x = 0;
+                } else if (pose.lean) {
+                    m.mesh.rotation.x = pose.lean;
+                } else {
                     m.mesh.rotation.x = 0;
                 }
                 const movedX = m.x - ox, movedZ = m.z - oz;
@@ -4316,7 +6239,273 @@
                 if (m.hp < m.maxHp) m.model.setHp(m.hp / m.maxHp, true);
                 m.model.faceHpBarTo(engine.camera);
             }
+            if ((m.kind === 'magma' || m.kind === 'blaze' || m.kind === 'fire_spirit' || m.kind === 'spore_bug') && moving && MOBS.spawnBurst) {
+                m.trailAt = (m.trailAt || 0) - dt;
+                if (m.trailAt <= 0) {
+                    m.trailAt = 0.18;
+                    const col = m.kind === 'spore_bug' ? 0xb4543a : 0xff6a2a;
+                    MOBS.spawnBurst(engine.scene, session.fx, m.x, (m.y || 0) + 0.35, m.z, col, 2);
+                }
+            }
+            if (C.sunBurn && C.sunBurn(m.kind, { exposed: skyExposed(m.x, m.z) })) {
+                if (MOBS.spawnBurst && (m.trailAt || 0) <= 0) {
+                    m.trailAt = 0.2;
+                    MOBS.spawnBurst(engine.scene, session.fx, m.x, (m.y || 0) + 1.1, m.z, 0xffc04a, 2);
+                } else {
+                    m.trailAt = (m.trailAt || 0) - dt;
+                }
+                if (!m.burnAt || t - m.burnAt >= 1800) {
+                    m.burnAt = t;
+                    hurtMonster(m, 2, false);
+                }
+            }
+            if (C.heatMelt && C.heatMelt(m.kind, { climate: engine.world.climate, wet: footWet(m.x, m.z) })) {
+                if (MOBS.spawnBurst && (m.trailAt || 0) <= 0) {
+                    m.trailAt = 0.22;
+                    MOBS.spawnBurst(engine.scene, session.fx, m.x, (m.y || 0) + 0.85, m.z, 0xe8f4ff, 3);
+                } else {
+                    m.trailAt = (m.trailAt || 0) - dt;
+                }
+                if (!m.meltAt || t - m.meltAt >= 1800) {
+                    m.meltAt = t;
+                    hurtMonster(m, 2, false);
+                }
+            } else if (m.kind === 'snowgolem' && moving && MOBS.spawnBurst) {
+                m.trailAt = (m.trailAt || 0) - dt;
+                if (m.trailAt <= 0) {
+                    m.trailAt = 0.32;
+                    MOBS.spawnBurst(engine.scene, session.fx, m.x, (m.y || 0) + 0.12, m.z, 0xf4f8ff, 2);
+                }
+            }
+            const inside = !!(ENG.inHouse && ENG.inHouse(engine.world, m.x, m.z));
+            if (C.canEnterHouse && C.canEnterHouse(m.kind) && inside && !m.houseIn) {
+                m.houseIn = true;
+                if (MOBS.spawnBurst) MOBS.spawnBurst(engine.scene, session.fx, m.x, (m.y || 0) + 0.85, m.z, 0x8a6a48, 7);
+            }
+            if (!inside) m.houseIn = false;
+            if (C.waterBlink && C.waterBlink(m.kind, { wet: footWet(m.x, m.z) })) {
+                m.aggro = false;
+                if (!m.wetBlinkAt || t - m.wetBlinkAt >= 900) {
+                    m.wetBlinkAt = t;
+                    blinkMob(m);
+                }
+            }
+            applyPresence(m, dist, tSec);
         });
+    }
+
+    function heldGold() {
+        let n = (Number(session.bag['gold-nugget']) || 0) + (Number(session.bag.gold) || 0);
+        (session.hotbar || []).forEach(function (id) {
+            if (id === 'gold-nugget' || id === 'gold') n += 1;
+        });
+        return n;
+    }
+
+    function spendHeldGold() {
+        if ((Number(session.bag['gold-nugget']) || 0) > 0) {
+            session.bag = C.addLoot(session.bag, 'gold-nugget', -1);
+            return true;
+        }
+        if ((Number(session.bag.gold) || 0) > 0) {
+            session.bag = C.addLoot(session.bag, 'gold', -1);
+            return true;
+        }
+        const bar = session.hotbar || [];
+        for (let i = 0; i < bar.length; i += 1) {
+            if (bar[i] === 'gold-nugget' || bar[i] === 'gold') {
+                bar[i] = null;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function skyExposed(x, z) {
+        if (!engine || !engine.world) return false;
+        if (ENG.inHouse && ENG.inHouse(engine.world, x, z)) return false;
+        const c = engine.world.climate;
+        return c !== 'nether' && c !== 'end' && c !== 'deep_dark';
+    }
+
+    function footWet(x, z) {
+        return !!(engine && engine.world && engine.world.ponds
+            && engine.world.ponds[Math.floor(x) + ',' + Math.floor(z)]);
+    }
+
+    function nearestHostileTo(x, z, hostiles) {
+        let target = null;
+        let best = 99;
+        hostiles.forEach(function (m) {
+            const d = Math.hypot(m.x - x, m.z - z);
+            if (d < best) {
+                best = d;
+                target = m;
+            }
+        });
+        return { target: target, dist: best };
+    }
+
+    function tickVillageGolems(now, dt) {
+        if (!engine || !engine.world || !C.signatureOf) return;
+        const hostiles = session.monsters.filter(function (m) {
+            return m.hp > 0 && !m.peaceful && !m.isBoss;
+        });
+        (engine.world.golems || []).forEach(function (g) {
+            const near = nearestHostileTo(g.x, g.z, hostiles);
+            const target = near.target;
+            const best = near.dist;
+            g.guarding = !!(target && best <= 12);
+            if (!target) return;
+            if (g.kind === 'snowgolem') {
+                if (C.heatMelt && C.heatMelt('snowgolem', { climate: engine.world.climate, wet: footWet(g.x, g.z) })) {
+                    if (MOBS.spawnBurst && (!g.meltFx || now - g.meltFx >= 220)) {
+                        g.meltFx = now;
+                        MOBS.spawnBurst(engine.scene, session.fx, g.x, (g.y || 0) + 0.85, g.z, 0xe8f4ff, 3);
+                    }
+                } else if (MOBS.spawnBurst && (!g.trailAt || now - g.trailAt >= 320)) {
+                    g.trailAt = now;
+                    MOBS.spawnBurst(engine.scene, session.fx, g.x, (g.y || 0) + 0.12, g.z, 0xf4f8ff, 2);
+                }
+                if (best > 10) return;
+                const sig = C.signatureOf('snowgolem');
+                if (!C.canFireSkill(sig, now, g.skillAt || 0, best, 8)) return;
+                g.skillAt = now;
+                fireBossShot(g, {
+                    shot: sig.shot,
+                    color: sig.color,
+                    halo: sig.halo,
+                    dmg: 1,
+                    friendly: true,
+                    aim: target,
+                    aimMob: target
+                });
+                return;
+            }
+            if (g.kind !== 'golem') return;
+            if (best > 12) return;
+            const dx = target.x - g.x;
+            const dz = target.z - g.z;
+            const len = Math.hypot(dx, dz) || 1;
+            if (best > 1.8 && dt) {
+                g.x += (dx / len) * 1.15 * dt;
+                g.z += (dz / len) * 1.15 * dt;
+                g.yaw = Math.atan2(dx, dz);
+                g.y = engine.world.surfaceAt(Math.floor(g.x), Math.floor(g.z));
+                if (g.mesh) {
+                    g.mesh.position.set(g.x, g.y, g.z);
+                    g.mesh.rotation.y = g.yaw;
+                }
+            }
+            if (best <= 2.2 && (!g.stompAt || now - g.stompAt >= 1400)) {
+                g.stompAt = now;
+                hurtMonster(target, 6, false);
+                spawnBossRing(g, { color: 0x6a5a48, radius: 1.3, grow: 2.8 });
+            }
+        });
+        (engine.world.villagers || []).forEach(function (v) {
+            const near = nearestHostileTo(v.x, v.z, hostiles);
+            const dx = near.target ? near.target.x - v.x : 0;
+            const dz = near.target ? near.target.z - v.z : 1;
+            let step = C.homeStep
+                ? C.homeStep('villager', {
+                    threat: !!near.target,
+                    dist: near.dist,
+                    x: v.x,
+                    z: v.z,
+                    homeX: v.homeX,
+                    homeZ: v.homeZ
+                })
+                : { sx: 0, sz: 0 };
+            if (!(step.sx || step.sz) && C.fleeStep) {
+                step = C.fleeStep('villager', { dist: near.dist, threat: !!near.target, dx: dx, dz: dz });
+            }
+            v.fleeing = !!(step.sx || step.sz);
+            if (!v.fleeing || !dt) return;
+            v.x += step.sx * dt;
+            v.z += step.sz * dt;
+            v.yaw = Math.atan2(step.sx, step.sz);
+            v.y = engine.world.surfaceAt(Math.floor(v.x), Math.floor(v.z));
+            if (v.mesh) {
+                v.mesh.position.set(v.x, v.y, v.z);
+                v.mesh.rotation.y = v.yaw;
+            }
+        });
+        (engine.world.animals || []).forEach(function (a) {
+            const near = nearestHostileTo(a.x, a.z, hostiles);
+            const tdx = near.target ? near.target.x - a.x : 0;
+            const tdz = near.target ? near.target.z - a.z : 1;
+            if (a.kind === 'wolf') {
+                const step = C.packHunt
+                    ? C.packHunt('wolf', { dist: near.dist, ally: !!near.target, dx: tdx, dz: tdz })
+                    : { sx: 0, sz: 0 };
+                a.hunting = !!(step.sx || step.sz);
+                a.fleeing = false;
+                if (a.hunting) nudgeLife(a, step.sx, step.sz, dt);
+                if (near.target && near.dist <= 1.6 && (!a.biteAt || now - a.biteAt >= 900)) {
+                    a.biteAt = now;
+                    hurtMonster(near.target, 3, false);
+                }
+                return;
+            }
+            if (C.isFarmAnimal && C.isFarmAnimal(a.kind)) {
+                const step = C.fleeStep
+                    ? C.fleeStep(a.kind, { dist: near.dist, threat: !!near.target, dx: tdx, dz: tdz })
+                    : { sx: 0, sz: 0 };
+                a.fleeing = !!(step.sx || step.sz);
+                a.hunting = false;
+                if (a.fleeing) nudgeLife(a, step.sx, step.sz, dt);
+                if (C.layEgg && C.layEgg(a.kind, { t: now / 1000, lastAt: a.eggAt || 0 })) {
+                    a.eggAt = now / 1000;
+                    spawnPickup(a.x, a.z, 0, 'egg');
+                }
+                if (C.grazeOf && C.grazeOf(a.kind, { t: now / 1000, lastAt: a.grazeAt || 0 })) {
+                    a.grazeAt = now / 1000;
+                    if (MOBS.spawnBurst) MOBS.spawnBurst(engine.scene, session.fx, a.x, (a.y || 0) + 0.2, a.z, 0x6fbf4a, 5);
+                }
+                return;
+            }
+            if (a.kind === 'bee' && C.stingDive) {
+                if (session.lookRow === a) a.angryUntil = now + 4500;
+                const hurt = a.maxHp != null && a.hp < a.maxHp;
+                const angry = hurt || now < (a.angryUntil || 0);
+                const p = engine.player;
+                const pdx = p.x - a.x;
+                const pdz = p.z - a.z;
+                const pdist = Math.hypot(pdx, pdz);
+                const dive = C.stingDive('bee', { dist: pdist, angry: angry, dx: pdx, dz: pdz });
+                a.hunting = !!(dive.sx || dive.sz);
+                a.fleeing = false;
+                if (a.hunting) nudgeLife(a, dive.sx, dive.sz, dt);
+                if (angry && pdist < 1.15 && (!a.stingAt || now - a.stingAt >= 1400)) {
+                    a.stingAt = now;
+                    const hit = C.applyContact({ hp: p.hp, lastHitAt: session.lastHitAt }, { contact: 1 }, now);
+                    if (hit.hit) {
+                        p.hp = hit.hp;
+                        session.lastHitAt = hit.lastHitAt;
+                        hurtFlash();
+                        if (sfx && sfx.hurt) sfx.hurt();
+                        toast('蜜蜂蛰了一下！HP ' + Math.ceil(p.hp));
+                        if (p.hp <= 0) respawn();
+                    }
+                    if (MOBS.spawnBurst) MOBS.spawnBurst(engine.scene, session.fx, a.x, (a.y || 0) + 0.4, a.z, 0xffd54f, 4);
+                }
+            }
+        });
+    }
+
+    function nudgeLife(actor, sx, sz, dt) {
+        if (!actor || !dt || !(sx || sz)) return;
+        actor.x += sx * dt;
+        actor.z += sz * dt;
+        actor.yaw = Math.atan2(sx, sz);
+        actor.y = ENG.lifeAltitude
+            ? ENG.lifeAltitude(actor, engine.world)
+            : engine.world.surfaceAt(Math.floor(actor.x), Math.floor(actor.z));
+        if (actor.mesh) {
+            actor.mesh.position.set(actor.x, actor.y, actor.z);
+            actor.mesh.rotation.y = actor.yaw;
+        }
     }
 
     function moveBolts(dt) {
@@ -4332,15 +6521,19 @@
                 b.mesh.position.set(b.x, b.y, b.z);
                 b.mesh.rotation.y = Math.atan2(b.vx, b.vz);
                 const spin = b.mesh.userData.spin;
+                const stretch = b.mesh.userData.stretch || 1;
+                if (stretch > 1) b.mesh.scale.set(1, 1, stretch);
                 if (spin) {
                     spin.core.rotation.y += dt * 9;
                     spin.halo.rotation.y -= dt * 5;
                     spin.halo.scale.setScalar(1 + Math.sin(Date.now() / 90) * 0.14);
                 }
-                b.trailAt = (b.trailAt || 0) - dt;
-                if (b.trailAt <= 0) {
-                    b.trailAt = 0.07;
-                    MOBS.spawnBurst(engine.scene, session.fx, b.x, b.y, b.z, 0x9a5ce8, 1);
+                if (b.mesh.userData.trail !== false) {
+                    b.trailAt = (b.trailAt || 0) - dt;
+                    if (b.trailAt <= 0) {
+                        b.trailAt = 0.07;
+                        MOBS.spawnBurst(engine.scene, session.fx, b.x, b.y, b.z, 0x9a5ce8, 1);
+                    }
                 }
             }
             let hit = null;
@@ -4369,6 +6562,13 @@
                     session.coins = C.pickupCoins(session.coins, item.coins);
                     if (sfx && sfx.coin) sfx.coin();
                 }
+                if (item.loot && tryAutoEat(item.loot)) {
+                    engine.scene.remove(item.mesh);
+                    MOBS.spawnBurst(engine.scene, session.fx, item.x, item.y, item.z, 0xffd24a, 5);
+                    persist();
+                    if (sfx && sfx.pickup) sfx.pickup();
+                    return;
+                }
                 session.bag = C.addLoot(session.bag, item.loot, 1);
                 engine.scene.remove(item.mesh);
                 MOBS.spawnBurst(engine.scene, session.fx, item.x, item.y, item.z, 0xffd24a, 5);
@@ -4384,6 +6584,204 @@
             keep.push(item);
         });
         session.pickups = keep;
+    }
+
+    function currentGuideMark() {
+        if (!L.guideMarkOf || !engine || !engine.world) return null;
+        return L.guideMarkOf({
+            hub: !!session.hub,
+            unlockedLevel: progress.unlockedLevel || 1,
+            clearedLevels: progress.clearedLevels || [],
+            coins: session.coins,
+            portals: engine.world.levelPortals || [],
+            unlockPost: engine.world.unlockPost,
+            settleAt: session.settleAt,
+            bossMob: session.bossMob && session.bossMob.hp > 0 ? session.bossMob : null,
+            monsters: session.monsters,
+            player: engine.player
+        });
+    }
+
+    function dropGuideBeacon() {
+        if (session.guideBeacon && engine && engine.scene) engine.scene.remove(session.guideBeacon);
+        session.guideBeacon = null;
+    }
+
+    function ensureGuideBeacon() {
+        if (session.guideBeacon) return session.guideBeacon;
+        const g = new THREE.Group();
+        g.name = 'guide-beacon';
+        const beam = new THREE.Mesh(
+            new THREE.BoxGeometry(0.9, 64, 0.9),
+            new THREE.MeshBasicMaterial({ color: 0xffe14a, transparent: true, opacity: 0.58 })
+        );
+        beam.position.y = 32;
+        beam.name = 'guide-beacon-beam';
+        const core = new THREE.Mesh(
+            new THREE.BoxGeometry(0.28, 64, 0.28),
+            new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9 })
+        );
+        core.position.y = 32;
+        const base = new THREE.Mesh(
+            new THREE.BoxGeometry(1.8, 0.4, 1.8),
+            new THREE.MeshBasicMaterial({ color: 0xf4c542 })
+        );
+        base.position.y = 0.22;
+        g.add(base);
+        g.add(beam);
+        g.add(core);
+        g.visible = false;
+        engine.scene.add(g);
+        session.guideBeacon = g;
+        return g;
+    }
+
+    function syncGuideBeacon(mark) {
+        const g = ensureGuideBeacon();
+        if (!mark) {
+            g.visible = false;
+            return;
+        }
+        const y = engine.world.surfaceAt(Math.floor(mark.x), Math.floor(mark.z));
+        g.position.set(mark.x, y, mark.z);
+        g.visible = true;
+        const beam = g.getObjectByName('guide-beacon-beam');
+        if (beam && beam.material) {
+            beam.material.opacity = 0.4 + 0.32 * (0.5 + 0.5 * Math.sin(Date.now() / 160));
+        }
+    }
+
+    function clearSettleFlag() {
+        if (session.settleFlag && engine && engine.scene) engine.scene.remove(session.settleFlag);
+        session.settleFlag = null;
+        session.settleAt = null;
+    }
+
+    function spawnSettleFlag(x, z) {
+        clearSettleFlag();
+        session.settleAt = { x: x, z: z };
+        const y = engine.world.surfaceAt(Math.floor(x), Math.floor(z));
+        const mesh = new THREE.Group();
+        const pole = new THREE.Mesh(
+            new THREE.BoxGeometry(0.18, 2.4, 0.18),
+            new THREE.MeshLambertMaterial({ color: 0xc4a574 })
+        );
+        pole.position.y = 1.2;
+        const flag = new THREE.Mesh(
+            new THREE.BoxGeometry(0.92, 0.56, 0.08),
+            new THREE.MeshLambertMaterial({ color: 0xf4c542, emissive: 0x553300 })
+        );
+        flag.position.set(0.46, 2.1, 0);
+        mesh.add(pole);
+        mesh.add(flag);
+        mesh.position.set(x, y, z);
+        engine.scene.add(mesh);
+        session.settleFlag = mesh;
+        toast('小地图黄点 · 走过去结算金币、开下一关');
+    }
+
+    function tryCampUnlock() {
+        if (session.hubUnlocking) return;
+        const next = (progress.unlockedLevel || 1) + 1;
+        if (next > L.LEVEL_TOTAL) return;
+        const res = L.tryUnlock({
+            unlockedLevel: progress.unlockedLevel || 1,
+            coined: session.coins,
+            recallWords: recallWordCount()
+        }, next);
+        if (!res.ok) {
+            if (session.hubUnlockTold === next) return;
+            session.hubUnlockTold = next;
+            toast('金币不够 · 先再打一关或去商人卖东西');
+            return;
+        }
+        session.hubUnlocking = true;
+        progress.unlockedLevel = res.unlockedLevel;
+        session.coins = res.coined;
+        persist();
+        startHub();
+        toast('第 ' + next + ' 关开了 · 跟着小地图黄点走进门');
+    }
+
+    function updateGuideReach() {
+        const mark = currentGuideMark();
+        session.guideMark = mark;
+        syncGuideBeacon(mark);
+        if (!mark || session.paused || session.quiz) return;
+        const d = Math.hypot(engine.player.x - mark.x, engine.player.z - mark.z);
+        if (mark.kind === 'settle' && d < 1.7) {
+            clearSettleFlag();
+            finishLevel();
+            return;
+        }
+        if (mark.kind === 'unlock' && d < 1.7) tryCampUnlock();
+    }
+
+    function nearestLevelPortal(range) {
+        const list = engine.world && engine.world.levelPortals;
+        if (!list || !list.length) return null;
+        const p = engine.player;
+        const max = range == null ? 2.2 : range;
+        let best = null, bestD = max;
+        list.forEach(function (g) {
+            const d = Math.hypot(p.x - g.x, p.z - g.z);
+            if (d < bestD) {
+                best = g;
+                bestD = d;
+            }
+        });
+        return best;
+    }
+
+    function paintHubPicks(show) {
+        const el = document.getElementById('hub-picks');
+        if (!el) return;
+        const on = show == null ? !!session.hub : !!show;
+        el.classList.toggle('is-hidden', !on);
+        if (!on) return;
+        const nodes = L.campMapOf ? L.campMapOf({
+            unlockedLevel: progress.unlockedLevel || 1,
+            clearedLevels: progress.clearedLevels || [],
+            dueLevelIds: reviewDueIds()
+        }).nodes : [];
+        el.innerHTML = nodes.map(function (n) {
+            const lock = n.state === 'locked';
+            const mark = n.state === 'due' ? '复习' : n.state === 'cleared' ? '已通' : lock ? '锁' : '进';
+            return '<button type="button" class="bl-hub-pick" data-hub-level="' + n.level
+                + '" data-state="' + n.state + '"' + (lock ? ' aria-disabled="true"' : '')
+                + '>' + n.level + ' ' + n.title + ' · ' + mark + '</button>';
+        }).join('');
+    }
+
+    function jumpHubLevel(level) {
+        const gate = L.canJumpHub ? L.canJumpHub({
+            unlockedLevel: progress.unlockedLevel || 1,
+            clearedLevels: progress.clearedLevels || [],
+            dueLevelIds: reviewDueIds()
+        }, level) : { ok: Number(level) <= (progress.unlockedLevel || 1), reason: 'open' };
+        if (!gate.ok) {
+            toast(gate.message || '先通前面的关');
+            return;
+        }
+        if (gate.reason === 'due') {
+            enterReviewDoor(level);
+            return;
+        }
+        startLevel(level);
+    }
+
+    function enterHubPortal(portal) {
+        if (!portal) return;
+        jumpHubLevel(portal.level);
+    }
+
+    function updateHubPortal() {
+        if (!session.hub || session.paused || session.quiz) return;
+        const portal = nearestLevelPortal(1.15);
+        if (!portal || portal.state === 'locked') return;
+        if (session.hubEntering) return;
+        session.hubEntering = true;
+        enterHubPortal(portal);
     }
 
     function nearestWordGate(range) {
@@ -4459,22 +6857,87 @@
         }
     }
 
-    function openTrade() {
+    function loadMathPractice(done) {
+        if (enFamiliarCount() < 20) {
+            if (done) done();
+            return;
+        }
+        if (window.PersonalWorkbenchPreschoolMathBank) {
+            if (done) done();
+            return;
+        }
+        const s = document.createElement('script');
+        s.src = '../../preschool-math-bank.js?v=20260819-bl-side4';
+        s.onload = function () { if (done) done(); };
+        s.onerror = function () { if (done) done(); };
+        document.head.appendChild(s);
+    }
+
+    function noteSideResult(word, correct) {
+        const key = word && word.side && word.side.masteryKey;
+        if (!key) return;
+        if (!session.sideAvoid) session.sideAvoid = [];
+        if (!session.sideMiss) session.sideMiss = {};
+        if (correct) {
+            session.sideMiss[key] = 0;
+            if (session.sideAvoid.indexOf(key) < 0) session.sideAvoid.push(key);
+            noteSideSit();
+            return;
+        }
+        session.sideMiss[key] = (Number(session.sideMiss[key]) || 0) + 1;
+        if (P && P.sideMissSkip && P.sideMissSkip(session.sideMiss[key])) {
+            if (session.sideAvoid.indexOf(key) < 0) session.sideAvoid.push(key);
+            noteSideSit();
+            toast('换一道');
+        }
+    }
+
+    function maybeAskMerchantMath() {
+        if (!P || !P.merchantDeal || session.mathAsked || sittingRoom() <= 0) return false;
+        if (session.sideSkip && session.sideSkip.math) return false;
+        const due = sideDueNow();
+        if ((Number(due.math) || 0) <= 0) return false;
+        session.mathAsked = true;
+        loadSideKinds(['math'], function () {
+            loadMathPractice(function () {
+                const M = window.PersonalWorkbenchPreschoolMathBank;
+                const deal = P.merchantDeal(due, {
+                    cards: (session.sideByKind && session.sideByKind.math) || [],
+                    enFamiliar: enFamiliarCount(),
+                    buildPracticePool: M && M.buildPracticePool,
+                    avoidKeys: session.sideAvoid || [],
+                    dueKeys: sideReviewKeys(),
+                    salt: 0
+                });
+                if (!deal) {
+                    paintTrade();
+                    return;
+                }
+                session.pending = { merchantMath: deal };
+                fillQuizCard(P.quizFromSide(deal.question), '商人 · 算对九折');
+            });
+        });
+        return true;
+    }
+
+    function paintTrade() {
         const lines = Object.keys(session.bag).filter(function (k) { return session.bag[k] > 0; });
         const copy = document.getElementById('trade-copy');
-        if (!lines.length) copy.textContent = 'Sell loot, or buy gear below. Coins: ' + session.coins;
+        const rate = session.mathDiscount || 1;
+        if (!lines.length) copy.textContent = 'Sell loot, or buy gear below. Coins: ' + session.coins + (rate < 1 ? ' · 九折' : '');
         else copy.textContent = lines.map(function (k) {
             return k + ' ×' + session.bag[k] + ' = ' + ((LOOT_PRICE[k] || 2) * session.bag[k]) + ' coins';
-        }).join(' · ') + ' · wallet ' + session.coins;
+        }).join(' · ') + ' · wallet ' + session.coins + (rate < 1 ? ' · 九折' : '');
         const list = document.getElementById('shop-list');
         if (list) {
             list.innerHTML = '';
             S.ITEMS.forEach(function (it) {
                 const worn = progress.gear && progress.gear[it.slot] === it.id;
+                const price = P && P.shopCost ? P.shopCost(it.cost, rate) : it.cost;
                 const row = document.createElement('button');
                 row.type = 'button';
                 row.className = 'bl-shop-row bl-shop-card';
-                row.innerHTML = '<b>' + it.en + '</b><em>' + it.zh + ' · $' + it.cost + (worn ? ' (on)' : '') + '</em><span class="bl-shop-buy">购买 Buy</span>';
+                row.innerHTML = '<b>' + it.en + '</b><em>' + it.zh + ' · $' + price + (worn ? ' (on)' : '') + '</em><span class="bl-shop-buy">购买 Buy</span>';
                 row.addEventListener('click', function () { buyItem(it.id); });
                 list.appendChild(row);
             });
@@ -4482,8 +6945,15 @@
         toggleLayer('trade-layer', true);
     }
 
+    function openTrade() {
+        if (maybeAskMerchantMath()) return;
+        paintTrade();
+    }
+
     function buyItem(id) {
-        const res = S.buy({ coined: session.coins, gear: progress.gear }, id);
+        const res = S.buy({ coined: session.coins, gear: progress.gear }, id, {
+            discount: session.mathDiscount || 1
+        });
         if (!res.ok) {
             toast(res.reason === 'poor' ? '金币不够。' : '买不了这个。');
             return;
@@ -4512,7 +6982,12 @@
         session.coins = C.pickupCoins(session.coins, gain);
         persist();
         toast(gain ? ('卖出战利品，金币 +' + gain) : '没有可卖的东西');
+        closeTrade();
+    }
+
+    function closeTrade() {
         toggleLayer('trade-layer', false);
+        if (!session.mathDiscount) session.mathAsked = false;
     }
 
     function syncBossHud() {
@@ -4604,11 +7079,31 @@
             zh.textContent = r.zh || '';
             const stage = document.createElement('em');
             stage.textContent = DEX_STAGE_LABEL[r.stage] || r.stage || '生疏';
+            const phrase = document.createElement('small');
+            phrase.className = 'bl-dex-phrase';
+            phrase.textContent = (r.phrase || '') + (r.phraseZh ? ' / ' + r.phraseZh : '');
             li.appendChild(en);
             li.appendChild(zh);
             li.appendChild(stage);
+            if (r.phrase || r.phraseZh) li.appendChild(phrase);
+            li.addEventListener('click', function () {
+                const open = li.classList.toggle('is-open');
+                if (open) playDexPhrase(r);
+            });
             list.appendChild(li);
         });
+    }
+
+    function playDexPhrase(row) {
+        const text = (row && (row.phrase || row.text)) || '';
+        if (row && row.audio) {
+            try {
+                const audio = new Audio(row.audio);
+                audio.play().catch(function () { speakWord({ text: text }); });
+                return;
+            } catch (err) { /* fall through to TTS */ }
+        }
+        speakWord({ text: text });
     }
 
     function paintOpsHud() {
@@ -4655,22 +7150,110 @@
     }
 
     function openSceneLayer() {
+        if (sittingRoom() <= 0) {
+            openEnglishScene();
+            return;
+        }
+        if (P && P.sceneSideKind && P.sceneSideKind(sideDueNow()) === 'phonics') {
+            loadSideKinds(['phonics'], function () {
+                const q = P.nextDue(sideDueNow(), {
+                    cards: (session.sideByKind && session.sideByKind.phonics) || [],
+                    kind: 'phonics',
+                    avoidKeys: session.sideAvoid || [],
+                    dueKeys: sideReviewKeys(),
+                    salt: 0
+                });
+                if (!q) {
+                    openEnglishScene();
+                    return;
+                }
+                session.pending = { sceneSide: true };
+                fillQuizCard(P.quizFromSide(q), '练一句 · 读出这个');
+            });
+            return;
+        }
+        openEnglishScene();
+    }
+
+    function openEnglishScene() {
         if (!SC) return;
-        session.scene = SC.start((session.scene && session.scene.sceneId) || 'greet');
-        paintScene();
+        beginScene((session.scene && session.scene.sceneId) || 'greet');
         toggleLayer('scene-layer', true);
+    }
+
+    function clearSceneTimer() {
+        if (session.sceneTimer) {
+            clearTimeout(session.sceneTimer);
+            session.sceneTimer = 0;
+        }
+    }
+
+    function syncSceneFromLoop() {
+        if (!SC || !session.sceneLoop) return;
+        const loop = session.sceneLoop;
+        session.scene = session.scene || SC.start(loop.sceneId);
+        session.scene.sceneId = loop.sceneId;
+        session.scene.line = loop.line;
+        session.scene.done = loop.phase === 'done';
+    }
+
+    function beginScene(id) {
+        if (!SC) return;
+        session.scene = SC.start(id);
+        if (SL && SL.startLoop) {
+            session.sceneLoop = SL.startLoop(id);
+            playScenePrompt();
+            return;
+        }
+        paintScene();
+    }
+
+    function playScenePrompt() {
+        syncSceneFromLoop();
+        paintScene();
+        const line = SC && session.scene ? SC.currentLine(session.scene) : null;
+        if (!line) return;
+        speakWord({ text: line.en });
+        if (!SL || !session.sceneLoop) return;
+        const wait = Math.max(800, Math.round(String(line.en || '').split(/\s+/).length * 450));
+        clearSceneTimer();
+        session.sceneTimer = setTimeout(function () {
+            session.sceneLoop = SL.onPromptEnd(session.sceneLoop);
+            paintScene();
+            listenScene();
+        }, wait);
+    }
+
+    function scenePhaseLabel(phase) {
+        if (phase === 'recording') return '该你说';
+        if (phase === 'waitingInterval') return '听下一遍';
+        if (phase === 'waitingForUser') return '没听清，再点听我说';
+        if (phase === 'done') return '场景完成';
+        return '听原句';
     }
 
     function paintScene() {
         if (!SC || !session.scene) return;
         const sc = SC.sceneOf(session.scene.sceneId);
         const line = SC.currentLine(session.scene);
+        const loop = session.sceneLoop;
         const title = document.getElementById('scene-title');
         const hint = document.getElementById('scene-hint');
         const en = document.getElementById('scene-en');
+        const phaseEl = document.getElementById('scene-phase');
+        const countEl = document.getElementById('scene-count');
         if (title) title.textContent = sc.title;
-        if (hint) hint.textContent = line ? (sc.hint + ' · ' + line.hint) : sc.hint;
+        if (hint) {
+            const pass = loop ? ('第' + (loop.pass || 1) + '/' + (loop.passesTarget || 3) + '遍') : '';
+            hint.textContent = (line ? (sc.hint + ' · ' + line.hint) : sc.hint) + (pass ? (' · ' + pass) : '');
+        }
         if (en) en.textContent = line ? line.en : '场景完成';
+        if (phaseEl) phaseEl.textContent = scenePhaseLabel(loop && loop.phase);
+        if (countEl) {
+            const show = !!(loop && loop.remainingMs && (loop.phase === 'recording' || loop.phase === 'waitingInterval'));
+            countEl.hidden = !show;
+            countEl.textContent = show ? ('还要 ' + Math.max(1, Math.round(loop.remainingMs / 1000)) + ' 秒') : '';
+        }
         const picks = document.getElementById('scene-picks');
         if (picks && !picks.childNodes.length) {
             SC.SCENES.forEach(function (item) {
@@ -4682,10 +7265,59 @@
                 picks.appendChild(btn);
             });
         }
+        const starsEl = document.getElementById('scene-stars');
+        const stars = loop ? (loop.lastStars || loop.bestStars) : (session.scene && session.scene.stars);
+        if (starsEl) {
+            starsEl.hidden = !stars;
+            starsEl.textContent = stars ? ('★'.repeat(stars) + '☆'.repeat(Math.max(0, 3 - stars))) : '';
+        }
+    }
+
+    function finishSceneWait(delayMs) {
+        if (!SL || !session.sceneLoop) return;
+        clearSceneTimer();
+        session.sceneTimer = setTimeout(function () {
+            const before = session.sceneLoop;
+            session.sceneLoop = SL.onIntervalEnd(before);
+            if (before && SL.stampSentence) {
+                SL.stampSentence(progress, before.sceneId, before.line, {
+                    stars: before.bestStars || before.lastStars || 0,
+                    now: nowIso()
+                });
+            }
+            syncSceneFromLoop();
+            if (session.sceneLoop.phase === 'done') {
+                toast((session.sceneLoop.lastStars ? ('★'.repeat(session.sceneLoop.lastStars) + ' ') : '') + '场景完成');
+                noteQuest({ type: 'scene-done', id: session.sceneLoop.sceneId });
+                persist();
+                paintScene();
+                return;
+            }
+            persist();
+            playScenePrompt();
+        }, Math.max(80, Number(delayMs) || 0));
     }
 
     function handleSceneHeard(heard) {
         if (!SC || !session.scene) return;
+        if (SL && session.sceneLoop) {
+            const line = SC.currentLine(session.scene) || { en: '', key: '' };
+            const ev = (window.SpeechMatch && window.SpeechMatch.evaluate)
+                ? window.SpeechMatch.evaluate(line.en, heard, 'sentence')
+                : { pass: false, score: 0, rating: 'KeepGoing' };
+            session.lastSpeechEval = ev;
+            session.sceneLoop = SL.onRecordResult(session.sceneLoop, ev);
+            if (RS && RS.noteHearSpeak) RS.noteHearSpeak(progress, 'speak');
+            if (ev.pass && line.key) recordBridgeAnswer({ id: line.key, text: line.key }, true);
+            paintScene();
+            if (ev.referenceSegments) {
+                paintSegments(document.getElementById('scene-en'), ev.referenceSegments, line.en || '');
+            }
+            toast(ev.pass ? ('★'.repeat(session.sceneLoop.lastStars || 1) + ' 记下了') : '评分低也继续，再说或等下一遍');
+            persist();
+            finishSceneWait(session.sceneLoop.remainingMs || 5000);
+            return;
+        }
         const next = SC.apply(session.scene, {
             heard: heard,
             matchHeard: SP && SP.matchHeard,
@@ -4695,13 +7327,19 @@
         if (next.ok) {
             recordBridgeAnswer({ id: next.key, text: next.key }, true);
             if (next.done) {
-                toast('场景完成');
+                toast((next.stars ? ('★'.repeat(next.stars) + ' ') : '') + '场景完成');
                 noteQuest({ type: 'scene-done', id: next.sceneId });
+            } else {
+                toast((next.stars ? ('★'.repeat(next.stars) + ' ') : '') + '下一句');
             }
         } else {
             toast('再说一次，或打关键词');
         }
         paintScene();
+        const ev = session.lastSpeechEval;
+        if (!next.ok && ev && ev.referenceSegments) {
+            paintSegments(document.getElementById('scene-en'), ev.referenceSegments, (SC.currentLine(next) || {}).en || '');
+        }
         persist();
     }
 
@@ -4753,6 +7391,12 @@
             speak.textContent = '开口 ' + R.speakCount + ' 次'
                 + (R.speakToday ? '（今天 ' + R.speakToday + '）' : '');
         }
+        const ratio = document.getElementById('parent-ratio');
+        if (ratio) {
+            ratio.textContent = RS && RS.hearSpeakLine
+                ? RS.hearSpeakLine(progress.stats)
+                : '听说比 还没开始';
+        }
         if (learned) learned.textContent = '已学 ' + R.learned + ' 词';
         if (due) {
             due.textContent = R.dueTexts.length
@@ -4768,6 +7412,35 @@
             });
         }
         if (advice) advice.textContent = R.advice || '今天可以开口一个新词';
+        const side = document.getElementById('parent-side');
+        if (side && P && P.parentSideLine) {
+            side.textContent = P.parentSideLine({
+                due: sideDueNow(),
+                tracks: readSubjectTracks()
+            });
+        }
+        paintWordPack();
+    }
+
+    function paintWordPack() {
+        const pack = progress.wordPack === 'mc' ? 'mc' : 'core';
+        const box = document.getElementById('word-pack');
+        if (!box) return;
+        const btns = box.querySelectorAll('[data-pack]');
+        for (let i = 0; i < btns.length; i += 1) {
+            const on = btns[i].getAttribute('data-pack') === pack;
+            btns[i].classList.toggle('is-on', on);
+            btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+        }
+    }
+
+    function setWordPack(pack) {
+        const next = pack === 'mc' ? 'mc' : 'core';
+        if (progress.wordPack === next) return;
+        progress.wordPack = next;
+        persist();
+        paintWordPack();
+        toast('下局生效 · 先关掉再进');
     }
 
     function recallWordCount() {
@@ -4844,7 +7517,13 @@
             if (hpNum) hpNum.textContent = Math.ceil(hp) + '/' + Math.ceil(hpMax);
         }
         const chapter = document.getElementById('chapter-label');
-        if (chapter) chapter.textContent = CHAPTERS[session.level] || CHAPTERS[1];
+        if (chapter) {
+            chapter.textContent = session.secretRun
+                ? '隐藏关 · 词灵回廊 · Secret'
+                : (CHAPTERS[session.level] || CHAPTERS[1]);
+        }
+        const power = document.getElementById('word-power');
+        if (power && WM) power.textContent = '词力 ' + WM.wordPower(memNow());
         const coord = document.getElementById('coord-label');
         if (coord && engine && engine.player) {
             coord.textContent = '坐标 ' + Math.floor(engine.player.x) + ', ' + Math.floor(engine.player.z);
@@ -4878,6 +7557,14 @@
         el.classList.add('is-on');
         clearTimeout(hurtFlash._t);
         hurtFlash._t = setTimeout(function () { el.classList.remove('is-on'); }, 130);
+    }
+
+    function wordFlash() {
+        const el = document.getElementById('word-flash');
+        if (!el) return;
+        el.classList.add('is-on');
+        clearTimeout(wordFlash._t);
+        wordFlash._t = setTimeout(function () { el.classList.remove('is-on'); }, 140);
     }
 
     /** 倒地复活：回出生点、满血、连击清零 */

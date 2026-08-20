@@ -1,4 +1,4 @@
-﻿# Phase 0：冻结基线
+# Phase 0：冻结基线
 
 > **给 Claude:** 必需子技能：使用 executing-plans 逐任务实施此计划。
 

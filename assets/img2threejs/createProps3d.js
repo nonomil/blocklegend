@@ -192,10 +192,20 @@
         };
     }
 
+    function withWalk(g) {
+        const prev = g.userData && g.userData.tick;
+        g.userData = g.userData || {};
+        g.userData.tick = function (t, moving) {
+            if (typeof prev === 'function') prev.call(g, t, moving);
+            g.rotation.z = Math.sin(t * (moving ? 8 : 2.2)) * (moving ? 0.07 : 0.02);
+        };
+        return g;
+    }
+
     function createVillager(THREE) {
         if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.villager) {
-            const fv = global.BlockLegendFourView.build(THREE, 'villager', { swingArms: false });
-            if (fv) { return fv; }
+            const fv = global.BlockLegendFourView.build(THREE, 'villager', { swingArms: true });
+            if (fv) { return withWalk(fv); }
         }
         const g = new THREE.Group();
         g.name = 'villager';
@@ -237,17 +247,18 @@
         g.add(eyeL);
         g.add(eyeR);
         g.add(arms);
-        g.userData.tick = function (t) {
-            g.rotation.z = Math.sin(t * 2) * 0.03;
+        g.userData.tick = function (t, moving) {
+            g.rotation.z = Math.sin(t * (moving ? 8 : 2.2)) * (moving ? 0.07 : 0.02);
             head.rotation.y = Math.sin(t * 1.4) * 0.12;
+            arms.rotation.x = -0.75 + Math.sin(t * (moving ? 8 : 2)) * (moving ? 0.2 : 0.04);
         };
         return g;
     }
 
     function createTrader(THREE) {
         if (global.BlockLegendFourView && global.BlockLegendAtlas4V && global.BlockLegendAtlas4V.trader) {
-            const fv = global.BlockLegendFourView.build(THREE, 'trader', { swingArms: false });
-            if (fv) { return fv; }
+            const fv = global.BlockLegendFourView.build(THREE, 'trader', { swingArms: true });
+            if (fv) { return withWalk(fv); }
         }
         const g = createVillager(THREE);
         g.name = 'trader';
@@ -266,6 +277,18 @@
         return g;
     }
 
+    function createFarmer(THREE) {
+        const g = createVillager(THREE);
+        g.name = 'farmer';
+        const brim = pbox(THREE, 10, 1.2, 10, 0xe6d27a);
+        const crown = pbox(THREE, 6, 3, 6, 0xc6a24a);
+        put(brim, 0, 34.2, 0);
+        put(crown, 0, 36, 0);
+        g.add(brim);
+        g.add(crown);
+        return g;
+    }
+
     function createTeacher(THREE) {
         const g = createVillager(THREE);
         g.name = 'teacher';
@@ -278,6 +301,45 @@
         g.add(coat);
         g.add(sash);
         g.add(book);
+        return g;
+    }
+
+    function createChair(THREE) {
+        const g = new THREE.Group();
+        g.name = 'chair';
+        const seat = box(THREE, 0.42, 0.08, 0.42, 0x8d6e48);
+        const back = box(THREE, 0.08, 0.36, 0.42, 0x6d4c31);
+        seat.position.y = 0.22;
+        back.position.set(-0.17, 0.44, 0);
+        g.add(seat);
+        g.add(back);
+        return g;
+    }
+
+    function createTable(THREE) {
+        const g = new THREE.Group();
+        g.name = 'table';
+        const top = box(THREE, 0.7, 0.08, 0.7, 0xa07848);
+        const leg = box(THREE, 0.08, 0.34, 0.08, 0x6d4c31);
+        top.position.y = 0.42;
+        leg.position.y = 0.16;
+        g.add(top);
+        g.add(leg);
+        return g;
+    }
+
+    function createBookshelf(THREE) {
+        const g = new THREE.Group();
+        g.name = 'bookshelf';
+        const frame = box(THREE, 0.7, 0.9, 0.28, 0x6d4c31);
+        const rowA = box(THREE, 0.62, 0.16, 0.12, 0xc62828);
+        const rowB = box(THREE, 0.62, 0.16, 0.12, 0x1565c0);
+        frame.position.y = 0.46;
+        rowA.position.set(0, 0.62, 0.1);
+        rowB.position.set(0, 0.38, 0.1);
+        g.add(frame);
+        g.add(rowA);
+        g.add(rowB);
         return g;
     }
 
@@ -543,6 +605,10 @@
         createVillager: createVillager,
         createTrader: createTrader,
         createTeacher: createTeacher,
+        createFarmer: createFarmer,
+        createChair: createChair,
+        createTable: createTable,
+        createBookshelf: createBookshelf,
         createPig: createPig,
         createCow: createCow,
         createSheep: createSheep,

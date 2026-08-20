@@ -30,6 +30,11 @@
         root.add(body);
         root.add(wingL);
         root.add(wingR);
+        root.userData.tick = function (t, moving) {
+            const flap = Math.sin(t * (moving ? 12 : 3)) * (moving ? 0.4 : 0.1);
+            wingL.rotation.z = flap;
+            wingR.rotation.z = -flap;
+        };
         return root;
     }
 

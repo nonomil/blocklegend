@@ -289,6 +289,18 @@
         return g;
     }
 
+    function createFlintAndSteel(THREE) {
+        const g = new THREE.Group();
+        g.name = 'flint_and_steel';
+        const iron = ironTex(THREE);
+        const wood = woodTex(THREE);
+        add(g, mesh(THREE, 0.045, 0.22, 0.045, wood), 0, 0.14, 0);
+        add(g, mesh(THREE, 0.08, 0.05, 0.06, iron), 0, 0.26, 0);
+        add(g, mesh(THREE, 0.05, 0.08, 0.04, null, 0x2a2a2e), 0.03, 0.3, 0);
+        add(g, mesh(THREE, 0.03, 0.04, 0.03, null, 0xff8a3a), 0.05, 0.35, 0);
+        return g;
+    }
+
     function createSwordOf(THREE, tier) {
         const g = new THREE.Group();
         g.name = (tier || 'wood') + '_sword';
@@ -297,6 +309,7 @@
         add(g, mesh(THREE, 0.07, 0.05, 0.07, head), 0, 0.03, 0);
         add(g, mesh(THREE, 0.045, 0.18, 0.045, wood), 0, 0.14, 0);
         add(g, mesh(THREE, 0.26, 0.045, 0.07, head), 0, 0.26, 0);
+        add(g, mesh(THREE, 0.06, 0.16, 0.024, head), 0, 0.34, 0);
         add(g, mesh(THREE, 0.09, 0.22, 0.022, head), 0, 0.5, 0);
         add(g, mesh(THREE, 0.07, 0.16, 0.02, head), 0, 0.68, 0);
         add(g, mesh(THREE, 0.045, 0.1, 0.018, head), 0, 0.8, 0);
@@ -385,6 +398,7 @@
         createShovelOf: createShovelOf,
         createBow: createBow,
         createArrow: createArrow,
+        createFlintAndSteel: createFlintAndSteel,
         createShovel: createShovel,
         createWoodShovel: createWoodShovel,
         createIronShovel: createIronShovel,

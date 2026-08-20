@@ -3,17 +3,19 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
-    <title>方块传奇 · 学英语大冒险</title>
-    <link rel="stylesheet" href="./game.css?v=20260819-bl-mode3">
+    <title>我的方块学园 · 地下城闯关，边打边学</title>
+    <link rel="stylesheet" href="./game.css?v=20260820-punch1">
 </head>
 <body class="bl-body">
     <main class="bl-stage">
-        <canvas id="world-canvas" aria-label="方块传奇世界"></canvas>
+        <canvas id="world-canvas" aria-label="我的方块学园"></canvas>
         <div class="bl-crosshair" aria-hidden="true"></div>
 
         <header class="bl-topbar">
             <a class="bl-back" id="back-link" href="./">返回工作台</a>
-            <strong class="bl-title">方块传奇</strong>
+            <strong class="bl-title">我的方块学园</strong>
+            <button type="button" class="bl-btn" id="today-btn" aria-label="Camp map">营地</button>
+            <button type="button" class="bl-btn" id="doors-btn" aria-label="Review doors">门</button>
             <button type="button" class="bl-btn" id="dex-btn" aria-label="Word dex">图鉴</button>
             <button type="button" class="bl-btn" id="scene-btn" aria-label="Practice a sentence">练一句</button>
             <button type="button" class="bl-btn" id="parent-btn" aria-label="Parent report">给家长看</button>
@@ -31,6 +33,7 @@
                 <span class="bl-quest-hint" id="quest-hint">WASD 走到树前，对准它</span>
             </p>
             <p class="bl-chapter" id="chapter-label">第一层 · 初生神域 · Genesis</p>
+            <p class="bl-word-power" id="word-power">词力 0</p>
             <div class="bl-rpg-head">
                 <b>Lv.<span id="level-label">1</span></b>
                 <span>Explorer Workshop</span>
@@ -49,8 +52,10 @@
                 <span class="bl-say" id="say-strip">Say:</span>
                 <span class="bl-my-english" id="my-english">My English: 0 words</span>
                 <span id="daily-word">今日：— · 说一次或拼一次</span>
+                <span id="side-due"></span>
             </p>
         </aside>
+        <nav id="hub-picks" class="bl-hub-picks is-hidden" aria-label="关卡地图"></nav>
 
         <aside class="bl-learn bl-wood" id="learn-panel" aria-label="词汇学习">
             <p class="bl-heard" id="heard-box"><i class="bl-heard-ico bl-ico bl-ico-mic" aria-hidden="true"></i><b id="heard-text">""</b></p>
@@ -123,6 +128,7 @@
 
         <div class="bl-look-tip" id="look-tip">Click to mine · 5–9 选中后右键放方块 · Esc 释放视角</div>
         <div class="bl-hurt" id="hurt-flash" aria-hidden="true"></div>
+        <div class="bl-wordflash" id="word-flash" aria-hidden="true"></div>
         <div class="bl-boss-hud is-hidden" id="boss-hud">
             <span id="boss-name">凋灵</span>
             <b id="boss-hp">0/0</b>
@@ -132,7 +138,7 @@
         </div>
         <p class="bl-lowhp is-hidden" id="low-hp-tip">Low HP · 先跑开或按 V 说词</p>
         <p class="bl-world-meta" id="world-meta"><span id="coord-label">坐标 0, 0</span><span id="bag-count">背包 0</span></p>
-        <p class="bl-hint">1–9 物品栏 · C 合成后点背包再点下面一排装上去 · 右键放方块 · WASD · V 开口 · T 打字 · Q 魔法 · F 小卖部 · <b id="fps-label">--</b> fps</p>
+        <p class="bl-hint">1–9 物品栏 · C 合成后点背包再点下面一排装上去 · 右键放方块 · WASD · V 开口 · T 打字 · Q 魔法 · F 小卖部/骑龙 · <b id="fps-label">--</b> fps</p>
         <div class="bl-trade-tip is-hidden" id="trade-tip">Press F to talk to Merchant Leo (商人雷奥)</div>
         <div class="bl-cast-hud is-hidden" id="cast-hud">
             <p class="bl-cast-kicker" id="cast-kicker">打字施法 · T 吟唱 · 看中文拼英文击杀</p>
@@ -172,6 +178,8 @@
                 <p id="settle-gain"></p>
                 <p id="settle-progress"></p>
                 <p id="settle-next"></p>
+                <p id="settle-tier"></p>
+                <p id="settle-density"></p>
                 <div class="bl-card-actions">
                     <button type="button" class="bl-btn" id="unlock-btn">解锁下一关</button>
                     <button type="button" class="bl-btn" id="replay-btn">再打本关</button>
@@ -215,8 +223,15 @@
                 <h2>给家长看</h2>
                 <p id="parent-streak">连续 0 天</p>
                 <p id="parent-speak">开口 0 次</p>
+                <p id="parent-ratio">听说比 还没开始</p>
                 <p id="parent-learned">已学 0 词</p>
                 <p id="parent-due">明天没有到期复习</p>
+                <p id="parent-side">配菜还没开始 · 熟悉 4 个英语词后出识字</p>
+                <p class="bl-pack-label">词包 · 下局生效</p>
+                <div id="word-pack" class="bl-pack-switch" role="group" aria-label="词包">
+                    <button type="button" class="bl-btn is-on" data-pack="core" aria-pressed="true">生活英语</button>
+                    <button type="button" class="bl-btn" data-pack="mc" aria-pressed="false">我的世界英语</button>
+                </div>
                 <ul id="parent-levels"></ul>
                 <p id="parent-advice">今天可以开口一个新词</p>
                 <div class="bl-card-actions">
@@ -229,11 +244,16 @@
                 <h2 id="scene-title">练一句</h2>
                 <p id="scene-hint">你在点餐</p>
                 <p id="scene-en">Hello.</p>
+                <p id="scene-phase">听原句</p>
+                <p id="scene-count" hidden></p>
+                <p id="scene-stars" hidden></p>
                 <div class="bl-scene-picks" id="scene-picks"></div>
                 <form class="bl-scene-type" id="scene-form" autocomplete="off">
                     <input id="scene-type" type="text" maxlength="64" placeholder="打这一句，或只打关键词" inputmode="latin" autocapitalize="none" spellcheck="false">
                     <button type="submit" class="bl-btn">说出去</button>
                     <button type="button" class="bl-btn" id="scene-mic">听我说</button>
+                    <button type="button" class="bl-btn" id="scene-again">再来一遍</button>
+                    <button type="button" class="bl-btn" id="scene-skip">跳过等待</button>
                 </form>
                 <div class="bl-card-actions">
                     <button type="button" class="bl-btn" id="scene-close">关闭</button>
@@ -243,10 +263,105 @@
         <div class="bl-layer is-hidden" id="dex-layer">
             <div class="bl-card bl-dex">
                 <h2>图鉴</h2>
-                <p class="bl-dex-kicker">见过 / 能写 / 说过 / 会了 / 该复习 · 答对一次不算掌握</p>
+                <p class="bl-dex-kicker">看自己收过的词 · 见过 / 能写 / 说过 / 会了 / 该复习 · 答对一次不算掌握</p>
                 <ul id="word-dex"></ul>
                 <div class="bl-card-actions">
                     <button type="button" class="bl-btn" id="dex-close">关闭</button>
+                </div>
+            </div>
+        </div>
+        <div class="bl-layer bl-worldmap-layer is-hidden" id="today-layer">
+            <div class="bl-worldmap" id="world-map" aria-label="营地世界地图">
+                <svg class="bl-worldmap-art" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                    <rect width="100" height="100" fill="#1a4e6a"/>
+                    <path d="M0 78 Q18 76 30 82 T58 86 T100 80 V100 H0 Z" fill="#15607a"/>
+                    <path d="M4 86 Q20 84 36 88 T70 90 T100 86" fill="none" stroke="#2a88a4" stroke-width="0.35"/>
+                    <path d="M7 22 L18 10 L40 8 L58 12 L70 7 L86 14 L96 28 L97 62 L90 84 L62 90 L40 86 L22 80 L8 72 Z" fill="#4a7a30"/>
+                    <path d="M22 48 L40 52 L50 70 L28 74 L18 62 Z" fill="#6fbf4a"/>
+                    <path d="M18 28 L36 26 L40 46 L24 50 L16 40 Z" fill="#2d6234"/>
+                    <path d="M38 60 L58 58 L62 78 L40 82 L34 70 Z" fill="#d2a04a"/>
+                    <path d="M10 12 L28 8 L36 22 L18 28 L8 20 Z" fill="#e6eef6"/>
+                    <path d="M38 32 L54 30 L58 46 L42 50 L34 42 Z" fill="#1a3034"/>
+                    <path d="M50 48 L64 46 L68 60 L54 64 L46 56 Z" fill="#8a3a22"/>
+                    <path d="M54 22 L70 20 L74 38 L58 40 L50 32 Z" fill="#7a7a70"/>
+                    <path d="M42 6 L62 6 L66 18 L46 20 L40 12 Z" fill="#3a3a78"/>
+                    <path d="M62 68 L82 66 L86 82 L64 86 L58 76 Z" fill="#3a8aaa"/>
+                    <path d="M70 30 L86 28 L90 46 L74 48 L66 40 Z" fill="#6a4a9a"/>
+                    <path d="M76 52 L92 50 L94 68 L78 70 L72 60 Z" fill="#6a2418"/>
+                    <ellipse cx="91" cy="16" rx="7" ry="6" fill="#2a1838"/>
+                    <path d="M24 58 L46 56 L50 64 L28 66 Z" fill="#8a6234" opacity="0.85"/>
+                    <path d="M28 40 L46 38 L50 48 L30 50 Z" fill="#8a6234" opacity="0.7"/>
+                    <path d="M46 40 L62 34 L66 42 L50 48 Z" fill="#8a6234" opacity="0.7"/>
+                    <path d="M62 34 L78 38 L80 46 L64 42 Z" fill="#8a6234" opacity="0.65"/>
+                    <rect x="6" y="50" width="18" height="18" fill="#6b4a28" stroke="#3a2414" stroke-width="0.6"/>
+                    <rect x="7" y="51" width="16" height="16" fill="none" stroke="#c4a574" stroke-width="0.35"/>
+                    <rect x="22" y="57" width="3.2" height="4" fill="#8a6234"/>
+                    <polygon points="8,56 11,53 14,56" fill="#c47a3a"/>
+                    <polygon points="13,56 16.5,52.5 20,56" fill="#e0b46a"/>
+                    <rect x="9" y="56" width="4" height="4" fill="#8a5a28"/>
+                    <rect x="14" y="56" width="5" height="4" fill="#b88840"/>
+                    <rect x="10" y="61" width="3" height="3" fill="#ff8a2a"/>
+                    <rect x="10.7" y="59.6" width="1.6" height="1.6" fill="#ffe27a"/>
+                    <rect x="17" y="60" width="4" height="3" fill="#5a3d22"/>
+                    <rect x="17.4" y="59" width="3.2" height="1.2" fill="#8a3030"/>
+                    <rect x="8" y="60" width="1.4" height="3.4" fill="#6b4424"/>
+                    <circle cx="8.7" cy="59.4" r="1.1" fill="#3a7a2a"/>
+                    <rect x="20" y="52" width="0.7" height="5" fill="#4a331c"/>
+                    <rect x="18.6" y="51.2" width="3.4" height="1.4" fill="#c47a3a"/>
+                    <rect x="23" y="34" width="1.6" height="4" fill="#1e4a28"/>
+                    <rect x="26" y="32" width="1.8" height="5" fill="#245a30"/>
+                    <rect x="29" y="35" width="1.5" height="3.6" fill="#1e4a28"/>
+                    <rect x="40" y="62" width="1.2" height="3" fill="#b88830"/>
+                    <rect x="43" y="64" width="1" height="2.6" fill="#c49a3a"/>
+                    <polygon points="16,16 22,10 28,16" fill="#f4f8ff"/>
+                    <polygon points="24,18 30,11 36,18" fill="#e8eef6"/>
+                    <rect x="53" y="50" width="3" height="4" fill="#3a140e"/>
+                    <polygon points="53,50 54.5,46 56,50" fill="#ff6a2a"/>
+                    <polygon points="80,54 84,46 88,54" fill="#4a1810"/>
+                    <polygon points="82,48 84,43 86,48" fill="#ff8a2a"/>
+                    <polygon points="72,34 75,28 78,34" fill="#8a6ad0"/>
+                    <polygon points="76,36 79,30 82,36" fill="#6a4a9a"/>
+                    <circle cx="91" cy="14" r="1.2" fill="#c89cff"/>
+                    <rect x="10" y="30" width="2" height="3" fill="#245a30"/>
+                    <rect x="13" y="28" width="2" height="4" fill="#1e4a28"/>
+                </svg>
+                <svg class="bl-worldmap-roads" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                    <polyline id="camp-path" fill="none" stroke="#6b4a28" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" points=""></polyline>
+                </svg>
+                <div id="camp-pad" class="bl-camp-spot"></div>
+                <div id="camp-map" class="bl-worldmap-pins"></div>
+            </div>
+            <div class="bl-worldmap-hud">
+                <div>
+                    <h2>营地</h2>
+                    <p>从营地出门，顺着土路走。亮着的图能进，锁着的要先通前面的关。</p>
+                </div>
+                <div class="bl-card-actions">
+                    <button type="button" class="bl-btn" id="camp-skip">直接进关</button>
+                    <button type="button" class="bl-btn" id="dummy-btn">训练假人</button>
+                    <button type="button" class="bl-btn" id="today-close">先去探险</button>
+                </div>
+            </div>
+            <div id="today-list" class="bl-today-list is-hidden"></div>
+        </div>
+        <div class="bl-layer is-hidden" id="doors-layer">
+            <div class="bl-card bl-doors">
+                <h2>复习之门</h2>
+                <p>到期会发光。超时只标待复习，还能进，不扣罚。</p>
+                <p id="tier-hint">默认 / 冒险 / 天启 三档。推荐档会描边。</p>
+                <div id="doors-list" class="bl-door-list"></div>
+                <div class="bl-card-actions">
+                    <button type="button" class="bl-btn" id="doors-close">关闭</button>
+                </div>
+            </div>
+        </div>
+        <div class="bl-layer is-hidden" id="tier-layer">
+            <div class="bl-card">
+                <h2>选择难度</h2>
+                <p>默认档学新词。冒险档全是复习。天启档词门限时、蓝罩连答 3 题。</p>
+                <div id="tier-list"></div>
+                <div class="bl-card-actions">
+                    <button type="button" class="bl-btn" id="tier-close">关闭</button>
                 </div>
             </div>
         </div>
@@ -265,25 +380,32 @@
                             <div class="bl-help-row"><kbd>1–9</kbd><span>物品栏 · 合成台里可换位</span></div>
                             <div class="bl-help-row"><kbd>C</kbd><span>合成台 · 点背包再点物品栏装上去</span></div>
                             <div class="bl-help-row"><kbd>Q</kbd><span>魔法 / 弓箭</span></div>
-                            <div class="bl-help-row"><kbd>V</kbd><span>开口说词</span></div>
-                            <div class="bl-help-row"><kbd>T</kbd><span>打字拼词</span></div>
+                            <div class="bl-help-row"><kbd>V</kbd><span>开口说词 · 对准怪物或村民，说对大意即过</span></div>
+                            <div class="bl-help-row"><kbd>T</kbd><span>打字拼词 · 对准怪物或村民</span></div>
                             <div class="bl-help-row"><kbd>G</kbd><span>跟伙伴说话</span></div>
-                            <div class="bl-help-row"><kbd>F</kbd><span>找商人</span></div>
+                            <div class="bl-help-row"><kbd>F</kbd><span>商人开铺 · 靠近龙骑上去 / 下来 · 空格升高 · Shift 下降</span></div>
                         </div>
                     </section>
                     <section class="bl-help-page is-hidden" data-help-page="1">
                         <p class="bl-help-kicker">第 2 页 · 玩法</p>
                         <div class="bl-help-grid">
                             <div class="bl-help-row"><kbd>准星</kbd><span>看方块 / 生物出词</span></div>
+                            <div class="bl-help-row"><kbd>村子</kbd><span>出生点有大村，往外走还有谷仓、畜栏、水井；屋里有椅子书架，村民会走动</span></div>
                             <div class="bl-help-row"><kbd>金色词块</kbd><span>同主题成批；答对 4/8/12 个给材料和金币</span></div>
+                            <div class="bl-help-row"><kbd>石碑</kbd><span>熟悉 4 个英语词后，远处金块变识字/拼音/拼读；本局最多 6 道，不算英语词</span></div>
+                            <div class="bl-help-row"><kbd>欠账</kbd><span>看左上角「还欠 识字N」· 找老师按 F</span></div>
                             <div class="bl-help-row"><kbd>词门</kbd><span>走近答题开门</span></div>
                             <div class="bl-help-row"><kbd>设</kbd><span>重选玩法 · 本局</span></div>
                             <div class="bl-help-row"><kbd>Boss</kbd><span>砍会掉血，说对词破罩</span></div>
                             <div class="bl-help-row"><kbd>点中文</kbd><span>两次打空后的兜底</span></div>
                             <div class="bl-help-row"><kbd>战斗</kbd><span>世界不停</span></div>
                             <div class="bl-help-row"><kbd>音乐</kbd><span>顶栏开关主题曲</span></div>
-                            <div class="bl-help-row"><kbd>图鉴</kbd><span>看自己收过的词</span></div>
-                            <div class="bl-help-row"><kbd>练一句</kbd><span>点餐 / 问路，说或拼三句</span></div>
+                            <div class="bl-help-row"><kbd>今日</kbd><span>今日冒险：到期门优先，否则推进新关</span></div>
+                            <div class="bl-help-row"><kbd>门</kbd><span>复习之门，超时只标待复习；已通关可选默认/冒险/天启三档</span></div>
+                            <div class="bl-help-row"><kbd>卷轴</kbd><span>气候词都到 3 星可捡，集 3 张开词灵回廊</span></div>
+                            <div class="bl-help-row"><kbd>营地</kbd><span>左下角点关卡跳进对应地图；按关卡顺序解锁</span></div>
+                            <div class="bl-help-row"><kbd>图鉴</kbd><span>点词翻卡，听例句</span></div>
+                            <div class="bl-help-row"><kbd>练一句</kbd><span>先听原句再跟读三遍，评分低也往下走 · 命中词会亮</span></div>
                         </div>
                     </section>
                     <section class="bl-help-page is-hidden" data-help-page="2">
@@ -295,7 +417,7 @@
                             <div class="bl-help-row"><kbd>10–12</kbd><span>蘑菇谷 / 火山 / 末地</span></div>
                             <div class="bl-help-row"><kbd>词库</kbd><span>597 词均分十二关，每关一整章</span></div>
                             <div class="bl-help-row"><kbd>通关</kbd><span>花金币解锁下一关</span></div>
-                            <div class="bl-help-row"><kbd>地图</kbd><span>384 格大世界，往外走看建筑</span></div>
+                            <div class="bl-help-row"><kbd>地图</kbd><span>512 格大世界，往外走看建筑</span></div>
                         </div>
                     </section>
                 </div>
@@ -361,24 +483,31 @@
     </main>
 
     <audio id="theme-bgm" src="./assets/audio/minecraft-theme.mp3" loop preload="auto" hidden></audio>
-    <script src="./shared/workbench-bridge.js?v=20260815-word-backflow-v1"></script>
+    <script src="./shared/speech-match.js?v=20260819-e1s1"></script>
+    <script src="./shared/workbench-bridge.js?v=20260819-bl-side7"></script>
     <script src="./shared/game-sfx.js?v=20260817-bl-sfx2"></script>
-    <script src="./preschool-english-vocab.js?v=20260815-word-backflow-v1"></script>
-    <script src="./child-courses.js?v=20260815-word-backflow-v1"></script>
+    <script src="./preschool-english-vocab.js?v=20260819-w1s1"></script>
+    <script src="./child-courses.js?v=20260819-w1s1"></script>
     <script src="./vendor/three.min.js?v=20260815-bl-s1"></script>
-    <script src="./data/shop.js?v=20260815-bl-look11"></script>
-    <script src="./data/tools.js?v=20260819-bl-survive1"></script>
-    <script src="./data/craft.js?v=20260819-bl-survive1"></script>
-    <script src="./data/atlas-paint.js?v=20260817-bl-art3"></script>
-    <script src="./data/fx.js?v=20260817-bl-art6"></script>
-    <script src="./engine.js?v=20260819-bl-survive1"></script>
-    <script src="./data/combat.js?v=20260819-bl-survive1"></script>
-    <script src="./data/speech-input.js?v=20260819-bl-scene1"></script>
-    <script src="./data/scenes.js?v=20260819-bl-scene1"></script>
+    <script src="./data/shop.js?v=20260819-bl-side2"></script>
+    <script src="./data/tools.js?v=20260819-farmhp1"></script>
+    <script src="./data/craft.js?v=20260819-farmhp1"></script>
+    <script src="./data/atlas-paint.js?v=20260820-seam1"></script>
+    <script src="./data/fx.js?v=20260820-sky1"></script>
+    <script src="./data/world-gen.js?v=20260820-sky1"></script>
+    <script src="./engine.js?v=20260820-sky1"></script>
+    <script src="./data/combat.js?v=20260820-breath1"></script>
+    <script src="./data/speech-input.js?v=20260819-e1s2"></script>
+    <script src="./data/scenes.js?v=20260819-e4s1"></script>
+    <script src="./data/scene-loop.js?v=20260819-e4s1"></script>
     <script src="./data/companion.js?v=20260819-bl-mode1"></script>
-    <script src="./data/words.js?v=20260819-bl-survive1"></script>
-    <script src="./data/levels.js?v=20260818-bl-world8"></script>
-    <script src="./data/quests.js?v=20260818-bl-review1"></script>
+    <script src="./data/words.js?v=20260819-bl-opt55"></script>
+    <script src="./data/question-port.js?v=20260819-bl-side7"></script>
+    <script src="./data/review-schedule.js?v=20260819-e2s3"></script>
+    <script src="./data/word-memory.js?v=20260819-d1s3"></script>
+    <script src="./data/difficulty.js?v=20260819-d2s1"></script>
+    <script src="./data/levels.js?v=20260819-bl-opt55"></script>
+    <script src="./data/quests.js?v=20260819-bl-opt55"></script>
     <script src="./data/skins.js?v=20260817-bl-art3"></script>
     <script src="./assets/img2threejs/voxelPix.js?v=20260816-bl-mobs3"></script>
     <script src="./assets/img2threejs/createCreeperModel.js?v=20260816-bl-cast3"></script>
@@ -390,46 +519,47 @@
     <script src="./assets/img2threejs/createEndermanModel.js?v=20260816-bl-mobs2"></script>
     <script src="./assets/img2threejs/createPiglinModel.js?v=20260816-bl-mobs2"></script>
     <script src="./assets/img2threejs/createWitchModel.js?v=20260816-bl-mobs2"></script>
-    <script src="./assets/atlas4v/golem-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/villager-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/pig-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/cow-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/sheep-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/chicken-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/wolf-atlas.js?v=20260818-bl-4vhost1"></script>
-    <script src="./assets/atlas4v/creeper-atlas.js?v=20260818-bl-4vrest1"></script>
-    <script src="./assets/atlas4v/zombie-atlas.js?v=20260818-bl-4vrest2"></script>
-    <script src="./assets/atlas4v/skeleton-atlas.js?v=20260818-bl-4vrest1"></script>
-    <script src="./assets/atlas4v/spider-atlas.js?v=20260818-bl-4vrest1"></script>
-    <script src="./assets/atlas4v/enderman-atlas.js?v=20260818-bl-4vrest1"></script>
-    <script src="./assets/atlas4v/witch-atlas.js?v=20260818-bl-4vrest1"></script>
-    <script src="./assets/atlas4v/piglin-atlas.js?v=20260818-bl-4vrest1"></script>
-    <script src="./assets/atlas4v/slime-atlas.js?v=20260818-bl-4vrest1"></script>
-    <script src="./assets/atlas4v/blaze-atlas.js?v=20260818-bl-4vboss1"></script>
-    <script src="./assets/atlas4v/ghast-atlas.js?v=20260818-bl-4vboss1"></script>
-    <script src="./assets/atlas4v/warden-atlas.js?v=20260818-bl-4vboss1"></script>
-    <script src="./assets/atlas4v/fox-atlas.js?v=20260818-bl-4vrest1"></script>
-    <script src="./assets/atlas4v/cube-atlas.js?v=20260818-bl-4vrest1"></script>
-    <script src="./assets/atlas4v/magma-atlas.js?v=20260818-bl-4vrest1"></script>
-    <script src="./assets/atlas4v/trader-atlas.js?v=20260818-bl-4vrest1"></script>
-    <script src="./assets/atlas4v/bee-atlas.js?v=20260818-bl-4vrest1"></script>
-    <script src="./assets/atlas4v/wither-atlas.js?v=20260818-bl-4vfix1"></script>
-    <script src="./assets/atlas4v/dragon-atlas.js?v=20260818-bl-4vboss1"></script>
-    <script src="./assets/atlas4v/storm-atlas.js?v=20260818-bl-4vboss1"></script>
-    <script src="./assets/atlas4v/husk-atlas.js?v=20260818-bl-4vnew1"></script>
-    <script src="./assets/atlas4v/pillager-atlas.js?v=20260818-bl-4vnew4"></script>
-    <script src="./assets/atlas4v/ravager-atlas.js?v=20260818-bl-4vnew1"></script>
-    <script src="./assets/atlas4v/phantom-atlas.js?v=20260818-bl-4vnew1"></script>
-    <script src="./assets/atlas4v/vex-atlas.js?v=20260818-bl-4vnew2"></script>
-    <script src="./assets/atlas4v/drowned-atlas.js?v=20260818-bl-4vnew2"></script>
-    <script src="./assets/atlas4v/snowgolem-atlas.js?v=20260818-bl-4vnew2"></script>
-    <script src="./assets/atlas4v/shulker-atlas.js?v=20260818-bl-4vnew3"></script>
-    <script src="./assets/atlas4v/guardian-atlas.js?v=20260818-bl-4vnew3"></script>
-    <script src="./assets/atlas4v/pufferfish-atlas.js?v=20260818-bl-4vnew3"></script>
-    <script src="./assets/atlas4v/spore_bug-atlas.js?v=20260818-bl-orig1"></script>
-    <script src="./assets/atlas4v/fire_spirit-atlas.js?v=20260818-bl-orig1"></script>
-    <script src="./assets/atlas4v/sculk_worm-atlas.js?v=20260818-bl-orig1"></script>
-    <script src="./assets/atlas4v/shadow_stalker-atlas.js?v=20260818-bl-orig1"></script>
+    <script src="./assets/atlas4v/golem-atlas.js?v=20260819-bl-opt15"></script>
+    <script src="./assets/atlas4v/villager-atlas.js?v=20260819-bl-opt3"></script>
+    <script src="./assets/atlas4v/pig-atlas.js?v=20260819-bl-opt3"></script>
+    <script src="./assets/atlas4v/cow-atlas.js?v=20260819-bl-opt56"></script>
+    <script src="./assets/atlas4v/sheep-atlas.js?v=20260819-bl-opt41"></script>
+    <script src="./assets/atlas4v/chicken-atlas.js?v=20260819-bl-opt3"></script>
+    <script src="./assets/atlas4v/wolf-atlas.js?v=20260819-bl-opt51"></script>
+    <script src="./assets/atlas4v/creeper-atlas.js?v=20260819-bl-opt51"></script>
+    <script src="./assets/atlas4v/zombie-atlas.js?v=20260819-bl-opt53"></script>
+    <script src="./assets/atlas4v/skeleton-atlas.js?v=20260819-bl-opt41"></script>
+    <script src="./assets/atlas4v/spider-atlas.js?v=20260819-bl-opt50"></script>
+    <script src="./assets/atlas4v/enderman-atlas.js?v=20260819-bl-opt6"></script>
+    <script src="./assets/atlas4v/witch-atlas.js?v=20260819-bl-opt5"></script>
+    <script src="./assets/atlas4v/piglin-atlas.js?v=20260819-bl-opt3"></script>
+    <script src="./assets/atlas4v/slime-atlas.js?v=20260819-bl-opt3"></script>
+    <script src="./assets/atlas4v/blaze-atlas.js?v=20260819-bl-opt10"></script>
+    <script src="./assets/atlas4v/ghast-atlas.js?v=20260819-bl-opt51"></script>
+    <script src="./assets/atlas4v/warden-atlas.js?v=20260819-bl-opt11"></script>
+    <script src="./assets/atlas4v/fox-atlas.js?v=20260819-bl-opt51"></script>
+    <script src="./assets/atlas4v/cube-atlas.js?v=20260819-bl-opt3"></script>
+    <script src="./assets/atlas4v/magma-atlas.js?v=20260819-bl-opt3"></script>
+    <script src="./assets/atlas4v/trader-atlas.js?v=20260819-bl-opt3"></script>
+    <script src="./assets/atlas4v/bee-atlas.js?v=20260819-bl-opt16"></script>
+    <script src="./assets/atlas4v/wither-atlas.js?v=20260819-bl-opt51"></script>
+    <script src="./assets/atlas4v/dragon-atlas.js?v=20260819-bl-opt11"></script>
+    <script src="./assets/atlas4v/storm-atlas.js?v=20260819-bl-opt51"></script>
+    <script src="./assets/atlas4v/husk-atlas.js?v=20260819-bl-opt53"></script>
+    <script src="./assets/atlas4v/pillager-atlas.js?v=20260819-bl-opt34"></script>
+    <script src="./assets/atlas4v/ravager-atlas.js?v=20260819-bl-opt54"></script>
+    <script src="./assets/atlas4v/phantom-atlas.js?v=20260819-bl-opt51"></script>
+    <script src="./assets/atlas4v/vex-atlas.js?v=20260819-bl-opt40"></script>
+    <script src="./assets/atlas4v/drowned-atlas.js?v=20260819-bl-opt5"></script>
+    <script src="./assets/atlas4v/snowgolem-atlas.js?v=20260819-bl-opt15"></script>
+    <script src="./assets/atlas4v/vindicator-atlas.js?v=20260819-bl-opt55"></script>
+    <script src="./assets/atlas4v/guardian-atlas.js?v=20260819-bl-opt41"></script>
+    <script src="./assets/atlas4v/elder_guardian-atlas.js?v=20260819-bl-opt51"></script>
+    <script src="./assets/atlas4v/pufferfish-atlas.js?v=20260819-bl-opt3"></script>
+    <script src="./assets/atlas4v/spore_bug-atlas.js?v=20260819-bl-opt50"></script>
+    <script src="./assets/atlas4v/fire_spirit-atlas.js?v=20260819-bl-opt3"></script>
+    <script src="./assets/atlas4v/sculk_worm-atlas.js?v=20260819-bl-opt49"></script>
+    <script src="./assets/atlas4v/shadow_stalker-atlas.js?v=20260819-bl-opt42"></script>
     <script src="./assets/img2threejs/fourViewModel.js?v=20260818-bl-4vnew3"></script>
     <script src="./assets/img2threejs/createHuskModel.js?v=20260818-bl-4vnew1"></script>
     <script src="./assets/img2threejs/createPillagerModel.js?v=20260818-bl-4vnew4"></script>
@@ -438,8 +568,9 @@
     <script src="./assets/img2threejs/createVexModel.js?v=20260818-bl-4vnew2"></script>
     <script src="./assets/img2threejs/createDrownedModel.js?v=20260818-bl-4vnew2"></script>
     <script src="./assets/img2threejs/createSnowGolemModel.js?v=20260818-bl-4vnew2"></script>
-    <script src="./assets/img2threejs/createShulkerModel.js?v=20260818-bl-4vnew3"></script>
-    <script src="./assets/img2threejs/createGuardianModel.js?v=20260818-bl-4vnew3"></script>
+    <script src="./assets/img2threejs/createVindicatorModel.js?v=20260819-bl-opt55"></script>
+    <script src="./assets/img2threejs/createGuardianModel.js?v=20260819-bl-opt51"></script>
+    <script src="./assets/img2threejs/createElderGuardianModel.js?v=20260819-bl-opt51"></script>
     <script src="./assets/img2threejs/createPufferfishModel.js?v=20260818-bl-4vnew3"></script>
     <script src="./assets/img2threejs/createSporeBugModel.js?v=20260818-bl-orig1"></script>
     <script src="./assets/img2threejs/createFireSpiritModel.js?v=20260818-bl-orig1"></script>
@@ -452,9 +583,9 @@
     <script src="./assets/img2threejs/createWitherModel.js?v=20260816-bl-mobs4"></script>
     <script src="./assets/img2threejs/createDragonModel.js?v=20260816-bl-mobs4"></script>
     <script src="./assets/img2threejs/createStormModel.js?v=20260816-bl-mobs4"></script>
-    <script src="./assets/img2threejs/createTools3d.js?v=20260817-bl-tools3d"></script>
-    <script src="./assets/img2threejs/createProps3d.js?v=20260817-bl-i2t4v2"></script>
-    <script src="./mobs.js?v=20260818-bl-learn5"></script>
-    <script src="./game.js?v=20260819-bl-survive1"></script>
+    <script src="./assets/img2threejs/createTools3d.js?v=20260819-bl-opt51"></script>
+    <script src="./assets/img2threejs/createProps3d.js?v=20260819-villages6"></script>
+    <script src="./mobs.js?v=20260820-light1"></script>
+    <script src="./game.js?v=20260820-sky1"></script>
 </body>
 </html>

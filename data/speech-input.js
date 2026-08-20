@@ -85,23 +85,85 @@
         return editDistance(want, got) <= 1;
     }
 
+    const PHRASE_STOP = { the: 1, and: 1, you: 1 };
+    const PHRASE_ANTI = { left: 'right', right: 'left' };
+
+    function stripPhrase(s) {
+        return String(s || '').toLowerCase().replace(/[^a-z\s']/g, ' ');
+    }
+
+    function speechMatch() {
+        return (typeof global !== 'undefined' && global.SpeechMatch) || null;
+    }
+
+    function applyAliases(heard, want) {
+        const parts = tokensOf(heard);
+        const mapped = parts.map(function (part) {
+            return aliasHit(want, part) ? want : part;
+        });
+        return mapped.join(' ');
+    }
+
+    function withEval(ok, kind, ev) {
+        return { ok: !!ok, kind: kind, eval: ev || null };
+    }
+
+    function matchPhrase(target, heard, extra) {
+        extra = extra || {};
+        const want = stripPhrase(target);
+        const got = stripPhrase(heard);
+        if (!want || !got) return withEval(false, 'mismatch');
+        const wantToks = tokensOf(want);
+        const gotToks = tokensOf(got);
+        let i = 0;
+        for (i = 0; i < wantToks.length; i += 1) {
+            const anti = PHRASE_ANTI[wantToks[i]];
+            if (anti && gotToks.indexOf(anti) >= 0 && gotToks.indexOf(wantToks[i]) < 0) {
+                return withEval(false, 'antonym');
+            }
+        }
+        if (extra.key) {
+            const keyHit = matchHeard(extra.key, heard);
+            if (keyHit.ok) return withEval(true, 'key', keyHit.eval);
+        }
+        const SM = speechMatch();
+        if (SM && SM.evaluate) {
+            const ev = SM.evaluate(target, heard, extra.scene || 'sentence');
+            if (ev.pass) return withEval(true, ev.rating || 'match', ev);
+        }
+        const content = wantToks.filter(function (t) {
+            return t.length >= 3 && !PHRASE_STOP[t];
+        });
+        for (i = 0; i < content.length; i += 1) {
+            const hit = matchHeard(content[i], heard);
+            if (hit.ok) return withEval(true, 'content', hit.eval);
+        }
+        return withEval(false, 'mismatch');
+    }
+
     function matchHeard(target, heard, extra) {
         const want = normHeard(target);
-        if (!want) return { ok: false, kind: 'mismatch' };
+        if (!want) return withEval(false, 'mismatch');
         extra = extra || {};
-        if (matchZh(extra.zh, heard)) return { ok: true, kind: 'zh' };
+        if (matchZh(extra.zh, heard)) return withEval(true, 'zh');
+        const SM = speechMatch();
+        if (SM && SM.evaluate) {
+            const rewritten = applyAliases(heard, want) || heard;
+            const ev = SM.evaluate(target, rewritten, extra.scene || 'word');
+            if (ev.pass) return withEval(true, ev.rating || 'match', ev);
+        }
         const parts = tokensOf(heard);
         let i = 0;
         for (i = 0; i < parts.length; i += 1) {
             if (closeEnough(want, parts[i]) || aliasHit(want, parts[i])) {
-                return { ok: true, kind: parts[i] === want ? 'match' : 'close' };
+                return withEval(true, parts[i] === want ? 'match' : 'close');
             }
         }
         const got = normHeard(heard);
         if (closeEnough(want, got) || aliasHit(want, got)) {
-            return { ok: true, kind: want === got ? 'match' : 'close' };
+            return withEval(true, want === got ? 'match' : 'close');
         }
-        return { ok: false, kind: 'mismatch' };
+        return withEval(false, 'mismatch');
     }
 
     function fail(kind) {
@@ -121,6 +183,7 @@
         normHeard: normHeard,
         editDistance: editDistance,
         matchHeard: matchHeard,
+        matchPhrase: matchPhrase,
         fail: fail,
         canSpeak: canSpeak
     };

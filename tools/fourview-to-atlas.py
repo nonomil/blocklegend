@@ -184,7 +184,6 @@ def clean_bg(img, bg, fallback):
         q = max(counts, key=counts.get)
         fill = (q[0] * 16 + 8, q[1] * 16 + 8, q[2] * 16 + 8)
     else:
-        # too few real pixels to trust; use the spec color for the whole crop
         fill = fallback
         for y in range(h):
             for x in range(w):
@@ -312,6 +311,17 @@ def build(model_id, exclude):
         bottom = Image.new('RGB', (tw, td), avg_color(faces['pz'].crop((0, th - max(1, th // 4), tw, th))))
         faces['py'] = top
         faces['ny'] = bottom
+        # Forward zombie-style arms: underside shows in the side shot.
+        # Use the side-face texture instead of a flat front-strip fill.
+        if b['name'].startswith('arm') and b['d'] > b['h'] + 0.5:
+            side = faces['px']
+            if tw == th:
+                faces['ny'] = side.transpose(Image.ROTATE_90)
+                faces['py'] = faces['ny'].copy()
+            else:
+                fill = avg_color(side)
+                faces['ny'] = Image.new('RGB', (tw, td), fill)
+                faces['py'] = Image.new('RGB', (tw, td), fill)
         for face, img in faces.items():
             crops.append((i, face, img))
 
