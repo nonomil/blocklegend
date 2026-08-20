@@ -18,7 +18,9 @@
             wordThemes: ['颜色', '自然', '物品', '动物'],
             climateWords: ['sun'],
             focusWords: ['tree', 'sword', 'slime', 'apple', 'jump', 'sun', 'flower', 'run', 'bed', 'home', 'teacher'],
-            unlock: { coins: 0, recallWords: 0 }
+            unlock: { coins: 0, recallWords: 0 },
+            flavorText: '动物们忘了自己的名字，帮它们找回来。',
+            flavorEn: 'The animals forgot their names. Help them remember.'
         },
         {
             level: 2, waves: 4, bossHp: 110, bossShield: 4, climate: 'forest', worldSeed: 21,
@@ -27,7 +29,9 @@
             wordThemes: ['动物', '自然', '方位'],
             climateWords: ['fox', 'right', 'flower'],
             focusWords: ['fox', 'flower', 'right', 'behind', 'tree', 'spider'],
-            unlock: { coins: 50, recallWords: 5 }
+            unlock: { coins: 50, recallWords: 5 },
+            flavorText: '狐狸把单词藏在了树洞里，找到它们。',
+            flavorEn: 'The fox hid words in tree hollows. Find them.'
         },
         {
             level: 3, waves: 4, bossHp: 140, bossShield: 4, climate: 'desert', worldSeed: 33,
@@ -36,7 +40,9 @@
             wordThemes: ['物品', '自然', '动作'],
             climateWords: ['hot', 'warm', 'wind'],
             focusWords: ['sand', 'stone', 'key', 'door', 'chest', 'open', 'husk', 'pillager'],
-            unlock: { coins: 150, recallWords: 5 }
+            unlock: { coins: 150, recallWords: 5 },
+            flavorText: '沙漠商队的物资清单被风吹散了，拼回来。',
+            flavorEn: 'The desert caravan list was blown away. Put it back together.'
         },
         {
             level: 4, waves: 4, bossHp: 170, bossShield: 5, climate: 'snow', worldSeed: 47,
@@ -45,7 +51,9 @@
             wordThemes: ['动作', '生活', '动物'],
             climateWords: ['night', 'moon', 'snow', 'cold', 'white'],
             focusWords: ['run', 'jump', 'torch', 'night', 'wolf', 'help', 'snow', 'phantom', 'shadow stalker', 'snow golem'],
-            unlock: { coins: 300, recallWords: 5 }
+            unlock: { coins: 300, recallWords: 5 },
+            flavorText: '夜里的雪原要靠火把和呼喊带路。',
+            flavorEn: 'Call out and light the way through the snowy night.'
         },
         {
             level: 5, waves: 4, bossHp: 200, bossShield: 5, climate: 'deep_dark', worldSeed: 59,
@@ -54,7 +62,9 @@
             wordThemes: ['描述', '颜色', '自然'],
             climateWords: ['black', 'light'],
             focusWords: ['black', 'light', 'blue', 'red', 'vindicator', 'sculk worm'],
-            unlock: { coins: 500, recallWords: 5 }
+            unlock: { coins: 500, recallWords: 5 },
+            flavorText: '地下城的声音在发指令，按指令行动。',
+            flavorEn: 'The dungeon is giving orders. Follow them.'
         },
         {
             level: 6, waves: 5, bossHp: 240, bossShield: 6, climate: 'nether', worldSeed: 71,
@@ -63,7 +73,9 @@
             wordThemes: ['高频词', '动物', '物品'],
             climateWords: ['red', 'open'],
             focusWords: ['fire', 'gold', 'hot', 'dark', 'run', 'help', 'door', 'key', 'fire spirit'],
-            unlock: { coins: 800, recallWords: 5 }
+            unlock: { coins: 800, recallWords: 5 },
+            flavorText: '火焰领主只听得懂完整的句子。',
+            flavorEn: 'The fire lord only understands complete sentences.'
         },
         {
             level: 7, waves: 4, bossHp: 260, bossShield: 6, climate: 'quarry', worldSeed: 83,
@@ -72,7 +84,9 @@
             wordThemes: ['动物', '自然', '物品'],
             climateWords: ['door'],
             focusWords: ['stone', 'dark', 'spider', 'run', 'help'],
-            unlock: { coins: 1100, recallWords: 6 }
+            unlock: { coins: 1100, recallWords: 6 },
+            flavorText: '矿坑里的石头把词压住了，挖出来。',
+            flavorEn: 'The quarry buried the words in stone. Dig them out.'
         },
         {
             level: 8, waves: 4, bossHp: 280, bossShield: 6, climate: 'astral', worldSeed: 97,
@@ -81,7 +95,9 @@
             wordThemes: ['自然', '描述', '动作'],
             climateWords: ['star', 'cloud'],
             focusWords: ['star', 'cloud', 'run', 'help'],
-            unlock: { coins: 1500, recallWords: 6 }
+            unlock: { coins: 1500, recallWords: 6 },
+            flavorText: '星路上的云把路标吹散了，念出来。',
+            flavorEn: 'Clouds blew the star-trail signs away. Say them aloud.'
         },
         {
             level: 9, waves: 5, bossHp: 300, bossShield: 7, climate: 'ocean', worldSeed: 111,
@@ -90,7 +106,9 @@
             wordThemes: ['自然', '物品', '动作'],
             climateWords: ['water', 'fish', 'boat', 'swim'],
             focusWords: ['water', 'fish', 'boat', 'swim', 'blue', 'open'],
-            unlock: { coins: 2000, recallWords: 7 }
+            unlock: { coins: 2000, recallWords: 7 },
+            flavorText: '潮水冲走了船上的词，游过去捡回来。',
+            flavorEn: 'The tide washed the words off the boat. Swim and fetch them.'
         },
         {
             level: 10, waves: 4, bossHp: 320, bossShield: 7, climate: 'crystal', worldSeed: 127,
@@ -99,7 +117,9 @@
             wordThemes: ['颜色', '自然', '动物'],
             climateWords: ['jump', 'green'],
             focusWords: ['green', 'jump', 'right', 'spore bug'],
-            unlock: { coins: 2600, recallWords: 7 }
+            unlock: { coins: 2600, recallWords: 7 },
+            flavorText: '水晶里锁着颜色和跳跃，说对才开门。',
+            flavorEn: 'Colors and jumps are locked in the crystals. Say them to open the way.'
         },
         {
             level: 11, waves: 5, bossHp: 340, bossShield: 7, climate: 'volcano', worldSeed: 141,
@@ -108,7 +128,9 @@
             wordThemes: ['高频词', '描述', '物品'],
             climateWords: ['help'],
             focusWords: ['hot', 'fire', 'rock', 'dark', 'run', 'help', 'fire spirit'],
-            unlock: { coins: 3300, recallWords: 8 }
+            unlock: { coins: 3300, recallWords: 8 },
+            flavorText: '岩浆里的旧词快忘了，再喊一遍。',
+            flavorEn: 'Old words are fading in the lava. Call them out again.'
         },
         {
             level: 12, waves: 5, bossHp: 380, bossShield: 8, climate: 'end', worldSeed: 157,
@@ -117,7 +139,9 @@
             wordThemes: ['动作', '描述', '高频词'],
             climateWords: ['cool'],
             focusWords: ['dark', 'jump', 'end', 'hard', 'help', 'light', 'sculk worm'],
-            unlock: { coins: 4200, recallWords: 8 }
+            unlock: { coins: 4200, recallWords: 8 },
+            flavorText: '终点只认又准又完整的英文。',
+            flavorEn: 'The end only accepts clear and complete English.'
         }
     ];
 
@@ -127,6 +151,17 @@
 
     function levelOf(n) {
         return LEVELS[Math.max(0, Math.min(LEVEL_TOTAL, Number(n) || 1) - 1)];
+    }
+
+    function flavorOf(n) {
+        const i = Number(n);
+        if (!Number.isFinite(i) || i < 1 || i > LEVEL_TOTAL) return null;
+        const lv = LEVELS[i - 1];
+        if (!lv) return null;
+        const zh = String(lv.flavorText || '').trim();
+        const en = String(lv.flavorEn || '').trim();
+        if (!zh && !en) return null;
+        return { zh: zh, en: en, ms: 3000, skippable: true, pause: false };
     }
 
     function eventKey(n) {
@@ -789,6 +824,7 @@
         LEVEL_TOTAL: LEVEL_TOTAL,
         LEVELS: LEVELS,
         levelOf: levelOf,
+        flavorOf: flavorOf,
         eventKey: eventKey,
         bossModelOf: bossModelOf,
         bossTitle: bossTitle,

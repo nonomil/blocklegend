@@ -18,7 +18,8 @@
         iron_pick: 10, iron_axe: 10, iron_shovel: 9, iron_ore: 3, iron_ingot: 6, coal: 2, torch: 1, chest: 8, furnace: 8,
         gold: 5, gold_ingot: 8, diamond: 12,
         gold_sword: 9, gold_pick: 9, gold_axe: 9, gold_shovel: 8,
-        tnt: 6, flint_and_steel: 7,
+        tnt: 6, flint_and_steel: 7, flint: 2, feather: 1,
+        gravel: 1, clay: 1, sandstone: 3, stone_brick: 3, brick: 2, bricks: 4, carpet: 2,
         diamond_sword: 14, diamond_pick: 14, diamond_axe: 14, diamond_shovel: 13,
         door: 6, fence: 3, ladder: 3, bowl: 2, boat: 7, shears: 5, bucket: 5, fishing_rod: 7,
         'ender-pearl': 8, 'gold-nugget': 6, 'glow-dust': 5,
@@ -29,7 +30,10 @@
     };
     const DROP_COLOR = {
         'oak-log': 0x6b4a28, 'stick': 0x8a6234, 'dirt': 0x8a6a3c, 'cobble': 0x7a7a80, 'plank': 0xe0b46a,
-        sand: 0xe8d090, glass: 0xa8e0f0, tnt: 0xc44528, flint_and_steel: 0x8a929c, wool: 0xf4f0ea, pork: 0xe07070, beef: 0x8a3030, mutton: 0xc06060, chicken: 0xf0c080, egg: 0xf4e8c0
+        sand: 0xe8d090, glass: 0xa8e0f0, tnt: 0xc44528, flint_and_steel: 0x8a929c, wool: 0xf4f0ea,
+        gravel: 0x9a9080, clay: 0xc47850, sandstone: 0xd4b45a, stone_brick: 0x888890, brick: 0xb44a32, bricks: 0xb44a32,
+        carpet: 0xe8dcc8, flint: 0x6a6460, feather: 0xf0ece4,
+        pork: 0xe07070, beef: 0x8a3030, mutton: 0xc06060, chicken: 0xf0c080, egg: 0xf4e8c0
     };
     const CHAPTERS = [
         '',
@@ -70,6 +74,7 @@
     const RS = window.BlockLegendReviewSchedule;
     const WM = window.BlockLegendWordMemory;
     const D = window.BlockLegendDifficulty;
+    const A = window.BlockLegendActionWords;
     const sfx = window.WorkbenchGameSfx;
     const THEME_BGM = './assets/audio/minecraft-theme.mp3';
     const THREE = window.THREE;
@@ -169,7 +174,9 @@
         bossHitsOnShield: 0,
         todayShown: false,
         sceneLoop: null,
-        sceneTimer: 0
+        sceneTimer: 0,
+        actionWordAt: {},
+        prevHp: null
     };
 
     function emptyProgress() {
@@ -223,7 +230,10 @@
         loadProgress();
         const canvas = document.getElementById('world-canvas');
         engine = ENG.create(canvas, { seed: 7, climate: 'plains' });
-        engine.onJump = function () { if (sfx && sfx.jump) sfx.jump(); };
+        engine.onJump = function () {
+            if (sfx && sfx.jump) sfx.jump();
+            flashAction('jump');
+        };
         // 第一人称手臂+剑：挂到相机上（相机需入场景，子对象才会渲染）
         viewModel = MOBS.createViewModel();
         engine.scene.add(engine.camera);
@@ -232,6 +242,10 @@
         if (back && bridge && bridge.backHref) back.href = bridge.backHref('blocklegend');
         session.buddyConfig = readBuddyConfig();
         bindChrome();
+        window.addEventListener('keydown', function () {
+            const banner = document.getElementById('flavor-banner');
+            if (banner && !banner.classList.contains('is-hidden')) hideFlavor();
+        });
         bindCombatInput(canvas);
         bindFarmAnimals();
         bindTouchPad();
@@ -670,7 +684,7 @@
                 if (hot) { clickCraftHot(Number(hot.getAttribute('data-hot'))); return; }
                 const inv = e.target.closest('[data-inv]');
                 if (inv) { clickCraftInv(inv.getAttribute('data-inv')); return; }
-                if (e.target.closest('#craft-out')) takeCraftResult();
+                if (e.target.closest('#craft-out')) takeCraftResult(!!e.shiftKey);
             });
             craftLayer.addEventListener('contextmenu', function (e) {
                 const inv = e.target.closest('[data-inv]');
@@ -1012,7 +1026,7 @@
     function paintCraft() {
         const tip = document.getElementById('craft-tip');
         if (tip) {
-            tip.textContent = '点配方，拼出英文才能做出。同一件拼对过就记住了。点背包再点合成格放材料，再点物品栏装到 1–9。';
+            tip.textContent = '有序配方可平移、可左右翻转。配方书上看格子和缺料。摆好后点箭头右边拿走，按住 Shift 连做。点配方仍是拼英文一键做。';
         }
         paintCraftGrid();
         paintCraftBook();
@@ -1063,11 +1077,18 @@
         box.innerHTML = list.map(function (r) {
             const ready = CR.canCraft(session.bag, r.id, { atTable: session.atTable });
             const outId = Object.keys(r.outputs || {})[0] || r.id;
-            const mats = Object.keys(r.inputs || {}).map(function (k) {
-                return '<span class="bl-craft-mat" title="' + itemLabel(k) + '">' +
-                    itemIconHtml(k) + '<em>' + r.inputs[k] + '</em></span>';
+            const rows = CR.ingredientStatus ? CR.ingredientStatus(session.bag, r.id) : Object.keys(r.inputs || {}).map(function (k) {
+                return { id: k, need: r.inputs[k], have: 0, ok: ready };
+            });
+            const mats = rows.map(function (row) {
+                return '<span class="bl-craft-mat' + (row.ok ? ' is-ok' : ' is-short') + '" title="' + itemLabel(row.id) + '">' +
+                    itemIconHtml(row.id) + '<em>' + row.have + '/' + row.need + '</em></span>';
+            }).join('');
+            const preview = (CR.previewCells ? CR.previewCells(r, 3) : []).map(function (k) {
+                return '<i class="bl-craft-cell"' + (k ? ' data-item="' + k + '"' : '') + '>' + (k ? itemIconHtml(k) : '') + '</i>';
             }).join('');
             return '<button type="button" class="bl-craft-btn' + (ready ? '' : ' is-off') + '" data-craft="' + r.id + '">' +
+                '<span class="bl-craft-preview" aria-hidden="true">' + preview + '</span>' +
                 itemIconHtml(outId) +
                 '<span class="bl-craft-copy"><b>' + r.name + '</b><span class="bl-craft-mats">' + mats + '</span></span></button>';
         }).join('');
@@ -1170,25 +1191,36 @@
         paintCraft();
     }
 
-    function takeCraftResult() {
+    function takeCraftResult(all) {
         if (!CR) return;
         const hit = CR.matchGrid(session.craftCells, session.craftSize);
         if (!hit) return;
+        session.craftAll = !!all;
         askCraftSpell('grid', hit.recipe.id);
     }
 
     function finishTakeCraft() {
-        const hit = CR.matchGrid(session.craftCells, session.craftSize);
-        if (!hit) return;
-        session.craftCells = CR.consumeGrid(session.craftCells, session.craftSize, hit);
-        Object.keys(hit.recipe.outputs).forEach(function (k) {
-            session.bag = C.addLoot(session.bag, k, hit.recipe.outputs[k]);
-        });
+        const all = !!session.craftAll;
+        session.craftAll = false;
+        let last = null;
+        let n = 0;
+        while (n < 64) {
+            const hit = CR.matchGrid(session.craftCells, session.craftSize);
+            if (!hit) break;
+            session.craftCells = CR.consumeGrid(session.craftCells, session.craftSize, hit);
+            Object.keys(hit.recipe.outputs).forEach(function (k) {
+                session.bag = C.addLoot(session.bag, k, hit.recipe.outputs[k]);
+            });
+            last = hit.recipe;
+            n += 1;
+            if (!all) break;
+        }
+        if (!last) return;
         persist();
         paintCraft();
         if (sfx && sfx.craft) sfx.craft();
-        toast(craftDoneTip(hit.recipe));
-        if (hit.recipe && hit.recipe.id) noteQuest({ type: 'craft', id: hit.recipe.id });
+        toast(n > 1 ? ('做了 ' + n + ' 次 ' + (last.name || last.id)) : craftDoneTip(last));
+        if (last.id) noteQuest({ type: 'craft', id: last.id });
     }
 
     function doCraft(id) {
@@ -1229,8 +1261,9 @@
     function craftDoneTip(recipe) {
         const id = recipe && recipe.id;
         const name = (recipe && recipe.name) || id || '物品';
-        if (id === 'table' || id === 'chest' || id === 'furnace' || id === 'torch') {
-            session.placeLoot = id;
+        if (id === 'table' || id === 'chest' || id === 'furnace' || id === 'torch'
+            || id === 'sandstone' || id === 'stone_brick' || id === 'bricks' || id === 'carpet' || id === 'wool') {
+            session.placeLoot = id === 'bricks' ? 'bricks' : id;
             return '合成了' + name + '。点背包里的它，再点下面物品栏格子装上去，然后按 1–9 选用、右键放置。';
         }
         return '合成了 ' + name + '。点背包再点下面物品栏，就能装到 1–9。';
@@ -1238,6 +1271,53 @@
 
     function uiBlocksWorld() {
         return !!(document.querySelector('.bl-layer:not(.is-hidden), .bl-quiz-layer:not(.is-hidden)'));
+    }
+
+    function flashAction(kind) {
+        if (!A || !A.ofAction) return;
+        const spec = A.ofAction(kind);
+        if (!spec) return;
+        const now = nowMs();
+        session.actionWordAt = session.actionWordAt || {};
+        const inp = engine && engine.input;
+        const moving = !!(inp && (inp.fwd || inp.back || inp.left || inp.right));
+        if (!A.shouldShow(kind, {
+            now: now,
+            lastAt: session.actionWordAt[kind],
+            moving: kind === 'swim' ? moving : true
+        })) return;
+        session.actionWordAt[kind] = now;
+        const el = document.getElementById('action-word');
+        if (!el) return;
+        el.textContent = spec.word;
+        el.classList.remove('is-hidden');
+        el.classList.add('is-on');
+        clearTimeout(flashAction._t);
+        flashAction._t = setTimeout(function () {
+            el.classList.remove('is-on');
+            el.classList.add('is-hidden');
+        }, spec.ms);
+    }
+
+    function hideFlavor() {
+        const root = document.getElementById('flavor-banner');
+        if (root) root.classList.add('is-hidden');
+        clearTimeout(showFlavor._t);
+    }
+
+    function showFlavor(flavor) {
+        const root = document.getElementById('flavor-banner');
+        if (!root || !flavor) return;
+        const zh = document.getElementById('flavor-zh');
+        const en = document.getElementById('flavor-en');
+        if (zh) zh.textContent = flavor.zh || '';
+        if (en) {
+            en.textContent = flavor.en || '';
+            en.classList.toggle('is-hidden', !flavor.en);
+        }
+        root.classList.remove('is-hidden');
+        clearTimeout(showFlavor._t);
+        showFlavor._t = setTimeout(hideFlavor, flavor.ms || 3000);
     }
 
     function tryAutoEat(id) {
@@ -1250,6 +1330,7 @@
         paintHearts();
         if (sfx && sfx.eat) sfx.eat();
         toast('吃了' + itemLabel(id) + ' · +' + plan.heal + 'HP');
+        flashAction('eat');
         return true;
     }
 
@@ -1269,6 +1350,7 @@
         paintHotbar();
         if (sfx && sfx.eat) sfx.eat();
         toast('吃了' + itemLabel(id) + ' · +' + plan.heal + 'HP');
+        flashAction('eat');
         return true;
     }
 
@@ -1642,6 +1724,7 @@
         else spawnWave();
         paintSayStrip();
         syncHud();
+        if (!session.secretRun && L.flavorOf) showFlavor(L.flavorOf(session.level));
     }
 
     function todayStr() {
@@ -2615,6 +2698,8 @@
             html += '<i class="bl-heart ' + cls + '"></i>';
         }
         const stamp = String(Math.round(hp * 10) / 10) + '/' + max;
+        if (session.prevHp != null && hp < session.prevHp) flashAction(hp <= 0 ? 'die' : 'hurt');
+        session.prevHp = hp;
         if (box.dataset.hp === stamp) return;
         box.dataset.hp = stamp;
         box.innerHTML = html;
@@ -2665,10 +2750,15 @@
     }
 
     function nextPlaceLoot() {
-        const order = [session.placeLoot, 'dirt', 'cobble', 'sand', 'glass', 'tnt', 'oak-log', 'plank', 'table', 'chest', 'furnace', 'torch'];
+        const held = session.hotbar && session.hotbar[session.hotIndex];
+        const order = [
+            held, session.placeLoot,
+            'dirt', 'cobble', 'sand', 'gravel', 'clay', 'sandstone', 'stone_brick', 'bricks', 'brick',
+            'wool', 'carpet', 'stone', 'glass', 'tnt', 'oak-log', 'plank', 'table', 'chest', 'furnace', 'torch'
+        ];
         for (let i = 0; i < order.length; i += 1) {
             const loot = order[i];
-            if (loot && (Number(session.bag[loot]) || 0) > 0) return loot;
+            if (loot && T.placeKindOf(loot) && (Number(session.bag[loot]) || 0) > 0) return loot;
         }
         return null;
     }
@@ -2980,6 +3070,7 @@
         toast('获得 ' + result.drop);
         spawnMineChips(hit, 6);
         noteWorldAct();
+        if (A && A.actionFromBlock(hit.kind) === 'cut') flashAction('cut');
     }
 
     function noteWorldAct() {
@@ -3144,7 +3235,7 @@
             if (sub && sub.kind) noteQuest({ type: 'look', kind: sub.kind });
         }
         hideVoiceFallback();
-        setVoiceState('matched');
+        setVoiceState('matched', { heard: heard || (word && word.text) || '' });
         if (sfx && sfx.reward) sfx.reward();
     }
 
@@ -3262,6 +3353,7 @@
         if (engine.fovKick && FX && FX.rideFov) engine.fovKick(FX.rideFov('up'));
         toast('骑上龙了 · 空格升高 · Shift 或低头下降 · F 下来');
         noteQuest({ type: 'look', kind: 'dragon' });
+        flashAction('ride');
         return true;
     }
 
@@ -5325,11 +5417,42 @@
         });
     }
 
-    function setVoiceState(state) {
+    function voiceWant() {
+        const lock = session.voice && session.voice.lock;
+        return (lock && lock.word && lock.word.text)
+            || (session.quiz && session.quiz.word && session.quiz.word.text)
+            || '';
+    }
+
+    function paintSpeechHud(hud) {
+        const root = document.getElementById('speech-hud');
+        const line = document.getElementById('speech-hud-line');
+        const want = document.getElementById('speech-hud-want');
+        if (!root || !hud) return;
+        root.className = 'bl-speech-hud ' + hud.cls;
+        if (line) line.textContent = hud.line;
+        if (want) {
+            const showWant = !!(hud.want && hud.cls === 'is-miss');
+            want.textContent = showWant ? ('要说 ' + hud.want) : '';
+            want.classList.toggle('is-hidden', !showWant);
+        }
+    }
+
+    function setVoiceState(state, extra) {
         if (!session.voice) session.voice = { state: 'idle', rec: null, lock: null, blocked: false };
         session.voice.state = state;
+        const SH = globalThis.BlockLegendSpeechHud;
+        const payload = Object.assign({
+            want: voiceWant(),
+            heard: extra && extra.heard != null ? extra.heard : (session.lastHeard || '')
+        }, extra || {});
+        const hud = SH && SH.hudOf ? SH.hudOf(state, payload) : null;
+        paintSpeechHud(hud);
         const box = document.getElementById('heard-box');
-        if (box) box.classList.toggle('is-listening', state === 'listening');
+        if (box) {
+            box.className = 'bl-heard' + (hud ? ' ' + hud.cls : '');
+            box.classList.toggle('is-listening', state === 'listening');
+        }
     }
 
     function stopVoiceRec() {
@@ -5424,7 +5547,7 @@
         session.combo = C.nextCombo({ answered: true, correct: true, combo: session.combo });
         applyResolvedHit(mob, 'melee', { answered: true, correct: true, channel: 'speak' });
         hideVoiceFallback();
-        setVoiceState('matched');
+        setVoiceState('matched', { heard: heard || (word && word.text) || '' });
         toast((heard || (word && word.text) || '') + ' · 暴击');
         maybeBuddyCue({ doing: 'speak-hit', heardHit: true, force: true });
     }
@@ -5542,16 +5665,20 @@
             if (inQuiz) {
                 if (!(session.quiz.word && session.quiz.word.side)) noteWordSpoken(session.quiz.word);
                 resolveQuiz(true, { record: true, crit: true, comboKeep: true, channel: 'speak' });
-                setVoiceState('matched');
+                setVoiceState('matched', { heard: heard || target });
             } else {
                 applySpeakHit(lock, heard || target);
             }
             return;
         }
-        setVoiceState('not-matched');
+        setVoiceState('not-matched', { heard: heard || '' });
         if (lock && lock.mob) lock.mob.voiceFails = (Number(lock.mob.voiceFails) || 0) + 1;
-        if (lock && W.shouldAsk({ voiceFails: lock.mob && lock.mob.voiceFails })) {
+        const fails = lock && lock.mob ? Number(lock.mob.voiceFails) || 0 : 0;
+        const SH = globalThis.BlockLegendSpeechHud;
+        if (lock && ((SH && SH.suggestSpell && SH.suggestSpell(fails))
+            || (W.shouldAsk && W.shouldAsk({ voiceFails: fails })))) {
             showVoiceFallback(lock, { reason: 'not-matched' });
+            toast('要不要按 T 拼写？');
             return;
         }
         toast('没听清，再按 V');
@@ -5583,6 +5710,7 @@
             };
             rec.onstop = function () {
                 stream.getTracks().forEach(function (t) { t.stop(); });
+                setVoiceState('processing');
                 const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' });
                 fetch(url, {
                     method: 'POST',
@@ -5724,6 +5852,7 @@
             }
             done = true;
             session.voice.rec = null;
+            setVoiceState('processing');
             const heard = alts[0] || '';
             const hitLine = alts.filter(function (line) { return heardHits(target, line, lock); })[0];
             finishListen(hitLine || heard, o, lock, inQuiz, target);
@@ -5830,6 +5959,10 @@
             }
             viewModel.update(dt, moving);
             if (viewModel.group) viewModel.group.visible = !engine.player.mounted;
+        }
+        if (!session.paused && engine && engine.player && footWet(engine.player.x, engine.player.z)) {
+            const swimIn = engine.input || {};
+            if (swimIn.fwd || swimIn.back || swimIn.left || swimIn.right) flashAction('swim');
         }
         updateMerchantTip();
         updateWordGate();
@@ -7569,6 +7702,7 @@
 
     /** 倒地复活：回出生点、满血、连击清零 */
     function respawn() {
+        flashAction('die');
         const w = engine.world;
         const cx = Math.floor(w.size / 2), cz = Math.floor(w.size / 2);
         engine.player.x = cx + 0.5;

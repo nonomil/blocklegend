@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
     <title>我的方块学园 · 地下城闯关，边打边学</title>
-    <link rel="stylesheet" href="./game.css?v=20260820-punch1">
+    <link rel="stylesheet" href="./game.css?v=20260820-act1">
 </head>
 <body class="bl-body">
     <main class="bl-stage">
@@ -129,6 +129,15 @@
         <div class="bl-look-tip" id="look-tip">Click to mine · 5–9 选中后右键放方块 · Esc 释放视角</div>
         <div class="bl-hurt" id="hurt-flash" aria-hidden="true"></div>
         <div class="bl-wordflash" id="word-flash" aria-hidden="true"></div>
+        <div id="speech-hud" class="bl-speech-hud is-idle" aria-live="polite">
+            <b id="speech-hud-line">按 V 说话</b>
+            <em id="speech-hud-want" class="is-hidden"></em>
+        </div>
+        <p id="action-word" class="bl-action-word is-hidden" aria-live="polite"></p>
+        <div id="flavor-banner" class="bl-flavor is-hidden" aria-live="polite">
+            <strong id="flavor-zh"></strong>
+            <em id="flavor-en"></em>
+        </div>
         <div class="bl-boss-hud is-hidden" id="boss-hud">
             <span id="boss-name">凋灵</span>
             <b id="boss-hp">0/0</b>
@@ -189,7 +198,7 @@
         <div class="bl-layer is-hidden" id="craft-layer">
             <div class="bl-card bl-craft bl-mc-craft">
                 <h2>合成台 / Crafting Table</h2>
-                <p id="craft-tip">点背包再点下面物品栏，把合成的东西装到 1–9。点背包再点合成格是放材料。</p>
+                <p id="craft-tip">有序配方可平移、可左右翻转。配方书上看格子和缺料。摆好后点右边拿走，Shift 连做。</p>
                 <div class="bl-mc-craft-body">
                     <div class="bl-mc-book" id="craft-book"></div>
                     <div class="bl-mc-bench">
@@ -490,23 +499,25 @@
     <script src="./child-courses.js?v=20260819-w1s1"></script>
     <script src="./vendor/three.min.js?v=20260815-bl-s1"></script>
     <script src="./data/shop.js?v=20260819-bl-side2"></script>
-    <script src="./data/tools.js?v=20260819-farmhp1"></script>
-    <script src="./data/craft.js?v=20260819-farmhp1"></script>
+    <script src="./data/tools.js?v=20260820-blocks1"></script>
+    <script src="./data/craft.js?v=20260820-blocks1"></script>
     <script src="./data/atlas-paint.js?v=20260820-seam1"></script>
     <script src="./data/fx.js?v=20260820-sky1"></script>
-    <script src="./data/world-gen.js?v=20260820-sky1"></script>
-    <script src="./engine.js?v=20260820-sky1"></script>
-    <script src="./data/combat.js?v=20260820-breath1"></script>
+    <script src="./data/world-gen.js?v=20260820-blocks1"></script>
+    <script src="./engine.js?v=20260820-blocks1"></script>
+    <script src="./data/combat.js?v=20260820-blocks1"></script>
     <script src="./data/speech-input.js?v=20260819-e1s2"></script>
+    <script src="./data/speech-hud.js?v=20260820-voice1"></script>
+    <script src="./data/action-words.js?v=20260820-act1"></script>
     <script src="./data/scenes.js?v=20260819-e4s1"></script>
     <script src="./data/scene-loop.js?v=20260819-e4s1"></script>
     <script src="./data/companion.js?v=20260819-bl-mode1"></script>
-    <script src="./data/words.js?v=20260819-bl-opt55"></script>
+    <script src="./data/words.js?v=20260820-blocks1"></script>
     <script src="./data/question-port.js?v=20260819-bl-side7"></script>
     <script src="./data/review-schedule.js?v=20260819-e2s3"></script>
     <script src="./data/word-memory.js?v=20260819-d1s3"></script>
     <script src="./data/difficulty.js?v=20260819-d2s1"></script>
-    <script src="./data/levels.js?v=20260819-bl-opt55"></script>
+    <script src="./data/levels.js?v=20260820-act1"></script>
     <script src="./data/quests.js?v=20260819-bl-opt55"></script>
     <script src="./data/skins.js?v=20260817-bl-art3"></script>
     <script src="./assets/img2threejs/voxelPix.js?v=20260816-bl-mobs3"></script>
@@ -586,6 +597,6 @@
     <script src="./assets/img2threejs/createTools3d.js?v=20260819-bl-opt51"></script>
     <script src="./assets/img2threejs/createProps3d.js?v=20260819-villages6"></script>
     <script src="./mobs.js?v=20260820-light1"></script>
-    <script src="./game.js?v=20260820-sky1"></script>
+    <script src="./game.js?v=20260820-act1"></script>
 </body>
 </html>
