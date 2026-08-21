@@ -1,16 +1,33 @@
 Use case: game-character-sheet
-Asset type: character four-view reference for 3D
-Primary request: One original voxel ink-wing wyrm. HORIZONTAL four-legged dragon. Body 12x10x18 box. Neck box in front. Head 10x8x10 with lower jaw slab and two short horns. Two wide flat wing slabs left and right. Four vertical legs. Long tail box behind. Dark purple hide, magenta eyes on the FRONT of the head only.
+Asset type: character four-view reference for 3D voxel projection
+Primary request: One ORIGINAL children's-game voxel riding dragon. Friendly four-legged academy wyrm. NOT official Minecraft ender dragon. NOT a red western movie dragon. NOT a black silhouette. NOT a smooth organic worm.
 
-CRITICAL LAYOUT — four ELEVATION views, same height, feet on one baseline:
-- Top-left FRONT: face the camera. See the face, spread wings, two FRONT legs. Head is a square, not a long top-down silhouette.
-- Top-right RIGHT: full LENGTH profile. Head+neck on the LEFT of this quadrant, tail on the RIGHT. Two legs. Wing as a thin slab.
-- Bottom-left BACK: tail pointing AT the camera. See wing backs and two REAR legs. This is a standing rear elevation. NEVER a floorplan. NEVER a top-down map of wings.
-- Bottom-right LEFT: mirror profile. Head+neck on the RIGHT of this quadrant, tail on the LEFT.
+Identity: amethyst-violet hide #6A3B8A, gold #D4A843 belly stripe, gold horn cones, gold wing-bone leading edges, cream highlight #F0E68C, shadow #3A1C4A. Warm amber square eyes on the FRONT of the head only. Blocky, cute-powerful, readable from 8 meters.
 
-FORBIDDEN: top-down view, 3/4 beauty shot, isometric, looking down on the wings.
+CRITICAL LAYOUT — 2x2 equal cells, same scale, same baseline, feet on one ground line. Orthographic elevations ONLY:
+- Top-left FRONT elevation: face the camera. Square head, two amber eyes, two gold horns, SPREAD wings, two FRONT legs, gold chest visible between legs. Standing. Not top-down.
+- Top-right RIGHT elevation: full LENGTH profile. Head+neck on the LEFT of this cell, tail on the RIGHT. Two legs. Gold belly is a continuous strip under body and tail. Wing is a thin side slab with a THICK gold bone on the TOP edge and a stepped lower edge.
+- Bottom-left BACK elevation: tail pointing AT the camera. Standing rear elevation. Two REAR legs. Wing BACKS visible. NEVER a floorplan. NEVER a top-down map of wings. NEVER looking down from the sky.
+- Bottom-right LEFT elevation: mirror profile. Head+neck on the RIGHT of this cell, tail on the LEFT. Gold belly strip visible.
 
-Scene/backdrop: flat warm gray studio #c8c4bc, no checkerboard, no ground shadow.
-Style/medium: Minecraft-like voxel boxes only, no bevel, no PBR.
-Color palette: hide #1a1028, wings #2a1840, horns #3a2458, eyes #b450ff.
-Text: none. Output: 1024x1024 PNG four-view sheet.
+Geometry — MORE boxes than a 13-block stick figure. Axis-aligned boxes only, chunky not skinny:
+- Fat body 16x12x20 box, gold belly SLAB on the underside (its own gold box, not just a painted line)
+- Neck as TWO boxes in front of the body
+- Head 12x10x12 with a gold lower jaw slab
+- Two short gold horn cones
+- Each wing is THREE slabs: root / mid / tip, plus a long thin GOLD bone along the leading (front-top) edge
+- Wing faces show segmented color blocks: dark purple root, mid purple, gold rim on tip
+- Four thick vertical legs with gold toe cubes
+- Tail as THREE tapering boxes, gold underside on each
+- Tiny gold ridge cubes along the spine
+
+Scene/backdrop: flat warm gray studio #c8c4bc only. No checkerboard, no ground shadow blob, no environment.
+
+Style/medium: Minecraft-like voxel boxes only, no bevel, no rounded corners, no PBR, no photoreal scales, nearest-neighbor pixel faces, flat Lambert lighting. Chunky, not a thin tube.
+
+FORBIDDEN: top-down view, 3/4 beauty shot, isometric, perspective, looking down on the wings, black/near-black body, official ender-dragon face, red leather western dragon, smooth organic sculpt, skinny noodle body.
+
+Color palette: hide #6A3B8A, dark hide #3A1C4A, belly/horns/wing-bone #D4A843, highlight #F0E68C, wing membrane #5A2B7A, eyes #F0E68C, claws #D4A843.
+
+Text: none. No labels, no letters, no numbers, no watermark.
+Output: 1024x1024 PNG four-view sheet.

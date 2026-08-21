@@ -372,6 +372,26 @@
             }
             g.add(rig);
             anim.rig = rig;
+        } else if (kind === 'dummy') {
+            const pole = box(0.18, 1.35, 0.18, 0x8a6234);
+            pole.position.y = 0.68;
+            const hay = box(0.58, 0.72, 0.3, 0xd2a84a);
+            hay.position.y = 0.74;
+            const arms = box(1.18, 0.12, 0.12, 0x8a6234);
+            arms.position.y = 1.16;
+            const head = box(0.44, 0.44, 0.44, 0xe6c86a);
+            head.position.y = 1.5;
+            const eyeL = box(0.08, 0.08, 0.04, 0x3a2410);
+            const eyeR = box(0.08, 0.08, 0.04, 0x3a2410);
+            eyeL.position.set(-0.1, 1.54, 0.22);
+            eyeR.position.set(0.1, 1.54, 0.22);
+            g.add(pole);
+            g.add(hay);
+            g.add(arms);
+            g.add(head);
+            g.add(eyeL);
+            g.add(eyeR);
+            height = 1.74;
         } else if (kind === 'merchant') {
             if (window.BlockLegendProps3d && window.BlockLegendProps3d.createTrader) {
                 const rig = window.BlockLegendProps3d.createTrader(THREE);

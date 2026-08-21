@@ -57,7 +57,7 @@
         pig: { kind: 'pig', hp: 16, coins: 2, contact: 0, loot: ['pork'], bodyRadius: 0.95 },
         cow: { kind: 'cow', hp: 20, coins: 2, contact: 0, loot: ['beef'], bodyRadius: 1.15 },
         sheep: { kind: 'sheep', hp: 14, coins: 2, contact: 0, loot: ['wool', 'mutton'], bodyRadius: 1.35 },
-        chicken: { kind: 'chicken', hp: 8, coins: 1, contact: 0, loot: ['chicken', 'egg'], bodyRadius: 0.6 }
+        chicken: { kind: 'chicken', hp: 8, coins: 1, contact: 0, loot: ['chicken', 'egg', 'feather'], bodyRadius: 0.6 }
     };
     const WILD_ANIMALS = {
         wolf: { kind: 'wolf', hp: 14, coins: 2, contact: 0, loot: [] },

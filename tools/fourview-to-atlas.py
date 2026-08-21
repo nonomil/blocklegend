@@ -238,6 +238,19 @@ def build(model_id, exclude):
         td = max(1, int(round(b['d'] * SCALE)))
 
         fb = hex_color(b.get('color', '#808080'))
+        if b.get('paintAll'):
+            fill = hex_color(b['paintAll'])
+            faces = {
+                'pz': Image.new('RGB', (tw, th), fill),
+                'nz': Image.new('RGB', (tw, th), fill),
+                'px': Image.new('RGB', (td, th), fill),
+                'nx': Image.new('RGB', (td, th), fill),
+                'py': Image.new('RGB', (tw, td), fill),
+                'ny': Image.new('RGB', (tw, td), fill),
+            }
+            for face, img in faces.items():
+                crops.append((i, face, img))
+            continue
         x_band = band_span(boxes, b, 'x')
         z_band = band_span(boxes, b, 'z')
 
@@ -311,6 +324,14 @@ def build(model_id, exclude):
         bottom = Image.new('RGB', (tw, td), avg_color(faces['pz'].crop((0, th - max(1, th // 4), tw, th))))
         faces['py'] = top
         faces['ny'] = bottom
+        if b.get('paintNy'):
+            faces['ny'] = Image.new('RGB', (tw, td), hex_color(b['paintNy']))
+        if b.get('paintPy'):
+            faces['py'] = Image.new('RGB', (tw, td), hex_color(b['paintPy']))
+        if b.get('paintAll'):
+            fill = hex_color(b['paintAll'])
+            for fk in faces:
+                faces[fk] = Image.new('RGB', faces[fk].size, fill)
         # Forward zombie-style arms: underside shows in the side shot.
         # Use the side-face texture instead of a flat front-strip fill.
         if b['name'].startswith('arm') and b['d'] > b['h'] + 0.5:

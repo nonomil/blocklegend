@@ -20,8 +20,13 @@
         gold_sword: 9, gold_pick: 9, gold_axe: 9, gold_shovel: 8,
         tnt: 6, flint_and_steel: 7, flint: 2, feather: 1,
         gravel: 1, clay: 1, sandstone: 3, stone_brick: 3, brick: 2, bricks: 4, carpet: 2,
+        slab: 2, stairs: 3, trapdoor: 3, campfire: 4, coal_block: 8, snow_block: 2,
+        ice: 2, packed_ice: 3, quartz: 3, quartz_block: 5, snowball: 1,
         diamond_sword: 14, diamond_pick: 14, diamond_axe: 14, diamond_shovel: 13,
         door: 6, fence: 3, ladder: 3, bowl: 2, boat: 7, shears: 5, bucket: 5, fishing_rod: 7,
+        bed: 8, lead: 5, wood_hoe: 5, stone_hoe: 7, iron_hoe: 9,
+        wheat: 2, bread: 4, cookie: 2, cake: 8, hay: 6, apple: 3, golden_apple: 14, milk: 4,
+        cooked_pork: 5, cooked_beef: 5, cooked_mutton: 5, cooked_chicken: 4,
         'ender-pearl': 8, 'gold-nugget': 6, 'glow-dust': 5,
         'iron-ingot': 6, saddle: 8, 'phantom-membrane': 6, 'vex-wing': 6,
         'trident-shard': 7, snowball: 2, prismarine: 7,
@@ -33,7 +38,14 @@
         sand: 0xe8d090, glass: 0xa8e0f0, tnt: 0xc44528, flint_and_steel: 0x8a929c, wool: 0xf4f0ea,
         gravel: 0x9a9080, clay: 0xc47850, sandstone: 0xd4b45a, stone_brick: 0x888890, brick: 0xb44a32, bricks: 0xb44a32,
         carpet: 0xe8dcc8, flint: 0x6a6460, feather: 0xf0ece4,
-        pork: 0xe07070, beef: 0x8a3030, mutton: 0xc06060, chicken: 0xf0c080, egg: 0xf4e8c0
+        slab: 0xc89a52, stairs: 0xc09048, trapdoor: 0xa07038, campfire: 0xc45a20,
+        coal_block: 0x2a2a2e, snow_block: 0xeef4f8, snowball: 0xf4f8fc,
+        ice: 0x8ec8e8, packed_ice: 0x5aa0d8, quartz: 0xe8dcc8, quartz_block: 0xf0e8d8,
+        pork: 0xe07070, beef: 0x8a3030, mutton: 0xc06060, chicken: 0xf0c080, egg: 0xf4e8c0,
+        wheat: 0xe8c84a, bread: 0xd4a04a, cookie: 0xc07838, cake: 0xf0c0d0, hay: 0xdbc24a,
+        apple: 0xd44a3a, golden_apple: 0xf0c84a, milk: 0xf4f0e8,
+        cooked_pork: 0xc06048, cooked_beef: 0x6a2820, cooked_mutton: 0xa84840, cooked_chicken: 0xe0a060, fish: 0x6aa0c8,
+        cooked_fish: 0xc89058, lantern: 0xffc04a
     };
     const CHAPTERS = [
         '',
@@ -176,7 +188,9 @@
         sceneLoop: null,
         sceneTimer: 0,
         actionWordAt: {},
-        prevHp: null
+        prevHp: null,
+        minimapKey: '',
+        hudAt: 0
     };
 
     function emptyProgress() {
@@ -203,6 +217,8 @@
             sceneSentences: {},
             bag: {},
             craftKnown: {},
+            smeltKnown: {},
+            chestStores: {},
             gear: {},
             hotbar: null,
             playDates: [],
@@ -212,7 +228,9 @@
             dailyDay: '',
             dailyDoneId: '',
             dailyDoneDay: '',
-            wordPack: 'core'
+            wordPack: 'core',
+            study: null,
+            studyPin: ''
         };
     }
 
@@ -229,7 +247,19 @@
         }
         loadProgress();
         const canvas = document.getElementById('world-canvas');
-        engine = ENG.create(canvas, { seed: 7, climate: 'plains' });
+        function startEngine() {
+            engine = ENG.create(canvas, { seed: 7, climate: 'plains' });
+            afterEngineReady(canvas);
+        }
+        const gltfReady = window.BlockLegendDragonGltf
+            && window.BlockLegendDragonGltf.hasLoader(window.THREE)
+            ? window.BlockLegendDragonGltf.load(window.THREE).catch(function () { return null; })
+            : Promise.resolve(null);
+        gltfReady.finally(startEngine);
+        return;
+    }
+
+    function afterEngineReady(canvas) {
         engine.onJump = function () {
             if (sfx && sfx.jump) sfx.jump();
             flashAction('jump');
@@ -392,7 +422,11 @@
         progress.speakCount = Number(progress.speakCount) || 0;
         if (!progress.gear || typeof progress.gear !== 'object') progress.gear = {};
         if (!progress.craftKnown || typeof progress.craftKnown !== 'object') progress.craftKnown = {};
+        if (!progress.smeltKnown || typeof progress.smeltKnown !== 'object') progress.smeltKnown = {};
+        if (!progress.chestStores || typeof progress.chestStores !== 'object') progress.chestStores = {};
         progress.wordPack = progress.wordPack === 'mc' ? 'mc' : 'core';
+        progress.study = P && P.normalizeStudy ? P.normalizeStudy(progress.study) : progress.study;
+        progress.studyPin = String(progress.studyPin || '');
         stampPlayDate();
         session.coins = Number(progress.coined) || 0;
         session.bag = Object.assign({}, progress.bag || C.emptyBag());
@@ -453,7 +487,63 @@
         audioBtn.setAttribute('aria-label', muted ? 'Unmute music' : 'Mute music');
     }
 
+    function wantCompactChrome() {
+        const C = globalThis.BlockLegendMobileChrome;
+        const flags = {
+            chromeFull: /[?&]chrome=full(?:&|$)/.test(location.search || ''),
+            capacitor: !!window.Capacitor,
+            playMode: session.playMode,
+            coarse: !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches),
+            hoverNone: !!(window.matchMedia && window.matchMedia('(hover: none)').matches)
+        };
+        return C ? C.wantCompact(flags) : wantTouchPad();
+    }
+
+    let hudMenuOpen = false;
+    function syncHudChrome() {
+        const C = globalThis.BlockLegendMobileChrome;
+        const compact = wantCompactChrome();
+        const overlay = overlayOpen();
+        if (!compact || overlay) hudMenuOpen = false;
+        if (C) C.apply(document.body, { compact: compact, open: hudMenuOpen, overlay: overlay });
+        const btn = document.getElementById('hud-menu-btn');
+        if (btn) btn.setAttribute('aria-expanded', hudMenuOpen ? 'true' : 'false');
+        const mask = document.getElementById('hud-menu-mask');
+        if (mask) mask.hidden = !hudMenuOpen;
+    }
+
+    function bindHudMenu() {
+        const btn = document.getElementById('hud-menu-btn');
+        const mask = document.getElementById('hud-menu-mask');
+        if (btn && !btn.dataset.bound) {
+            btn.dataset.bound = '1';
+            btn.addEventListener('click', function (ev) {
+                ev.preventDefault();
+                hudMenuOpen = !hudMenuOpen;
+                syncHudChrome();
+            });
+        }
+        if (mask && !mask.dataset.bound) {
+            mask.dataset.bound = '1';
+            mask.addEventListener('click', function () {
+                hudMenuOpen = false;
+                syncHudChrome();
+            });
+        }
+        const fold = document.getElementById('hud-fold');
+        if (fold && !fold.dataset.bound) {
+            fold.dataset.bound = '1';
+            fold.addEventListener('click', function (ev) {
+                if (!ev.target.closest('a, button')) return;
+                hudMenuOpen = false;
+                syncHudChrome();
+            });
+        }
+    }
+
     function bindChrome() {
+        bindHudMenu();
+        syncHudChrome();
         const fullBtn = document.getElementById('fullscreen-btn');
         if (fullBtn) fullBtn.addEventListener('click', function () {
             const r = document.documentElement;
@@ -626,6 +716,72 @@
                 setWordPack(btn.getAttribute('data-pack'));
             });
         }
+        const unlockBtn = document.getElementById('parent-unlock');
+        if (unlockBtn) unlockBtn.addEventListener('click', tryParentUnlock);
+        const pinInput = document.getElementById('parent-pin');
+        if (pinInput) {
+            pinInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    tryParentUnlock();
+                }
+            });
+        }
+        const studyBox = document.getElementById('parent-study');
+        if (studyBox) {
+            studyBox.addEventListener('change', function (e) {
+                const box = e.target.closest('[data-study-subject]');
+                if (!box) return;
+                const next = studyNow();
+                next.subjects[box.getAttribute('data-study-subject')] = !!box.checked;
+                writeStudy(next);
+            });
+            studyBox.addEventListener('click', function (e) {
+                const every = e.target.closest('[data-study-every]');
+                if (every) {
+                    const next = studyNow();
+                    next.every = Number(every.getAttribute('data-study-every')) || 4;
+                    writeStudy(next);
+                    return;
+                }
+                const cap = e.target.closest('[data-study-cap]');
+                if (cap) {
+                    const next = studyNow();
+                    next.sittingCap = Number(cap.getAttribute('data-study-cap')) || 6;
+                    writeStudy(next);
+                    return;
+                }
+                const words = e.target.closest('[data-study-words]');
+                if (words) {
+                    const next = studyNow();
+                    next.wordCount = Number(words.getAttribute('data-study-words')) || 0;
+                    writeStudy(next);
+                    return;
+                }
+                const spawn = e.target.closest('[data-study-spawn]');
+                if (spawn) {
+                    const next = studyNow();
+                    next.spawnFrom = spawn.getAttribute('data-study-spawn') || 'hit';
+                    writeStudy(next);
+                    return;
+                }
+                const spawnEvery = e.target.closest('[data-study-spawn-every]');
+                if (spawnEvery) {
+                    const next = studyNow();
+                    next.spawnEvery = Number(spawnEvery.getAttribute('data-study-spawn-every')) || 4;
+                    writeStudy(next);
+                    return;
+                }
+                const band = e.target.closest('[data-study-band]');
+                if (band) {
+                    const next = studyNow();
+                    next.bands.literacy = band.getAttribute('data-study-band') || 'auto';
+                    writeStudy(next);
+                }
+            });
+        }
+        const savePin = document.getElementById('parent-save-pin');
+        if (savePin) savePin.addEventListener('click', saveParentPin);
         const audioBtn = document.getElementById('audio-btn');
         if (audioBtn) {
             audioBtn.addEventListener('click', function () {
@@ -654,6 +810,10 @@
                 choosePlayMode(btn.getAttribute('data-play-mode'));
             });
         }
+        const hubNext = document.getElementById('hub-guide-next');
+        if (hubNext) hubNext.addEventListener('click', function () { nextHubTalk(); });
+        const hubGo = document.getElementById('hub-guide-go');
+        if (hubGo) hubGo.addEventListener('click', function () { closeHubTalk(); });
         const buddyForm = document.getElementById('buddy-form');
         if (buddyForm) {
             buddyForm.addEventListener('submit', function (e) {
@@ -664,6 +824,17 @@
         document.getElementById('trade-close').addEventListener('click', function () { closeTrade(); });
         const craftClose = document.getElementById('craft-close');
         if (craftClose) craftClose.addEventListener('click', function () { toggleCraft(false); });
+        const chestClose = document.getElementById('chest-close');
+        if (chestClose) chestClose.addEventListener('click', function () { toggleChest(false); });
+        const chestLayer = document.getElementById('chest-layer');
+        if (chestLayer) {
+            chestLayer.addEventListener('click', function (e) {
+                const store = e.target.closest('[data-chest]');
+                if (store) { takeFromChest(store.getAttribute('data-chest')); return; }
+                const bag = e.target.closest('[data-chest-bag]');
+                if (bag) { putInChest(bag.getAttribute('data-chest-bag')); }
+            });
+        }
         const craftLayer = document.getElementById('craft-layer');
         if (craftLayer) {
             craftLayer.addEventListener('click', function (e) {
@@ -880,10 +1051,16 @@
             }
             if (e.key === 'f' || e.key === 'F') {
                 if (tryMountToggle()) return;
+                if (useHubService(nearestHubService(2.4))) return;
                 if (session.nearMerchant) openTrade();
             }
             if (e.key === 'c' || e.key === 'C') {
                 e.preventDefault();
+                const chestEl = document.getElementById('chest-layer');
+                if (chestEl && !chestEl.classList.contains('is-hidden')) {
+                    toggleChest(false);
+                    return;
+                }
                 toggleCraft();
                 return;
             }
@@ -901,6 +1078,7 @@
                 closeTrade();
                 toggleLayer('buddy-layer', false);
                 toggleCraft(false);
+                toggleChest(false);
                 showBuddyType(false);
             }
         });
@@ -938,7 +1116,7 @@
     }
 
     function overlayOpen() {
-        return ['quiz-layer', 'settle-layer', 'trade-layer', 'help-layer', 'craft-layer', 'buddy-layer', 'buddy-gate', 'scene-layer', 'doors-layer', 'today-layer', 'tier-layer', 'dex-layer', 'parent-layer'].some(function (id) {
+        return ['quiz-layer', 'settle-layer', 'trade-layer', 'help-layer', 'craft-layer', 'chest-layer', 'buddy-layer', 'buddy-gate', 'scene-layer', 'doors-layer', 'today-layer', 'tier-layer', 'dex-layer', 'parent-layer'].some(function (id) {
             const el = document.getElementById(id);
             return el && !el.classList.contains('is-hidden');
         });
@@ -1001,6 +1179,95 @@
             session.craftCells = CR.emptyGrid(session.craftSize);
             persist();
         }
+    }
+
+    function chestStoreId(x, y, z) {
+        return String(session.level || 1) + ':' + CR.chestKey(x, y, z);
+    }
+
+    function chestContents() {
+        if (!progress.chestStores || typeof progress.chestStores !== 'object') progress.chestStores = {};
+        const p = session.chestProp;
+        if (!p) return {};
+        const id = chestStoreId(p.x, p.y, p.z);
+        if (!progress.chestStores[id] || typeof progress.chestStores[id] !== 'object') progress.chestStores[id] = {};
+        return progress.chestStores[id];
+    }
+
+    function paintChestGrid(boxId, store, attr) {
+        const box = document.getElementById(boxId);
+        if (!box) return;
+        const keys = Object.keys(store || {}).filter(function (k) { return (Number(store[k]) || 0) > 0; });
+        let html = '';
+        for (let i = 0; i < INV_SLOTS; i += 1) {
+            const k = keys[i];
+            html += '<button type="button" class="bl-mc-slot"' +
+                (k ? ' ' + attr + '="' + k + '" data-item="' + k + '" title="' + itemLabel(k) + '"' : '') + '>' +
+                (k ? slotInner(k, store[k]) : '') + '</button>';
+        }
+        box.innerHTML = html;
+    }
+
+    function paintChest() {
+        const tip = document.getElementById('chest-tip');
+        if (tip) tip.textContent = '点背包物品放进箱子，点箱子里的物品拿回背包。';
+        paintChestGrid('chest-store', chestContents(), 'data-chest');
+        paintChestGrid('chest-bag', session.bag, 'data-chest-bag');
+        paintHotbar();
+    }
+
+    function toggleChest(forceOn) {
+        const el = document.getElementById('chest-layer');
+        if (!el) return;
+        const on = forceOn == null ? el.classList.contains('is-hidden') : !!forceOn;
+        if (on) paintChest();
+        toggleLayer('chest-layer', on);
+        if (!on) {
+            const p = session.chestProp;
+            if (p && p.mesh && p.mesh.userData.toggle && p.mesh.userData.open) p.mesh.userData.toggle();
+            session.chestProp = null;
+            persist();
+        }
+    }
+
+    function openChest(sub) {
+        const p = (sub && sub.prop) || (sub && sub.row && sub.row.prop) || (sub && sub.row);
+        if (!p || !CR || !CR.chestKey) return false;
+        session.chestProp = p;
+        if (p.mesh && p.mesh.userData.toggle && !p.mesh.userData.open) p.mesh.userData.toggle();
+        toggleChest(true);
+        toast('箱子打开了');
+        return true;
+    }
+
+    function putInChest(id) {
+        if (!id || !CR.deposit) return;
+        const r = CR.deposit(session.bag, chestContents(), id);
+        if (!r.ok) {
+            toast(r.reason || '放不进去');
+            return;
+        }
+        session.bag = r.bag;
+        const p = session.chestProp;
+        if (p) progress.chestStores[chestStoreId(p.x, p.y, p.z)] = r.chest;
+        persist();
+        paintChest();
+        toast('放进箱子了 · ' + itemLabel(id));
+    }
+
+    function takeFromChest(id) {
+        if (!id || !CR.withdraw) return;
+        const r = CR.withdraw(session.bag, chestContents(), id);
+        if (!r.ok) {
+            toast(r.reason || '箱子里没有');
+            return;
+        }
+        session.bag = r.bag;
+        const p = session.chestProp;
+        if (p) progress.chestStores[chestStoreId(p.x, p.y, p.z)] = r.chest;
+        persist();
+        paintChest();
+        toast('从箱子拿出了 · ' + itemLabel(id));
     }
 
     function itemLabel(id) {
@@ -1255,16 +1522,43 @@
         const word = CR.craftWord ? CR.craftWord(id) : { id: id, text: id, zh: id };
         rememberBoundWord(word);
         session.pending = { craftItem: id, craftVia: via };
-        fillQuizCard(nextLearnQuiz(word, { mode: 'spell' }), '合成 · 拼出 ' + (word.zh || word.text));
+        const quiz = CR.craftQuiz
+            ? CR.craftQuiz(id)
+            : nextLearnQuiz(word, { mode: 'enpick' });
+        fillQuizCard(quiz, '合成 · 选出「' + (word.zh || word.text) + '」的英文');
     }
 
     function craftDoneTip(recipe) {
         const id = recipe && recipe.id;
         const name = (recipe && recipe.name) || id || '物品';
-        if (id === 'table' || id === 'chest' || id === 'furnace' || id === 'torch'
-            || id === 'sandstone' || id === 'stone_brick' || id === 'bricks' || id === 'carpet' || id === 'wool') {
+        if (id === 'table' || id === 'torch'
+            || id === 'sandstone' || id === 'stone_brick' || id === 'bricks' || id === 'carpet' || id === 'wool'
+            || id === 'bed' || id === 'snow_block'
+            || id === 'door' || id === 'ladder' || id === 'fence' || id === 'boat') {
             session.placeLoot = id === 'bricks' ? 'bricks' : id;
             return '合成了' + name + '。点背包里的它，再点下面物品栏格子装上去，然后按 1–9 选用、右键放置。';
+        }
+        if (id === 'chest') {
+            session.placeLoot = 'chest';
+            return '合成了箱子。放到地上，对着它右键就能把东西放进去。';
+        }
+        if (id === 'furnace') {
+            session.placeLoot = 'furnace';
+            return '合成了熔炉。放到地上，袋子里放沙子或矿石和煤炭，对着熔炉右键就能烧。第一次烧要选英文。';
+        }
+        if (id === 'lantern') {
+            session.placeLoot = 'lantern';
+            return '合成了灯笼。放到洞里，怪物会慢一点。';
+        }
+        if (id === 'campfire') {
+            session.placeLoot = 'campfire';
+            return '合成了营火。放到地上，拿着生肉或鱼对着它右键就能烤，不用煤炭。';
+        }
+        if (id === 'wood_hoe' || id === 'stone_hoe' || id === 'iron_hoe') {
+            return '合成了' + name + '。装到物品栏，对着草方块右键就能锄地。';
+        }
+        if (id === 'lead') {
+            return '合成了拴绳。对着猪、牛、羊右键，它会跟着你。';
         }
         return '合成了 ' + name + '。点背包再点下面物品栏，就能装到 1–9。';
     }
@@ -1413,6 +1707,8 @@
         hideLookTip();
         if (session.paused || uiBlocksWorld()) return;
         if (tryInteract()) return;
+        if (tryTill()) return;
+        if (tryFish()) return;
         if (tryEat()) return;
         const hit = lookHit();
         if (hit && hit.hit && hit.kind === 'table') {
@@ -1435,6 +1731,7 @@
     function syncTouchHud() {
         const root = document.getElementById('touch-pad');
         document.body.classList.toggle('is-overlay', overlayOpen());
+        syncHudChrome();
         if (!root) return;
         if (!wantTouchPad()) {
             root.hidden = true;
@@ -1621,12 +1918,23 @@
             }));
             if (session.merchant && session.merchant.mesh) engine.scene.remove(session.merchant.mesh);
             spawnMerchant();
+            spawnDummy();
             refreshSideTablets();
         }
         if (engine) engine.player.hp = engine.player.hpMax;
         session.lastHitAt = 0;
-        toast('小地图黄点 · 走过去就能解锁或进下一关');
+        session.hubTalkLine = 0;
+        session.hubTalkClosed = false;
+        session.hubTalkShownNear = false;
+        session.hubTalk = null;
+        session.hubServiceAt = '';
+        toast('小地图黄点 · 跟着老师走进第一关');
         paintHubPicks(true);
+        paintHubTalk();
+        if (session.hubTalk) {
+            showFlavor({ zh: session.hubTalk.zh, en: session.hubTalk.en, ms: 4200 });
+            showBuddy(session.hubTalk.say);
+        }
         paintSayStrip();
         syncHud();
     }
@@ -1659,7 +1967,9 @@
         clearEntities();
         session.hub = false;
         session.hubEntering = false;
+        session.hubTalkClosed = true;
         paintHubPicks(false);
+        paintHubTalk();
         session.level = Math.max(1, Number(level) || 1);
         session.combo = 0;
         session.wave = 0;
@@ -1811,8 +2121,27 @@
         return Number(session.sideDone) || 0;
     }
 
+    function sideBand(kind, tracks) {
+        const src = tracks || readSubjectTracks();
+        const known = P && P.knownCount ? P.knownCount(src[kind] || src.literacy) : 0;
+        return P && P.studyBand ? P.studyBand(kind, known, studyNow()) : 'L1';
+    }
+
+    function studyNow() {
+        return P && P.normalizeStudy ? P.normalizeStudy(progress.study) : {
+            subjects: { literacy: true, pinyin: true, phonics: true, math: true },
+            every: 4,
+            sittingCap: 6,
+            wordCount: 0,
+            spawnFrom: 'hit',
+            spawnEvery: 4,
+            bands: { literacy: 'auto', pinyin: 'auto', phonics: 'auto', math: 'auto' }
+        };
+    }
+
     function sittingRoom() {
-        return P && P.sittingLeft ? P.sittingLeft({ done: sittingDoneNow() }) : 6;
+        const cap = studyNow().sittingCap;
+        return P && P.sittingLeft ? P.sittingLeft({ done: sittingDoneNow(), cap: cap }) : cap;
     }
 
     function noteSideSit() {
@@ -1826,7 +2155,9 @@
 
     function paintSideDue(due) {
         const el = document.getElementById('side-due');
-        if (el && P && P.hudDueLine) el.textContent = P.hudDueLine(due, { done: sittingDoneNow() });
+        if (el && P && P.hudDueLine) {
+            el.textContent = P.hudDueLine(due, { done: sittingDoneNow(), cap: studyNow().sittingCap });
+        }
         const n = ['literacy', 'pinyin', 'phonics', 'math'].reduce(function (sum, kind) {
             return sum + (Number(due && due[kind]) || 0);
         }, 0);
@@ -1838,7 +2169,7 @@
 
     function sideDueNow() {
         return P && P.sideDue
-            ? P.sideDue({ enFamiliar: enFamiliarCount(), tracks: readSubjectTracks() })
+            ? P.sideDue({ enFamiliar: enFamiliarCount(), tracks: readSubjectTracks(), study: studyNow() })
             : { literacy: 0, pinyin: 0, phonics: 0, math: 0 };
     }
 
@@ -1937,10 +2268,9 @@
                     avoidKeys: session.sideAvoid || [],
                     dueKeys: sideReviewKeys(),
                     tracks: tracks,
-                    literacyBand: P.literacyBand
-                        ? P.literacyBand(P.knownCount ? P.knownCount(tracks.literacy) : 0)
-                        : 'L1',
+                    literacyBand: sideBand('literacy', tracks),
                     sittingDone: sittingDoneNow(),
+                    sittingCap: studyNow().sittingCap,
                     salt: 0
                 })
                 : [];
@@ -2058,6 +2388,10 @@
             }
         }
         if (!pool.length) pool = src.slice();
+        const wordCap = studyNow().wordCount;
+        if (wordCap > 0 && !session.reviewRun && !session.secretRun && pool.length > wordCap) {
+            pool = pool.slice(0, wordCap);
+        }
     }
 
     function reviewDueWords() {
@@ -2271,7 +2605,36 @@
             return;
         }
         session.pending = { dummy: true };
-        fillQuizCard(nextLearnQuiz(word, { mode: 'choice' }), '训练假人 · 答对 +1 金币');
+        fillQuizCard(nextLearnQuiz(word, { mode: 'choice' }), '练习房 · 答对 +1 金币');
+    }
+
+    function askWordHut() {
+        const word = (pool || bank || []).filter(function (w) { return w && w.text; })[0];
+        if (!word) {
+            toast('小屋还没词可练');
+            return;
+        }
+        session.pending = { wordHut: true };
+        fillQuizCard(nextLearnQuiz(word, { mode: 'choice' }), '单词小屋 · 答对 +3 金币');
+    }
+
+    function openHubChest() {
+        const n = Number(progress.campChest) || 0;
+        if (n > 0) {
+            session.coins = (Number(session.coins) || 0) + n;
+            progress.campChest = 0;
+            persist();
+            syncHud();
+            toast('营地奖励箱 · +' + n + ' 金币');
+        }
+        const props = (engine.world && engine.world.placedProps) || [];
+        let chest = null;
+        props.forEach(function (p) {
+            if (p && p.kind === 'chest' && p.hub) chest = p;
+        });
+        if (chest) return openChest({ prop: chest, row: { x: chest.x + 0.5, z: chest.z + 0.5, y: chest.y, prop: chest } });
+        if (!n) toast('箱子是空的 · 先去小屋答题或打一关');
+        return !!n;
     }
 
     function maybeOfferScroll() {
@@ -2375,6 +2738,8 @@
         session.bolts = [];
         session.pickups = [];
         session.fx = [];
+        if (session.dummy && session.dummy.mesh) engine.scene.remove(session.dummy.mesh);
+        session.dummy = null;
         clearSettleFlag();
         dropGuideBeacon();
         const hud = document.getElementById('boss-hud');
@@ -2555,7 +2920,11 @@
 
     function spawnMerchant() {
         const mid = Math.floor(engine.world.size / 2);
-        const x = mid + 4.5, z = mid - 6.5;
+        const trade = ((engine.world && engine.world.hubServices) || []).filter(function (s) {
+            return s && s.id === 'trade';
+        })[0];
+        const x = trade ? trade.x : mid + 4.5;
+        const z = trade ? trade.z : mid - 6.5;
         const y = engine.world.surfaceAt(Math.floor(x), Math.floor(z));
         const model = MOBS.create('merchant');
         const g = model.group;
@@ -2563,6 +2932,40 @@
         g.rotation.y = Math.atan2((mid + 0.5) - x, (mid + 0.5) - z);
         engine.scene.add(g);
         session.merchant = { x: x, z: z, mesh: g, model: model };
+    }
+
+    function spawnDummy() {
+        if (session.dummy && session.dummy.mesh) engine.scene.remove(session.dummy.mesh);
+        session.dummy = null;
+        if (!MOBS || !MOBS.create) return;
+        const house = ((engine.world && engine.world.houses) || []).filter(function (h) {
+            return h && h.hubService === 'dummy';
+        })[0];
+        const svc = ((engine.world && engine.world.hubServices) || []).filter(function (s) {
+            return s && s.id === 'dummy';
+        })[0];
+        const x = house ? house.x + (house.w || 7) / 2 : (svc ? svc.x : Math.floor(engine.world.size / 2) + 10.5);
+        const z = house ? house.z + (house.d || 7) / 2 : (svc ? svc.z - 2 : Math.floor(engine.world.size / 2) - 1);
+        const y = engine.world.surfaceAt(Math.floor(x), Math.floor(z));
+        const model = MOBS.create('dummy');
+        const g = model.group;
+        g.position.set(x, y, z);
+        g.rotation.y = Math.PI;
+        engine.scene.add(g);
+        session.dummy = {
+            x: x,
+            z: z,
+            y: y,
+            mesh: g,
+            model: model,
+            kind: 'dummy',
+            isDummy: true,
+            peaceful: true,
+            hp: 99,
+            maxHp: 99,
+            hitRadius: 0.6,
+            height: model.height || 1.7
+        };
     }
 
     function farmTargets() {
@@ -2617,7 +3020,7 @@
     function meleeHits() {
         const overlap = overlappingFarm();
         if (overlap) return [overlap];
-        const living = session.monsters.concat(farmTargets());
+        const living = session.monsters.concat(farmTargets()).concat(session.dummy ? [session.dummy] : []);
         const arc = living.filter(function (m) {
             return m.hp > 0 && C.inMeleeArc(engine.player, engine.look.yaw, m);
         });
@@ -2676,7 +3079,7 @@
             const role = T.toolRole ? T.toolRole(id) : id;
             session.tool = role;
             if (session.mine) session.mine.acc = 0;
-            if (viewModel && viewModel.setTool) viewModel.setTool(role === 'fist' ? 'sword' : role);
+            if (viewModel && viewModel.setTool) viewModel.setTool(role === 'fist' ? 'sword' : (role === 'hoe' ? 'shovel' : role));
             showUseTip();
             return;
         }
@@ -2754,7 +3157,9 @@
         const order = [
             held, session.placeLoot,
             'dirt', 'cobble', 'sand', 'gravel', 'clay', 'sandstone', 'stone_brick', 'bricks', 'brick',
-            'wool', 'carpet', 'stone', 'glass', 'tnt', 'oak-log', 'plank', 'table', 'chest', 'furnace', 'torch'
+            'wool', 'carpet', 'bed', 'door', 'ladder', 'fence', 'boat', 'lantern', 'campfire', 'stone',
+            'snow_block', 'ice',
+            'glass', 'tnt', 'oak-log', 'plank', 'table', 'chest', 'furnace', 'torch'
         ];
         for (let i = 0; i < order.length; i += 1) {
             const loot = order[i];
@@ -2775,7 +3180,9 @@
             return;
         }
         const kind = T.placeKindOf(loot);
-        if (kind === 'chest' || kind === 'furnace' || kind === 'torch') {
+        if (kind === 'chest' || kind === 'furnace' || kind === 'torch' || kind === 'bed'
+            || kind === 'door' || kind === 'ladder' || kind === 'fence' || kind === 'boat'
+            || kind === 'lantern') {
             if (!engine.placeProp) {
                 toast('这里放不下。');
                 return;
@@ -3066,11 +3473,28 @@
         }
         if (T.placeKindOf(result.drop)) session.placeLoot = result.drop;
         session.bag = C.addLoot(session.bag, result.drop, 1);
+        const extra = T.extraDrop && T.extraDrop(hit.kind, hit.x, hit.y, hit.z);
+        if (extra) session.bag = C.addLoot(session.bag, extra, 1);
         persist();
-        toast('获得 ' + result.drop);
+        toast(extra ? ('获得 ' + result.drop + ' 和 ' + extra) : ('获得 ' + result.drop));
         spawnMineChips(hit, 6);
         noteWorldAct();
+        maybeWorldWordQuiz();
         if (A && A.actionFromBlock(hit.kind) === 'cut') flashAction('cut');
+    }
+
+    function maybeWorldWordQuiz() {
+        if (session.pending) return;
+        const study = studyNow();
+        if (!W.shouldAskWorldQuiz({
+            from: study.spawnFrom,
+            every: study.spawnEvery,
+            broken: session.worldActs
+        })) return;
+        const word = W.nextWord(pool, progress.learnedIds) || pool[0];
+        if (!word) return;
+        session.pending = { worldBreak: true };
+        fillQuizCard(nextLearnQuiz(word), '拆方块 · 答对继续挖');
     }
 
     function noteWorldAct() {
@@ -3097,7 +3521,7 @@
         const origin = eyeOrigin();
         const dir = T.lookDir(engine.look.yaw, engine.look.pitch);
         let best = null, bestDot = 0.74, bestDist = 7;
-        session.monsters.concat(farmTargets()).forEach(function (m) {
+        session.monsters.concat(farmTargets()).concat(session.dummy ? [session.dummy] : []).forEach(function (m) {
             if (m.hp <= 0) return;
             const aim = C.aimPoint(m);
             const dx = aim.x - origin.x;
@@ -3154,6 +3578,9 @@
         (engine.world.golems || []).forEach(function (g) {
             consider(g, 'animal', g.kind === 'snowgolem' ? 'snowgolem' : 'golem', engine.world.surfaceAt(Math.floor(g.x), Math.floor(g.z)) + 1.4);
         });
+        if (session.dummy) {
+            consider(session.dummy, 'mob', 'dummy', (session.dummy.y || 0) + 1.1, 6, 0.62);
+        }
         (engine.world.placedProps || []).forEach(function (p) {
             const row = { x: p.x + 0.5, z: p.z + 0.5, y: p.y, prop: p };
             consider(row, 'prop', p.kind, p.y + 0.4);
@@ -3168,8 +3595,18 @@
             const y0 = h.y0 != null ? h.y0 : engine.world.surfaceAt(Math.floor(h.x), Math.floor(h.z));
             const houseKind = h.role === 'word' ? 'wordhouse'
                 : h.role === 'trader' ? 'traderhouse'
-                    : h.role === 'farm' ? 'farmhouse'
-                        : 'house';
+                    : h.role === 'dummy' ? 'dummyhouse'
+                        : h.role === 'chest' ? 'chesthouse'
+                            : h.role === 'bed' ? 'bedhouse'
+                                : h.role === 'craft' ? 'crafthouse'
+                                    : h.role === 'furnace' ? 'furnacehouse'
+                                        : h.role === 'teacher' ? 'teacherhouse'
+                                            : h.role === 'library' ? 'libraryhouse'
+                                                : h.role === 'lookout' ? 'lookouthouse'
+                                                    : h.role === 'dock' ? 'dockhouse'
+                                                        : h.role === 'barn' ? 'barnhouse'
+                                                            : h.role === 'farm' ? 'farmhouse'
+                                                                : 'house';
             consider({ x: doorX, z: doorZ, y: y0 }, 'prop', houseKind, y0 + 1.15);
         });
         (engine.world.wells || []).forEach(function (w) {
@@ -3211,7 +3648,7 @@
     function isVillageLook(sub) {
         if (!sub || sub.type === 'mob') return false;
         const kind = String(sub.kind || '');
-        return /^(villager|farmer|teacher|trader|well|house|farmhouse|wordhouse|traderhouse|pen|wheat|pig|cow|sheep|golem)$/.test(kind);
+        return /^(villager|farmer|teacher|trader|well|house|farmhouse|wordhouse|traderhouse|dummyhouse|chesthouse|bedhouse|crafthouse|furnacehouse|teacherhouse|libraryhouse|lookouthouse|dockhouse|barnhouse|dummy|pen|wheat|pig|cow|sheep|golem|bed|chest|table|chair|torch|bookshelf|furnace)$/.test(kind);
     }
 
     function villageLookWord(sub) {
@@ -3262,9 +3699,7 @@
             const q = P.nextDue(due, {
                 cards: allSideCards(),
                 kind: kind,
-                band: kind === 'literacy' && P.literacyBand
-                    ? P.literacyBand(P.knownCount ? P.knownCount(tracks.literacy) : 0)
-                    : undefined,
+                band: kind === 'literacy' ? sideBand('literacy', tracks) : undefined,
                 avoidKeys: session.sideAvoid || [],
                 dueKeys: sideReviewKeys(),
                 salt: sittingDoneNow()
@@ -3283,22 +3718,49 @@
     function greetVillager(sub) {
         const kind = (sub && sub.kind) || 'villager';
         const label = W.labelFor(kind, bank);
-        const hello = kind === 'farmer' ? 'Hello, farmer'
-            : kind === 'teacher' ? 'Hello, teacher'
-                : 'Hello, villager';
+        const talk = session.hub ? currentHubTalk() : null;
+        const hello = talk
+            ? talk.say
+            : (kind === 'farmer' ? 'Hello, farmer'
+                : kind === 'teacher' ? 'Hello, teacher'
+                    : 'Hello, villager');
         const row = sub && (sub.row || (session.lookRow));
         if (row && row.mesh) {
             row.mesh.userData.waveUntil = nowMs() + 900;
             row.mesh.rotation.z = 0.18;
         }
-        toast(hello + ' · ' + (label.zh || ''));
+        toast(hello + (talk ? '' : (' · ' + (label.zh || ''))));
+        if (talk) {
+            session.hubTalkClosed = false;
+            paintHubTalk();
+            showBuddy(talk.say);
+        }
         noteQuest({ type: 'look', kind: kind });
+    }
+
+    function bagCount(id) {
+        return Number(session.bag && session.bag[id]) || 0;
+    }
+
+    function spendBag(id) {
+        if (bagCount(id) <= 0) return false;
+        session.bag = C.addLoot(session.bag, id, -1);
+        return true;
+    }
+
+    function heldId() {
+        return session.hotbar && session.hotbar[session.hotIndex];
     }
 
     function interactFarm(mob) {
         if (!mob || !(C.isFarmAnimal && C.isFarmAnimal(mob.kind))) return false;
+        const t = nowMs() / 1000;
+        if (heldId() === 'lead' || bagCount('lead') > 0) {
+            mob.leashed = !mob.leashed;
+            toast(mob.leashed ? '拴上了，它会跟着你' : '解开了拴绳');
+            return true;
+        }
         if (mob.kind === 'chicken') {
-            const t = nowMs() / 1000;
             if (!mob.handEggAt || t - mob.handEggAt >= 8) {
                 mob.handEggAt = t;
                 mob.eggAt = t;
@@ -3310,6 +3772,40 @@
                 return true;
             }
             toast('这只鸡刚下过蛋，等一会儿再摸');
+            return true;
+        }
+        if (mob.kind === 'cow') {
+            if (bagCount('bucket') <= 0 && heldId() !== 'bucket') {
+                toast('拿着桶再摸牛，能挤牛奶');
+                return true;
+            }
+            if (mob.milkAt && t - mob.milkAt < 10) {
+                toast('这头牛刚挤过，等一会儿');
+                return true;
+            }
+            mob.milkAt = t;
+            spendBag('bucket');
+            if (tryAutoEat('milk')) {
+                persist();
+                paintHotbar();
+                return true;
+            }
+            session.bag = C.addLoot(session.bag, 'milk', 1);
+            persist();
+            paintHotbar();
+            toast('挤到牛奶 · 做蛋糕或按 E 喝');
+            return true;
+        }
+        if (mob.kind === 'sheep' && (heldId() === 'shears' || bagCount('shears') > 0)) {
+            if (mob.shearAt && t - mob.shearAt < 8) {
+                toast('这只羊刚剪过，等一会儿');
+                return true;
+            }
+            mob.shearAt = t;
+            session.bag = C.addLoot(session.bag, 'wool', 2);
+            persist();
+            paintHotbar();
+            toast('剪到羊毛 · 可以做床或地毯');
             return true;
         }
         toast('左键打它掉肉，走过去捡起来就能回血');
@@ -3348,7 +3844,10 @@
         engine.player.mounted = dragon;
         engine.player.x = dragon.x;
         engine.player.z = dragon.z;
-        engine.player.y = (dragon.y != null ? dragon.y : engine.world.surfaceAt(Math.floor(dragon.x), Math.floor(dragon.z))) + 1.32;
+        const surfaceY = engine.world.surfaceAt(Math.floor(dragon.x), Math.floor(dragon.z));
+        engine.player.y = FX && FX.rideMountY
+            ? FX.rideMountY(surfaceY, dragon.y)
+            : Math.max((dragon.y != null ? dragon.y : surfaceY) + 1.32, surfaceY + 12);
         engine.player.vy = 0;
         if (engine.fovKick && FX && FX.rideFov) engine.fovKick(FX.rideFov('up'));
         toast('骑上龙了 · 空格升高 · Shift 或低头下降 · F 下来');
@@ -3359,6 +3858,7 @@
 
     function tryMountToggle() {
         if (session.paused || uiBlocksWorld()) return false;
+        if (engine.player.mounted && engine.player.mounted.kind === 'boat') return toggleBoat();
         if (engine.player.mounted) return toggleMount();
         const sub = lookSubject();
         if (sub && sub.row && sub.row.rideable) return toggleMount(sub.row);
@@ -3367,7 +3867,10 @@
     }
 
     function tryInteract() {
-        if (engine.player.mounted) return toggleMount();
+        if (engine.player.mounted) {
+            if (engine.player.mounted.kind === 'boat') return toggleBoat();
+            return toggleMount();
+        }
         const sub = lookSubject();
         if (!sub) return false;
         if (sub.type === 'portal') {
@@ -3386,11 +3889,66 @@
             greetVillager(sub);
             return true;
         }
+        if (sub.type === 'prop' && sub.kind === 'wordhouse' && session.hub) {
+            askWordHut();
+            return true;
+        }
+        if ((sub.type === 'mob' || sub.type === 'animal') && sub.kind === 'dummy') {
+            askDummy();
+            return true;
+        }
+        if (sub.type === 'prop' && sub.kind === 'dummyhouse') {
+            askDummy();
+            return true;
+        }
+        if (sub.type === 'prop' && sub.kind === 'chesthouse') {
+            return openHubChest();
+        }
+        if (sub.type === 'prop' && sub.kind === 'traderhouse') {
+            openTrade();
+            return true;
+        }
+        if (sub.type === 'prop' && sub.kind === 'bedhouse') {
+            return trySleep();
+        }
+        if (sub.type === 'prop' && (sub.kind === 'crafthouse' || sub.kind === 'table')) {
+            toggleCraft(true, true);
+            return true;
+        }
+        if (sub.type === 'prop' && sub.kind === 'furnacehouse') {
+            return trySmelt(sub);
+        }
+        if (sub.type === 'prop' && sub.kind === 'teacherhouse') {
+            startTeacherLesson(sub);
+            return true;
+        }
+        if (sub.type === 'prop' && sub.kind === 'bed') {
+            return trySleep();
+        }
+        if (sub.type === 'prop' && sub.kind === 'chest') {
+            return openChest(sub);
+        }
+        if (sub.type === 'prop' && sub.kind === 'furnace') {
+            return trySmelt(sub);
+        }
+        if (sub.type === 'block' && sub.kind === 'campfire') {
+            return tryCook();
+        }
+        if (sub.type === 'prop' && sub.kind === 'boat') {
+            return toggleBoat(sub.prop || sub.row);
+        }
+        if ((sub.type === 'animal' || sub.type === 'mob') && sub.kind === 'fish') {
+            return tryCatchFish(sub.row || sub.mob);
+        }
+        if (sub.type === 'prop' && sub.kind === 'wheat') {
+            return tryHarvestWheat(sub);
+        }
         if (sub.type === 'prop' && sub.prop && sub.prop.mesh && sub.prop.mesh.userData.toggle) {
             sub.prop.mesh.userData.toggle();
             toast(sub.kind === 'chest' ? (sub.prop.mesh.userData.open ? '箱子打开了' : '箱子关上了')
                 : sub.kind === 'furnace' ? (sub.prop.mesh.userData.lit ? '熔炉点着了' : '熔炉熄了')
-                    : '互动了');
+                    : sub.kind === 'door' ? (sub.prop.mesh.userData.open ? '门打开了' : '门关上了')
+                        : '互动了');
             return true;
         }
         if (sub.type === 'animal' && sub.row && sub.row.rideable) {
@@ -3416,6 +3974,183 @@
             }
         }
         return false;
+    }
+
+    function tryHarvestWheat(sub) {
+        const row = sub && sub.row;
+        if (!row || !engine || !engine.world) return false;
+        const fn = ENG && ENG.harvestWheat;
+        if (!fn) return false;
+        const res = fn(engine.world, row.x, row.z);
+        if (!res || !res.ok) {
+            toast(res && res.reason === 'wheat still growing' ? '小麦还没长好，对着它说 wheat' : '这里没有熟小麦');
+            return true;
+        }
+        session.bag = C.addLoot(session.bag, res.drop || 'wheat', 1);
+        persist();
+        paintHotbar();
+        toast('收了小麦');
+        noteQuest({ type: 'look', kind: 'wheat' });
+        return true;
+    }
+
+    function finishSmelt(r, sub) {
+        session.bag = r.bag;
+        if (sub && sub.prop && sub.prop.mesh && sub.prop.mesh.userData.toggle && !sub.prop.mesh.userData.lit) {
+            sub.prop.mesh.userData.toggle();
+        }
+        persist();
+        paintBagCounts();
+        const outId = r.recipe && Object.keys(r.recipe.outputs)[0];
+        toast('烧出了' + ((CR.itemName && CR.itemName(outId)) || outId || '物品'));
+        if (sfx && sfx.craft) sfx.craft();
+        return true;
+    }
+
+    function askSmeltSpell(outId, prefer, sub) {
+        if (CR.needsSmeltSpell && !CR.needsSmeltSpell(outId, progress.smeltKnown)) {
+            const r = CR.smeltNext(session.bag, prefer);
+            if (r && r.ok) return finishSmelt(r, sub);
+            return false;
+        }
+        const word = CR.smeltWord ? CR.smeltWord(outId) : { id: outId, text: outId, zh: outId };
+        rememberBoundWord(word);
+        session.pending = { smeltOut: outId, smeltPrefer: prefer };
+        session.smeltLook = sub || null;
+        const quiz = CR.smeltQuiz
+            ? CR.smeltQuiz(outId)
+            : nextLearnQuiz(word, { mode: 'enpick' });
+        fillQuizCard(quiz, '熔炉 · 选出「' + (word.zh || word.text) + '」的英文');
+        return true;
+    }
+
+    function trySmelt(sub) {
+        if (!CR || !CR.smeltNext) return false;
+        const held = session.hotbar && session.hotbar[session.hotIndex];
+        const r = CR.smeltNext(session.bag, held);
+        if (!r.ok) {
+            toast('对着熔炉烧东西。袋子里要有沙子、矿石或生肉，再加煤炭。');
+            if (sub && sub.prop && sub.prop.mesh && sub.prop.mesh.userData.toggle) {
+                sub.prop.mesh.userData.toggle();
+            }
+            return true;
+        }
+        const outId = r.recipe && Object.keys(r.recipe.outputs)[0];
+        if (CR.needsSmeltSpell && CR.needsSmeltSpell(outId, progress.smeltKnown)) {
+            return askSmeltSpell(outId, held, sub);
+        }
+        return finishSmelt(r, sub);
+    }
+
+    function tryCook() {
+        if (!CR || !CR.cookNext) return false;
+        const held = session.hotbar && session.hotbar[session.hotIndex];
+        const r = CR.cookNext(session.bag, held);
+        if (!r.ok) {
+            toast('拿着生肉或鱼，对着营火右键就能烤，不用煤炭。');
+            return true;
+        }
+        session.bag = r.bag;
+        persist();
+        paintBagCounts();
+        const outId = r.out || (r.recipe && Object.keys(r.recipe.outputs)[0]);
+        toast('营火烤出了' + ((CR.itemName && CR.itemName(outId)) || outId || '食物'));
+        if (sfx && sfx.craft) sfx.craft();
+        return true;
+    }
+
+    function trySleep() {
+        if (!engine || !engine.player) return false;
+        engine.player.hp = engine.player.hpMax;
+        persist();
+        paintHearts();
+        toast('睡了一觉 · HP 回满');
+        flashAction('eat');
+        return true;
+    }
+
+    function toggleBoat(row) {
+        if (engine.player.mounted && engine.player.mounted.kind === 'boat') {
+            if (engine.dismount) engine.dismount();
+            else {
+                engine.player.mounted = null;
+                engine.player.y = engine.world.surfaceAt(Math.floor(engine.player.x), Math.floor(engine.player.z));
+                engine.player.vy = 0;
+            }
+            toast('下船了');
+            return true;
+        }
+        if (engine.player.mounted) return toggleMount();
+        const boat = row && (row.prop || row);
+        if (!boat || (boat.kind && boat.kind !== 'boat')) return false;
+        boat.kind = 'boat';
+        engine.player.mounted = boat;
+        engine.player.x = (boat.x != null ? boat.x : 0) + 0.5;
+        engine.player.z = (boat.z != null ? boat.z : 0) + 0.5;
+        engine.player.y = engine.world.surfaceAt(Math.floor(engine.player.x), Math.floor(engine.player.z)) + 0.35;
+        engine.player.vy = 0;
+        toast('坐上船了 · WASD 划 · 右键下来');
+        noteQuest({ type: 'look', kind: 'boat' });
+        return true;
+    }
+
+    function tryFish() {
+        if (heldId() !== 'fishing_rod') return false;
+        const sub = lookSubject();
+        if (sub && sub.kind === 'fish') return tryCatchFish(sub.row || sub.mob);
+        toast('对准水里游着的鱼再钓');
+        return true;
+    }
+
+    function tryCatchFish(fish) {
+        if (!fish || fish.kind !== 'fish') return false;
+        if (heldId() !== 'fishing_rod') {
+            toast('拿着钓竿对准鱼');
+            return true;
+        }
+        const t = nowMs() / 1000;
+        if (session.fishAt && t - session.fishAt < 2.5) {
+            toast('再等一会儿再钓');
+            return true;
+        }
+        const fn = (ENG && ENG.catchFish) || (globalThis.BlockLegendWorld && globalThis.BlockLegendWorld.catchFish);
+        if (!fn) return false;
+        const res = fn(engine.world, fish);
+        if (!res || !res.ok) {
+            toast('这条游走了');
+            return true;
+        }
+        session.fishAt = t;
+        if (tryAutoEat('fish')) return true;
+        session.bag = C.addLoot(session.bag, res.drop || 'fish', 1);
+        persist();
+        paintHotbar();
+        toast('钓到鱼了 · 按 E 吃');
+        return true;
+    }
+
+    function tryTill() {
+        const id = heldId();
+        if (!id || !T.toolRole || T.toolRole(id) !== 'hoe') return false;
+        const hit = lookHit();
+        if (!hit || !hit.hit) {
+            toast('对着草方块才能锄地');
+            return true;
+        }
+        if (hit.kind === 'dirt') {
+            toast('这块地已经锄过了');
+            return true;
+        }
+        if (hit.kind !== 'grass') return false;
+        const broke = ENG.breakVoxel(engine.world, hit.x, hit.y, hit.z);
+        if (!broke || !broke.ok) return false;
+        ENG.placeVoxel(engine.world, hit.x, hit.y, hit.z, 'dirt');
+        if (engine.remeshAt) engine.remeshAt(hit.x, hit.z);
+        if (viewModel) viewModel.triggerSwing();
+        spawnPlaceChips(hit.x, hit.y, hit.z, 'dirt');
+        toast('锄好地了');
+        noteWorldAct();
+        return true;
     }
 
     function lookSubject() {
@@ -3659,11 +4394,28 @@
 
     function tryBolt() {
         if (!C.canAttack({ kind: 'bolt', lastAt: session.lastBoltAt, now: nowMs() })) return;
+        const held = heldId();
+        if (held === 'snowball') {
+            if (bagCount('snowball') <= 0) {
+                toast('没有雪球了 · 去铲雪');
+                return;
+            }
+            session.bag = C.addLoot(session.bag, 'snowball', -1);
+            persist();
+            paintHotbar();
+            launchBoltToward(nearestLookMob());
+            return;
+        }
         launchBoltToward(nearestLookMob());
     }
 
     function requestHit(mob, kind) {
         if (session.pending) return;
+        if (mob && mob.isDummy) {
+            if (mob.mesh) mob.hurtUntil = nowMs() + 280;
+            askDummy();
+            return;
+        }
         if (mob.peaceful && C.isFarmAnimal && C.isFarmAnimal(mob.kind)) {
             applyResolvedHit(mob, kind, { answered: false, correct: false });
             return;
@@ -3674,6 +4426,7 @@
             quizPassed: !!mob.quizPassed,
             lastQuizWrong: !!mob.lastQuizWrong,
             hitsSinceQuiz: Number(mob.hitsSinceQuiz) || 0,
+            every: studyNow().spawnEvery,
             bossShielded: !!(mob.isBoss && session.boss && session.boss.state === 'shielded')
         })) {
             openQuiz(mob, kind);
@@ -4317,6 +5070,17 @@
             }
             return;
         }
+        if (pending.wordHut) {
+            if (correct) {
+                session.coins = (Number(session.coins) || 0) + 3;
+                persist();
+                syncHud();
+                toast('单词小屋 · +3 金币 · 可去商人摊换东西');
+            } else {
+                toast('再进小屋试一次');
+            }
+            return;
+        }
         if (pending.merchantMath) {
             if (correct) {
                 session.mathDiscount = pending.merchantMath.discount || 0.9;
@@ -4342,6 +5106,10 @@
         }
         if (pending.sceneSide) {
             toast(correct ? '拼读做到了' : '再听一次');
+            return;
+        }
+        if (pending.worldBreak) {
+            toast(correct ? '继续挖' : '下次拆方块再试');
             return;
         }
         if (pending.wordBlock) {
@@ -4395,9 +5163,23 @@
                 else finishDoCraft(pending.craftItem);
                 toggleCraft(true);
             } else {
-                toast('再拼一次 ' + ((word && word.text) || '') + ' 才能合成');
+                toast('再选一次 ' + ((word && word.text) || '') + ' 才能合成');
                 toggleCraft(true);
             }
+            return;
+        }
+        if (pending.smeltOut) {
+            if (correct) {
+                if (!progress.smeltKnown) progress.smeltKnown = {};
+                progress.smeltKnown[pending.smeltOut] = 1;
+                persist();
+                const r = CR.smeltNext(session.bag, pending.smeltPrefer || pending.smeltOut);
+                if (r && r.ok) finishSmelt(r, session.smeltLook);
+                else toast('材料不够了');
+            } else {
+                toast('再选一次 ' + ((word && word.text) || '') + ' 才能烧');
+            }
+            session.smeltLook = null;
             return;
         }
         pending.mob.asked = true;
@@ -4438,6 +5220,11 @@
     function paintQuest() {
         const goal = document.getElementById('quest-goal');
         const hint = document.getElementById('quest-hint');
+        if (session.hub && session.hubTalk) {
+            if (goal) goal.textContent = session.hubTalk.goal;
+            if (hint) hint.textContent = session.hubTalk.hint;
+            return;
+        }
         const mark = session.guideMark || currentGuideMark();
         if (mark) {
             if (goal) goal.textContent = mark.label;
@@ -5943,6 +6730,13 @@
         if (session.merchant && session.merchant.model) {
             session.merchant.model.update(dt, false, t / 1000);
         }
+        if (session.dummy && session.dummy.mesh) {
+            const wobble = session.dummy.hurtUntil && nowMs() < session.dummy.hurtUntil;
+            session.dummy.mesh.rotation.z = wobble ? Math.sin(t * 28) * 0.2 : 0;
+            if (session.dummy.model && session.dummy.model.update) {
+                session.dummy.model.update(dt, false, t / 1000);
+            }
+        }
         if (viewModel) {
             const inp = engine.input;
             const moving = !!(inp.fwd || inp.back || inp.left || inp.right);
@@ -5967,9 +6761,15 @@
         updateMerchantTip();
         updateWordGate();
         updateHubPortal();
+        updateHubService();
         updateGuideReach();
-        syncHud();
-        drawMinimap();
+        updateHubTalk();
+        const Perf = globalThis.BlockLegendPerf;
+        if (!Perf || Perf.shouldPulse(t, session.hudAt, Perf.HUD_MS)) {
+            session.hudAt = t;
+            syncHud();
+            drawMinimap();
+        }
     }
 
     function setHotbar(n) {
@@ -5978,14 +6778,10 @@
         });
     }
 
-    function drawMinimap() {
-        const c = document.getElementById('mini-map');
-        if (!c || !engine) return;
-        const ctx = c.getContext('2d');
-        const w = engine.world;
-        const scale = c.width / w.size;
+    function paintMinimapTerrain(buf, w, scale) {
+        const ctx = buf.getContext('2d');
         ctx.fillStyle = '#3d8a38';
-        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.fillRect(0, 0, buf.width, buf.height);
         for (let z = 0; z < w.size; z += 2) {
             for (let x = 0; x < w.size; x += 2) {
                 const h = w.surfaceAt(x, z);
@@ -5997,6 +6793,27 @@
             ctx.fillStyle = '#1c4a16';
             ctx.fillRect(t.x * scale, t.z * scale, 2.2, 2.2);
         });
+    }
+
+    function drawMinimap() {
+        const c = document.getElementById('mini-map');
+        if (!c || !engine) return;
+        const ctx = c.getContext('2d');
+        const w = engine.world;
+        const scale = c.width / w.size;
+        const P = globalThis.BlockLegendPerf;
+        if (!session.minimapTerrain) session.minimapTerrain = document.createElement('canvas');
+        const buf = session.minimapTerrain;
+        if (buf.width !== c.width || buf.height !== c.height) {
+            buf.width = c.width;
+            buf.height = c.height;
+            session.minimapKey = '';
+        }
+        if (!P || P.shouldPaintTerrain(session.minimapKey, w, c.width)) {
+            paintMinimapTerrain(buf, w, scale);
+            session.minimapKey = P ? P.terrainKey(w, c.width) : 'once';
+        }
+        ctx.drawImage(buf, 0, 0);
         session.monsters.forEach(function (m) {
             if (m.hp <= 0) return;
             ctx.fillStyle = m.isBoss ? '#3d7dff' : '#e23ad0';
@@ -6275,7 +7092,10 @@
                 const surface = engine.world.surfaceAt(Math.floor(engine.player.x), Math.floor(engine.player.z));
                 const inCave = engine.player.y < surface - 2.2;
                 const slow = C.torchSlow
-                    ? C.torchSlow({ hasTorch: (session.bag.torch || 0) > 0, inCave: inCave })
+                    ? C.torchSlow({
+                        hasTorch: (session.bag.torch || 0) > 0 || (session.bag.lantern || 0) > 0,
+                        inCave: inCave
+                    })
                     : 1;
                 const dash = (m.isBoss && session.bossDashUntil && nowMs() < session.bossDashUntil) ? 2.35 : 1;
                 const step = Math.max(1.05, m.speed) * dt * slow * dash * (pose.dash || 1);
@@ -6582,6 +7402,14 @@
                 return;
             }
             if (C.isFarmAnimal && C.isFarmAnimal(a.kind)) {
+                if (a.leashed && engine.player) {
+                    const pdx = engine.player.x - a.x;
+                    const pdz = engine.player.z - a.z;
+                    const pdist = Math.hypot(pdx, pdz) || 1;
+                    if (pdist > 1.5) nudgeLife(a, pdx / pdist * 1.7, pdz / pdist * 1.7, dt);
+                    a.fleeing = false;
+                    return;
+                }
                 const step = C.fleeStep
                     ? C.fleeStep(a.kind, { dist: near.dist, threat: !!near.target, dx: tdx, dz: tdz })
                     : { sx: 0, sz: 0 };
@@ -6850,6 +7678,143 @@
         if (mark.kind === 'unlock' && d < 1.7) tryCampUnlock();
     }
 
+    function nearestHubService(range) {
+        const list = engine.world && engine.world.hubServices;
+        if (!list || !list.length || !engine.player) return null;
+        const p = engine.player;
+        const max = range == null ? 2.2 : range;
+        let best = null, bestD = max;
+        list.forEach(function (s) {
+            const d = Math.hypot(p.x - s.x, p.z - s.z);
+            if (d < bestD) {
+                best = s;
+                bestD = d;
+            }
+        });
+        return best;
+    }
+
+    function useHubService(svc) {
+        if (!svc) return false;
+        if (svc.id === 'word') {
+            askWordHut();
+            return true;
+        }
+        if (svc.id === 'dummy') {
+            askDummy();
+            return true;
+        }
+        if (svc.id === 'chest') {
+            openHubChest();
+            return true;
+        }
+        if (svc.id === 'trade') {
+            openTrade();
+            return true;
+        }
+        if (svc.id === 'bed') {
+            trySleep();
+            return true;
+        }
+        if (svc.id === 'craft') {
+            toggleCraft(true, true);
+            return true;
+        }
+        if (svc.id === 'furnace') {
+            trySmelt();
+            return true;
+        }
+        if (svc.id === 'teacher') {
+            startTeacherLesson({ kind: 'teacher' });
+            return true;
+        }
+        if (svc.id === 'campfire') {
+            tryCook();
+            return true;
+        }
+        if (svc.id === 'garden' || svc.id === 'farm') {
+            tryHubFarm(svc);
+            return true;
+        }
+        if (svc.id === 'library') {
+            askWordHut();
+            return true;
+        }
+        if (svc.id === 'lookout') {
+            toast('瞭望塔 · Lookout · 北边黄光就是第一关的门');
+            return true;
+        }
+        if (svc.id === 'dock') {
+            tryHubDock();
+            return true;
+        }
+        if (svc.id === 'barn') {
+            toast('牲口棚 · Barn · 猪牛羊在院子里');
+            return true;
+        }
+        return false;
+    }
+
+    function tryHubFarm(svc) {
+        if (ENG && ENG.growWheat && engine.world) ENG.growWheat(engine.world);
+        let got = 0;
+        if (ENG && ENG.harvestWheat && engine.world && engine.player) {
+            const ox = Math.floor(svc && svc.x != null ? svc.x : engine.player.x);
+            const oz = Math.floor(svc && svc.z != null ? svc.z : engine.player.z);
+            let dx, dz;
+            for (dz = -3; dz <= 3; dz += 1) {
+                for (dx = -3; dx <= 3; dx += 1) {
+                    const cut = ENG.harvestWheat(engine.world, ox + dx, oz + dz);
+                    if (cut && cut.ok) {
+                        session.bag = C.addLoot(session.bag, cut.drop || 'wheat', 1);
+                        got += 1;
+                    }
+                }
+            }
+        }
+        if (got) {
+            persist();
+            toast('农田 · Farm · 收了 ' + got + ' 把小麦');
+            return;
+        }
+        toast('农田 · Farm · 麦子会慢慢长，走近再收');
+    }
+
+    function tryHubDock() {
+        const p = engine.player;
+        const list = ((engine.world && engine.world.animals) || []).filter(function (a) {
+            return a && a.kind === 'fish';
+        });
+        list.sort(function (a, b) {
+            return Math.hypot(p.x - a.x, p.z - a.z) - Math.hypot(p.x - b.x, p.z - b.z);
+        });
+        const fish = list[0];
+        if (!fish || Math.hypot(p.x - fish.x, p.z - fish.z) > 10) {
+            toast('码头 · Dock · 走到湖边木板再钓鱼');
+            return;
+        }
+        const caught = ENG && ENG.catchFish ? ENG.catchFish(engine.world, fish) : null;
+        if (caught && caught.ok) {
+            session.bag = C.addLoot(session.bag, caught.drop || 'fish', 1);
+            persist();
+            toast('码头 · Dock · 钓到一条鱼');
+            return;
+        }
+        toast('码头 · Dock · 湖里有鱼，再靠近一点');
+    }
+
+    function updateHubService() {
+        if (!session.hub || session.paused || session.quiz) return;
+        const svc = nearestHubService(1.35);
+        if (!svc || session.hubServiceAt === svc.id) return;
+        session.hubServiceAt = svc.id;
+        const tip = document.getElementById('look-tip');
+        if (tip) {
+            tip.textContent = (svc.en || '') + ' · ' + (svc.label || '') + ' · 走近或按 F';
+            tip.classList.remove('is-hidden');
+        }
+    }
+
     function nearestLevelPortal(range) {
         const list = engine.world && engine.world.levelPortals;
         if (!list || !list.length) return null;
@@ -6880,10 +7845,106 @@
         el.innerHTML = nodes.map(function (n) {
             const lock = n.state === 'locked';
             const mark = n.state === 'due' ? '复习' : n.state === 'cleared' ? '已通' : lock ? '锁' : '进';
-            return '<button type="button" class="bl-hub-pick" data-hub-level="' + n.level
+            const guide = !lock && n.level === 1 && (progress.unlockedLevel || 1) <= 1;
+            return '<button type="button" class="bl-hub-pick' + (guide ? ' is-guide' : '')
+                + '" data-hub-level="' + n.level
                 + '" data-state="' + n.state + '"' + (lock ? ' aria-disabled="true"' : '')
                 + '>' + n.level + ' ' + n.title + ' · ' + mark + '</button>';
         }).join('');
+    }
+
+    function currentHubTalk() {
+        if (!session.hub || !L.hubTalkOf) return null;
+        const portals = (engine && engine.world && engine.world.levelPortals) || [];
+        let first = null;
+        let i;
+        for (i = 0; i < portals.length; i += 1) {
+            if (portals[i].level === 1) {
+                first = portals[i];
+                break;
+            }
+        }
+        if (!first) {
+            for (i = 0; i < portals.length; i += 1) {
+                if (portals[i].state === 'open' || portals[i].state === 'due') {
+                    first = portals[i];
+                    break;
+                }
+            }
+        }
+        const p = engine && engine.player;
+        const dist = first && p ? Math.hypot(p.x - first.x, p.z - first.z) : 999;
+        return L.hubTalkOf({
+            unlockedLevel: progress.unlockedLevel || 1,
+            clearedLevels: progress.clearedLevels || [],
+            dist: dist,
+            line: session.hubTalkLine || 0
+        });
+    }
+
+    function paintHubTalk() {
+        const talk = currentHubTalk();
+        session.hubTalk = talk;
+        const root = document.getElementById('hub-guide');
+        const who = document.getElementById('hub-guide-who');
+        const zh = document.getElementById('hub-guide-zh');
+        const en = document.getElementById('hub-guide-en');
+        const prompts = document.getElementById('hub-guide-prompts');
+        const nextBtn = document.getElementById('hub-guide-next');
+        if (!root) {
+            paintQuest();
+            return;
+        }
+        if (!talk || session.hubTalkClosed) {
+            root.classList.add('is-hidden');
+            paintQuest();
+            return;
+        }
+        if (who) who.textContent = talk.who || '老师';
+        if (zh) zh.textContent = talk.zh || '';
+        if (en) en.textContent = talk.en || '';
+        if (prompts) {
+            prompts.innerHTML = (talk.prompts || []).map(function (p) {
+                return '<span class="bl-hub-prompt"><b>' + p.en + '</b><i>' + p.zh + '</i></span>';
+            }).join('');
+        }
+        if (nextBtn) nextBtn.classList.toggle('is-hidden', !!talk.last);
+        root.classList.remove('is-hidden');
+        paintQuest();
+    }
+
+    function nextHubTalk() {
+        const talk = currentHubTalk();
+        if (!talk || talk.last) {
+            closeHubTalk();
+            return;
+        }
+        session.hubTalkLine = (talk.line || 0) + 1;
+        paintHubTalk();
+        if (session.hubTalk) showBuddy(session.hubTalk.say);
+    }
+
+    function closeHubTalk() {
+        session.hubTalkClosed = true;
+        paintHubTalk();
+        toast('跟着黄光走 · Go');
+    }
+
+    function updateHubTalk() {
+        if (!session.hub || session.paused || session.quiz) return;
+        const talk = currentHubTalk();
+        if (!talk) return;
+        const prev = session.hubTalk;
+        if (talk.stage === 'near' && session.hubTalkClosed && !session.hubTalkShownNear) {
+            session.hubTalkClosed = false;
+            session.hubTalkShownNear = true;
+            paintHubTalk();
+            showBuddy(talk.say);
+            return;
+        }
+        if (prev && prev.stage === talk.stage && prev.line === talk.line) return;
+        paintHubTalk();
+        if (talk.stage === 'near') showBuddy(talk.say);
     }
 
     function jumpHubLevel(level) {
@@ -7064,7 +8125,11 @@
         const list = document.getElementById('shop-list');
         if (list) {
             list.innerHTML = '';
-            S.ITEMS.forEach(function (it) {
+            const stock = S.catalogOf ? S.catalogOf({
+                unlockedLevel: progress.unlockedLevel || 1,
+                clearedLevels: progress.clearedLevels || []
+            }) : S.ITEMS;
+            stock.forEach(function (it) {
                 const worn = progress.gear && progress.gear[it.slot] === it.id;
                 const price = P && P.shopCost ? P.shopCost(it.cost, rate) : it.cost;
                 const row = document.createElement('button');
@@ -7093,6 +8158,11 @@
         }
         session.coins = res.coined;
         progress.gear = res.gear;
+        if (res.bagId && C.addLoot) {
+            session.bag = C.addLoot(session.bag, res.bagId, res.qty || 1);
+            paintHotbar();
+            paintBagCounts();
+        }
         if (sfx && sfx.buy) sfx.buy();
         if (res.heal && engine) {
             engine.player.hp = Math.min(engine.player.hpMax, engine.player.hp + res.heal);
@@ -7552,7 +8622,82 @@
                 tracks: readSubjectTracks()
             });
         }
+        paintParentGate();
+    }
+
+    function paintParentGate() {
+        const on = !!session.parentUnlocked;
+        const gate = document.getElementById('parent-gate');
+        const study = document.getElementById('parent-study');
+        if (gate) gate.classList.toggle('is-hidden', on);
+        if (study) study.classList.toggle('is-hidden', !on);
+        if (on) paintParentStudy();
+        else paintWordPack();
+    }
+
+    function tryParentUnlock() {
+        const input = document.getElementById('parent-pin');
+        const msg = document.getElementById('parent-pin-msg');
+        const ok = P && P.checkPin ? P.checkPin(progress.studyPin, input && input.value) : false;
+        if (!ok) {
+            if (msg) msg.textContent = '密码不对';
+            return;
+        }
+        session.parentUnlocked = true;
+        if (input) input.value = '';
+        if (msg) msg.textContent = '';
+        paintParentGate();
+    }
+
+    function paintStudyGroup(attr, value) {
+        const box = document.getElementById('parent-study');
+        if (!box) return;
+        const btns = box.querySelectorAll('[' + attr + ']');
+        for (let i = 0; i < btns.length; i += 1) {
+            const on = String(btns[i].getAttribute(attr) || '') === String(value);
+            btns[i].classList.toggle('is-on', on);
+            btns[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+        }
+    }
+
+    function paintParentStudy() {
+        const study = studyNow();
+        const box = document.getElementById('parent-study');
+        if (box) {
+            const checks = box.querySelectorAll('[data-study-subject]');
+            for (let i = 0; i < checks.length; i += 1) {
+                checks[i].checked = !!study.subjects[checks[i].getAttribute('data-study-subject')];
+            }
+        }
+        paintStudyGroup('data-study-every', study.every);
+        paintStudyGroup('data-study-cap', study.sittingCap);
+        paintStudyGroup('data-study-words', study.wordCount);
+        paintStudyGroup('data-study-spawn', study.spawnFrom);
+        paintStudyGroup('data-study-spawn-every', study.spawnEvery);
+        paintStudyGroup('data-study-band', study.bands.literacy);
         paintWordPack();
+    }
+
+    function writeStudy(next) {
+        progress.study = P && P.normalizeStudy ? P.normalizeStudy(next) : next;
+        persist();
+        paintParentStudy();
+        refreshSideTablets();
+        if (session.levelStarted) refreshPool();
+        toast('已保存 · 配菜按新设置出');
+    }
+
+    function saveParentPin() {
+        const input = document.getElementById('parent-new-pin');
+        const got = P && P.setPin ? P.setPin(input && input.value) : { ok: false };
+        if (!got.ok) {
+            toast('请输入 4 位数字');
+            return;
+        }
+        progress.studyPin = got.pin;
+        persist();
+        if (input) input.value = '';
+        toast('密码已改');
     }
 
     function paintWordPack() {

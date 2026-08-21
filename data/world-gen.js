@@ -125,14 +125,14 @@
         if (style === 'desert') return { wall: 'sand', post: 'sand', roof: 'sand' };
         if (style === 'crystal') return { wall: 'stone', post: 'iron', roof: 'stone' };
         if (style === 'dusk') return { wall: 'stone', post: 'log', roof: 'plank' };
-        if (style === 'cherry') return { wall: 'plank', post: 'log', roof: 'plank' };
-        if (style === 'snow') return { wall: 'snow', post: 'log', roof: 'plank' };
+        if (style === 'cherry') return { wall: 'wool', post: 'log', roof: 'brick' };
+        if (style === 'snow') return { wall: 'snow', post: 'log', roof: 'brick' };
         if (style === 'mushroom') return { wall: 'plank', post: 'log', roof: 'leaf' };
         if (style === 'quarry') return { wall: 'stone', post: 'stone', roof: 'plank' };
         if (style === 'nether') return { wall: 'stone', post: 'gold', roof: 'stone' };
         if (style === 'volcano') return { wall: 'stone', post: 'stone', roof: 'gold' };
         if (style === 'end') return { wall: 'stone', post: 'iron', roof: 'stone' };
-        return { wall: 'plank', post: 'log', roof: 'plank' };
+        return { wall: 'wool', post: 'log', roof: 'brick' };
     }
 
     function villagePlan(climate, cx, cz) {
@@ -173,20 +173,24 @@
         return {
             x0: cx + 6,
             z0: cz + 1,
-            x1: cx + 28,
-            z1: cz + 22,
+            x1: cx + 36,
+            z1: cz + 28,
             style: villageStyle(climate),
             houses: [
                 { x: cx + 8, z: cz + 3, w: 6, d: 6, role: 'bed', stories: 1 },
                 { x: cx + 16, z: cz + 3, w: 6, d: 6, role: 'trader', stories: 2 },
                 { x: cx + 8, z: cz + 12, w: 6, d: 6, role: 'word', stories: 2 },
                 { x: cx + 16, z: cz + 12, w: 5, d: 5, role: 'bed', stories: 1 },
-                { x: cx + 23, z: cz + 6, w: 5, d: 5, role: 'farm', stories: 1 }
+                { x: cx + 23, z: cz + 6, w: 5, d: 5, role: 'farm', stories: 1 },
+                { x: cx + 29, z: cz + 3, w: 5, d: 5, role: 'bed', stories: 1 },
+                { x: cx + 29, z: cz + 12, w: 5, d: 5, role: 'bed', stories: 2 },
+                { x: cx + 8, z: cz + 20, w: 5, d: 5, role: 'bed', stories: 1 },
+                { x: cx + 16, z: cz + 20, w: 5, d: 5, role: 'trader', stories: 1 }
             ],
             garden: { x: cx + 14, z: cz + 9, w: 4, d: 2 },
             well: { x: cx + 14, z: cz + 7 },
-            pen: { x: cx + 20, z: cz + 16, w: 4, d: 3 },
-            golem: { x: cx + 20.5, z: cz + 21.5 },
+            pen: { x: cx + 24, z: cz + 20, w: 4, d: 3 },
+            golem: { x: cx + 32.5, z: cz + 22.5 },
             snowgolem: climate === 'snow' ? { x: cx + 10.5, z: cz + 19.5 } : null
         };
     }
@@ -208,35 +212,42 @@
             : [
                 { ox: -46, oz: 24, houses: [
                     { dx: 0, dz: 0, w: 5, d: 5, role: 'bed' },
-                    { dx: 7, dz: 0, w: 5, d: 5, role: 'trader', stories: 2 },
-                    { dx: 0, dz: 7, w: 5, d: 5, role: 'farm' }
+                    { dx: 6, dz: 0, w: 5, d: 5, role: 'trader', stories: 2 },
+                    { dx: 0, dz: 6, w: 5, d: 5, role: 'farm' },
+                    { dx: 6, dz: 6, w: 5, d: 5, role: 'bed' }
                 ], garden: true, well: true, pen: true },
                 { ox: 40, oz: -40, houses: [
                     { dx: 0, dz: 0, w: 5, d: 5, role: 'word', stories: 2 },
-                    { dx: 7, dz: 1, w: 5, d: 5, role: 'bed' }
+                    { dx: 6, dz: 1, w: 5, d: 5, role: 'bed' },
+                    { dx: 0, dz: 8, w: 5, d: 5, role: 'bed' }
                 ], well: true },
                 { ox: -70, oz: -52, houses: [
                     { dx: 0, dz: 0, w: 5, d: 5, role: 'bed' },
-                    { dx: 7, dz: 0, w: 5, d: 5, role: 'bed' },
-                    { dx: 3, dz: 7, w: 5, d: 5, role: 'trader', stories: 2 }
+                    { dx: 6, dz: 0, w: 5, d: 5, role: 'bed' },
+                    { dx: 3, dz: 6, w: 5, d: 5, role: 'trader', stories: 2 },
+                    { dx: 12, dz: 6, w: 5, d: 5, role: 'bed' }
                 ], garden: true },
                 { ox: 64, oz: 48, houses: [
                     { dx: 0, dz: 0, w: 5, d: 5, role: 'word', stories: 2 },
-                    { dx: 7, dz: 0, w: 5, d: 5, role: 'bed' },
-                    { dx: 0, dz: 7, w: 5, d: 5, role: 'bed' }
+                    { dx: 6, dz: 0, w: 5, d: 5, role: 'bed' },
+                    { dx: 0, dz: 6, w: 5, d: 5, role: 'bed' },
+                    { dx: 6, dz: 6, w: 5, d: 5, role: 'farm' }
                 ], well: true },
                 { ox: -56, oz: 62, houses: [
                     { dx: 0, dz: 0, w: 5, d: 5, role: 'bed' },
-                    { dx: 7, dz: 4, w: 5, d: 5, role: 'trader', stories: 2 }
+                    { dx: 6, dz: 4, w: 5, d: 5, role: 'trader', stories: 2 },
+                    { dx: 12, dz: 0, w: 5, d: 5, role: 'bed' }
                 ], garden: true, pen: true },
                 { ox: 52, oz: 18, houses: [
                     { dx: 0, dz: 0, w: 5, d: 5, role: 'farm' },
-                    { dx: 7, dz: 0, w: 5, d: 5, role: 'word', stories: 2 }
+                    { dx: 6, dz: 0, w: 5, d: 5, role: 'word', stories: 2 },
+                    { dx: 12, dz: 2, w: 5, d: 5, role: 'bed' }
                 ], garden: true, pen: true },
                 { ox: -28, oz: -68, houses: [
                     { dx: 0, dz: 0, w: 5, d: 5, role: 'bed' },
-                    { dx: 7, dz: 2, w: 5, d: 5, role: 'bed' },
-                    { dx: 14, dz: 0, w: 5, d: 5, role: 'trader', stories: 2 }
+                    { dx: 6, dz: 2, w: 5, d: 5, role: 'bed' },
+                    { dx: 12, dz: 0, w: 5, d: 5, role: 'trader', stories: 2 },
+                    { dx: 6, dz: 8, w: 5, d: 5, role: 'bed' }
                 ], garden: true, well: true, pen: true }
             ];
         const out = [];
@@ -303,6 +314,286 @@
             out.push(plan);
         });
         return out;
+    }
+
+    function boxesOverlap(a, b) {
+        return !!(a && b && a.x0 <= b.x1 && a.x1 >= b.x0 && a.z0 <= b.z1 && a.z1 >= b.z0);
+    }
+
+    function houseBox(h) {
+        return { x0: h.x, z0: h.z, x1: h.x + (h.w || 1) - 1, z1: h.z + (h.d || 1) - 1 };
+    }
+
+    function cityLayoutOf(climate) {
+        const layouts = {
+            plains: { pattern: 'tian', ox: -22, south: 22, half: 36, gap: 18, step: 8, lot: 6, cap: 24, storyLo: 1, storyHi: 4, tower: 12, shapes: ['cottage', 'shop', 'barn'], extra: 'crops' },
+            forest: { pattern: 'jing', ox: 8, south: 24, half: 34, gap: 14, step: 6, lot: 5, cap: 28, storyLo: 1, storyHi: 3, tower: 10, shapes: ['hut', 'longhouse', 'cottage'], extra: 'grove' },
+            desert: { pattern: 'cross', ox: -40, south: 26, half: 40, gap: 22, step: 9, lot: 7, cap: 22, storyLo: 1, storyHi: 3, tower: 14, shapes: ['adobe', 'spire'], extra: 'sand' },
+            snow: { pattern: 'tian', ox: 18, south: 22, half: 32, gap: 12, step: 7, lot: 5, cap: 22, storyLo: 2, storyHi: 4, tower: 14, shapes: ['igloo', 'cottage'], extra: 'hearth' },
+            deep_dark: { pattern: 'cross', ox: -8, south: 28, half: 36, gap: 20, step: 8, lot: 6, cap: 20, storyLo: 2, storyHi: 4, tower: 16, shapes: ['bunker', 'spire'], extra: 'ore' },
+            nether: { pattern: 'jing', ox: -36, south: 24, half: 32, gap: 13, step: 7, lot: 5, cap: 22, storyLo: 2, storyHi: 4, tower: 11, shapes: ['bunker', 'spire'], extra: 'gold' },
+            quarry: { pattern: 'tian', ox: 28, south: 26, half: 36, gap: 16, step: 8, lot: 6, cap: 24, storyLo: 1, storyHi: 3, tower: 13, shapes: ['barn', 'bunker', 'cottage'], extra: 'ore' },
+            astral: { pattern: 'cross', ox: -28, south: 30, half: 38, gap: 18, step: 8, lot: 5, cap: 20, storyLo: 2, storyHi: 4, tower: 16, shapes: ['spire', 'cottage'], extra: 'crystal' },
+            ocean: { pattern: 'harbor', ox: -48, south: 22, half: 36, gap: 16, step: 8, lot: 6, cap: 24, storyLo: 1, storyHi: 3, tower: 10, shapes: ['dock', 'cottage', 'shop'], extra: 'crate' },
+            crystal: { pattern: 'jing', ox: 12, south: 28, half: 34, gap: 15, step: 7, lot: 5, cap: 26, storyLo: 2, storyHi: 4, tower: 15, shapes: ['spire', 'shop'], extra: 'crystal' },
+            volcano: { pattern: 'tian', ox: -30, south: 24, half: 32, gap: 14, step: 7, lot: 5, cap: 22, storyLo: 2, storyHi: 4, tower: 14, shapes: ['bunker', 'adobe'], extra: 'gold' },
+            end: { pattern: 'cross', ox: 22, south: 32, half: 36, gap: 22, step: 9, lot: 6, cap: 20, storyLo: 3, storyHi: 4, tower: 18, shapes: ['spire', 'bunker'], extra: 'void' }
+        };
+        return layouts[climate] || layouts.plains;
+    }
+
+    function cityLotSize(layout, shape) {
+        const lot = layout.lot;
+        if (shape === 'longhouse') return { w: lot + 3, d: Math.max(4, lot - 1) };
+        if (shape === 'spire') return { w: 3, d: 3 };
+        if (shape === 'hut') return { w: Math.max(4, lot - 1), d: Math.max(4, lot - 1) };
+        if (shape === 'igloo') return { w: 5, d: 5 };
+        if (shape === 'adobe') return { w: lot, d: Math.max(5, lot - 1) };
+        if (shape === 'dock') return { w: lot, d: lot + 1 };
+        if (shape === 'barn') return { w: lot + 1, d: lot };
+        if (shape === 'shop') return { w: lot, d: lot };
+        return { w: lot, d: lot };
+    }
+
+    function cityRoadsOf(layout, px, pz, x0, z0, x1, z1) {
+        const g = layout.gap;
+        const roads = [];
+        function vert(x, za, zb) {
+            roads.push({ axis: 'z', x: x, z0: za, z1: zb, w: 2 });
+        }
+        function horz(z, xa, xb) {
+            roads.push({ axis: 'x', z: z, x0: xa, x1: xb, w: 2 });
+        }
+        if (layout.pattern === 'jing') {
+            vert(px - g, z0, z1);
+            vert(px, z0, z1);
+            vert(px + g - 2, z0, z1);
+            horz(pz - g, x0, x1);
+            horz(pz, x0, x1);
+            horz(pz + g - 2, x0, x1);
+        } else if (layout.pattern === 'harbor') {
+            horz(pz, x0, x1);
+            horz(pz + g, x0, x1);
+            vert(px - g, z0, pz);
+            vert(px + g - 2, z0, pz);
+        } else if (layout.pattern === 'cross') {
+            vert(px, z0, z1);
+            horz(pz, x0, x1);
+            vert(px - g, pz - g, pz + g);
+            horz(pz - g, px - g, px + g);
+        } else {
+            vert(px - g, z0, z1);
+            vert(px + g - 2, z0, z1);
+            horz(pz - g, x0, x1);
+            horz(pz + g - 2, x0, x1);
+        }
+        return roads;
+    }
+
+    function cityPlan(climate, cx, cz, n, keepouts) {
+        n = n || WORLD_SIZE;
+        const layout = cityLayoutOf(climate);
+        const half = layout.half;
+        const z0 = Math.max(8, cz + layout.south);
+        const px = cx + layout.ox;
+        const pz = z0 + half;
+        const x0 = Math.max(8, px - half);
+        const x1 = Math.min(n - 9, px + half);
+        const z1 = Math.min(n - 9, z0 + half * 2);
+        const roads = cityRoadsOf(layout, px, pz, x0, z0, x1, z1);
+        const plaza = { x: px - 2, z: pz - 2, w: 5, d: 5 };
+        const blocked = [
+            { x0: cx - 6, z0: cz - 6, x1: cx + 6, z1: cz + 6 },
+            { x0: plaza.x, z0: plaza.z, x1: plaza.x + plaza.w - 1, z1: plaza.z + plaza.d - 1 }
+        ].concat((keepouts || []).map(function (box) {
+            return { x0: box.x0 - 3, z0: box.z0 - 3, x1: box.x1 + 3, z1: box.z1 + 3 };
+        }));
+        const lot = layout.lot;
+        const step = layout.step;
+        const candidates = [];
+        function pushLot(x, z) {
+            if (x < 6 || z < 6 || x + lot >= n - 4 || z + lot >= n - 4) return;
+            candidates.push({ x: x, z: z, w: lot, d: lot });
+        }
+        roads.forEach(function (road) {
+            if (road.axis === 'z') {
+                for (let z = road.z0 + 3; z + lot <= road.z1 - 2; z += step) {
+                    pushLot(road.x - lot - 2, z);
+                    pushLot(road.x + road.w + 1, z);
+                }
+            } else {
+                for (let x = road.x0 + 3; x + lot <= road.x1 - 2; x += step) {
+                    pushLot(x, road.z - lot - 2);
+                    pushLot(x, road.z + road.w + 1);
+                }
+            }
+        });
+        candidates.sort(function (a, b) {
+            return (Math.abs(a.x - px) + Math.abs(a.z - pz)) - (Math.abs(b.x - px) + Math.abs(b.z - pz));
+        });
+        const roles = ['bed', 'trader', 'word', 'farm', 'bed', 'bed', 'trader', 'bed'];
+        const houses = [];
+        const storySpan = Math.max(1, layout.storyHi - layout.storyLo + 1);
+        candidates.forEach(function (spot) {
+            if (houses.length >= layout.cap) return;
+            const shape = (layout.shapes || ['cottage'])[houses.length % (layout.shapes || ['cottage']).length];
+            const size = cityLotSize(layout, shape);
+            const sized = { x: spot.x, z: spot.z, w: size.w, d: size.d };
+            const box = houseBox(sized);
+            let hit = false;
+            let i;
+            for (i = 0; i < blocked.length; i += 1) {
+                if (boxesOverlap(box, blocked[i])) {
+                    hit = true;
+                    break;
+                }
+            }
+            if (hit) return;
+            for (i = 0; i < houses.length; i += 1) {
+                if (boxesOverlap(box, houseBox(houses[i]))) {
+                    hit = true;
+                    break;
+                }
+            }
+            if (hit) return;
+            houses.push({
+                x: sized.x,
+                z: sized.z,
+                w: sized.w,
+                d: sized.d,
+                role: roles[houses.length % roles.length],
+                stories: layout.storyLo + Math.floor(hash3(spot.x, 11, spot.z) * storySpan),
+                shape: shape,
+                extra: layout.extra || 'crops',
+                district: 'city'
+            });
+        });
+        return {
+            kind: 'city',
+            pattern: layout.pattern,
+            style: villageStyle(climate),
+            x0: x0,
+            z0: z0,
+            x1: x1,
+            z1: z1,
+            plaza: plaza,
+            tower: { x: px - 1, z: pz - 1, w: 3, d: 3, h: layout.tower },
+            roads: roads,
+            houses: houses,
+            golem: { x: px + 0.5, z: pz + 0.5 }
+        };
+    }
+
+    function scenicPlan(climate, cx, cz, n) {
+        n = n || WORLD_SIZE;
+        const noWater = climate === 'nether' || climate === 'volcano' || climate === 'end';
+        const lakes = noWater
+            ? []
+            : [
+                { x: cx - 88, z: cz + 56, r: 9 },
+                { x: cx + 72, z: cz - 64, r: 8 }
+            ].filter(function (lake) {
+                return lake.x > 16 && lake.z > 16 && lake.x < n - 16 && lake.z < n - 16;
+            });
+        const woods = [
+            { x0: cx - 130, z0: cz - 90, x1: cx - 70, z1: cz - 40 },
+            { x0: cx + 48, z0: cz + 90, x1: cx + 120, z1: cz + 140 }
+        ].filter(function (box) {
+            return box.x1 > 8 && box.z1 > 8 && box.x0 < n - 8 && box.z0 < n - 8;
+        });
+        return { lakes: lakes, woods: woods };
+    }
+
+    function stampScenicLakes(n, ponds, heights, scenic, towns, cx, cz) {
+        if (!scenic || !scenic.lakes) return;
+        scenic.lakes.forEach(function (lake) {
+            fillPond(ponds, n, lake.x, lake.z, lake.r, towns, cx, cz);
+            for (let dz = -lake.r; dz <= lake.r; dz += 1) {
+                for (let dx = -lake.r; dx <= lake.r; dx += 1) {
+                    if (dx * dx + dz * dz > lake.r * lake.r) continue;
+                    const x = lake.x + dx, z = lake.z + dz;
+                    if (!ponds[x + ',' + z] || x < 1 || z < 1 || x >= n - 1 || z >= n - 1) continue;
+                    heights[z * n + x] = Math.max(2, heights[z * n + x] - 1);
+                }
+            }
+        });
+    }
+
+    function stampWoodsBiome(n, biomes, scenic, cx, cz, climate) {
+        if (!scenic || !scenic.woods) return;
+        if (climate === 'desert' || climate === 'nether' || climate === 'volcano' || climate === 'end') return;
+        scenic.woods.forEach(function (box) {
+            const x0 = Math.max(2, box.x0);
+            const z0 = Math.max(2, box.z0);
+            const x1 = Math.min(n - 3, box.x1);
+            const z1 = Math.min(n - 3, box.z1);
+            for (let z = z0; z <= z1; z += 1) {
+                for (let x = x0; x <= x1; x += 1) {
+                    if (Math.abs(x - cx) < 8 && Math.abs(z - cz) < 8) continue;
+                    if (biomes[z * n + x] === 3) continue;
+                    biomes[z * n + x] = 1;
+                }
+            }
+        });
+    }
+
+    function stampWoodsTrees(n, trees, heights, ponds, blocked, scenic, climateName) {
+        if (!scenic || !scenic.woods) return;
+        scenic.woods.forEach(function (box) {
+            for (let z = box.z0; z <= box.z1; z += 4) {
+                for (let x = box.x0; x <= box.x1; x += 4) {
+                    if (x < 3 || z < 3 || x >= n - 3 || z >= n - 3) continue;
+                    if (Math.abs(x - Math.floor(n / 2)) <= 3 && Math.abs(z - Math.floor(n / 2)) <= 3) continue;
+                    if (ponds[x + ',' + z] || inAnyRect(x, z, blocked)) continue;
+                    if (hash3(x, 19, z) < 0.4) continue;
+                    if (trees.some(function (t) { return Math.abs(t.x - x) + Math.abs(t.z - z) < 4; })) continue;
+                    const roll = hash3(x, 23, z);
+                    let species = roll < 0.55 ? 'spruce' : 'oak';
+                    if (climateName === 'nether' || climateName === 'volcano') species = 'crimson';
+                    else if (climateName === 'desert') species = 'cactus';
+                    else if (climateName === 'end') species = 'spruce';
+                    else if (climateName === 'cherry') species = 'cherry';
+                    else if (climateName === 'snow' || climateName === 'astral') species = 'spruce';
+                    const trunk = species === 'cactus' ? 3 : species === 'crimson' ? 4 : species === 'spruce' ? 6 : species === 'cherry' ? 5 : 4;
+                    trees.push({
+                        x: x,
+                        z: z,
+                        surface: heights[z * n + x] || 4,
+                        trunk: trunk,
+                        species: species
+                    });
+                }
+            }
+        });
+    }
+
+    function stampCityRoads(n, heights, edits, plan) {
+        if (!plan || !plan.roads) return;
+        plan.paths = plan.paths || {};
+        const kind = plan.style === 'desert' ? 'sand' : plan.pattern === 'harbor' ? 'plank' : 'stone';
+        function pave(x, z) {
+            if (x < 1 || z < 1 || x >= n - 1 || z >= n - 1) return;
+            paveTop(heights, n, edits, x, z, kind);
+            plan.paths[x + ',' + z] = 1;
+        }
+        plan.roads.forEach(function (road) {
+            if (road.axis === 'z') {
+                for (let z = road.z0; z <= road.z1; z += 1) {
+                    for (let w = 0; w < road.w; w += 1) pave(road.x + w, z);
+                }
+            } else {
+                for (let x = road.x0; x <= road.x1; x += 1) {
+                    for (let w = 0; w < road.w; w += 1) pave(x, road.z + w);
+                }
+            }
+        });
+        if (plan.plaza) {
+            const p = plan.plaza;
+            flattenPad(heights, n, p.x, p.z, p.w, p.d);
+            for (let z = p.z; z < p.z + p.d; z += 1) {
+                for (let x = p.x; x < p.x + p.w; x += 1) pave(x, z);
+            }
+        }
     }
 
     function fillPond(ponds, n, px, pz, r, towns, cx, cz) {
@@ -389,6 +680,121 @@
         }
     }
 
+    function stampCityHouse(n, heights, edits, plan, house, mats) {
+        let y0 = 99;
+        for (let z = house.z; z < house.z + house.d; z += 1) {
+            for (let x = house.x; x < house.x + house.w; x += 1) {
+                if (x < 1 || z < 1 || x >= n - 1 || z >= n - 1) continue;
+                y0 = Math.min(y0, heights[z * n + x]);
+            }
+        }
+        y0 = Math.max(2, y0);
+        house.y0 = y0;
+        const wall = mats.wall;
+        const post = mats.post;
+        const roof = mats.roof;
+        const shape = house.shape || 'cottage';
+        const stories = house.stories || 1;
+        const cityH = stories >= 4 ? 12 : stories === 3 ? 9 : stories === 2 ? 6 : 4;
+        let wallH = Math.min(shape === 'hut' || shape === 'igloo' ? 3 : shape === 'bunker' ? 4 : cityH, HEIGHT_MAX - y0 - 2);
+        const doorX = house.x + Math.floor(house.w / 2);
+        const doorZ = house.z + house.d - 1;
+        const winZ = house.z + 1;
+        const midZ = house.z + Math.floor(house.d / 2);
+        const flat = shape === 'adobe' || shape === 'bunker' || shape === 'dock';
+        const openSouth = shape === 'dock' || shape === 'barn';
+        const wideDoor = shape === 'barn' || shape === 'longhouse' || shape === 'dock';
+        const noWin = shape === 'bunker' || shape === 'igloo';
+        if (shape === 'igloo') {
+            stampTowerAt(edits, house.x, house.z, house.w, house.d, 3, 'snow', 'snow', true, y0);
+        } else if (shape === 'spire') {
+            const h = Math.min(6 + stories * 2, HEIGHT_MAX - y0 - 2);
+            stampTowerAt(edits, house.x, house.z, house.w, house.d, h, wall, roof, false, y0);
+            putBlock(edits, house.x + 1, y0 + h, house.z + 1, house.extra === 'gold' ? 'gold' : 'iron');
+            wallH = h;
+        } else {
+            for (let z = house.z; z < house.z + house.d; z += 1) {
+                for (let x = house.x; x < house.x + house.w; x += 1) {
+                    if (x < 1 || z < 1 || x >= n - 1 || z >= n - 1) continue;
+                    heights[z * n + x] = y0;
+                    const edgeX = x === house.x || x === house.x + house.w - 1;
+                    const edgeZ = z === house.z || z === house.z + house.d - 1;
+                    const door = wideDoor
+                        ? (z === doorZ && Math.abs(x - doorX) <= 1)
+                        : (x === doorX && z === doorZ);
+                    const southOpen = openSouth && z === doorZ && !edgeX;
+                    const lowWin = !noWin && ((edgeX && (z === winZ || z === midZ)) || (edgeZ && x === house.x + 1)) && !door;
+                    const highWin = !noWin && stories >= 2 && edgeX && z === winZ && !door;
+                    for (let dy = 0; dy < wallH; dy += 1) {
+                        if (!(edgeX || edgeZ)) {
+                            if (stories >= 2 && dy === 3) edits[x + ',' + (y0 + dy) + ',' + z] = wall;
+                            continue;
+                        }
+                        if ((door || southOpen) && dy < (wideDoor ? 3 : 2)) continue;
+                        if (lowWin && dy === 1) continue;
+                        if (highWin && (dy === 4 || dy === 7)) continue;
+                        edits[x + ',' + (y0 + dy) + ',' + z] = (edgeX && edgeZ) ? post : wall;
+                    }
+                    edits[x + ',' + (y0 + wallH) + ',' + z] = flat ? wall : roof;
+                    if (!flat && !edgeX && z === midZ) {
+                        edits[x + ',' + (y0 + wallH + 1) + ',' + z] = post;
+                    }
+                }
+            }
+            if (!flat && shape !== 'hut' && house.role !== 'word') {
+                const chimX = house.x + house.w - 1, chimZ = house.z;
+                for (let cy = wallH; cy <= wallH + 2; cy += 1) {
+                    edits[chimX + ',' + (y0 + cy) + ',' + chimZ] = 'stone';
+                }
+            }
+        }
+        const extra = house.extra || 'crops';
+        const bedX = house.x + 1, bedZ = house.z + 1;
+        const chestX = house.x + Math.max(house.x + 1, house.x + house.w - 2) - house.x, chestZ = house.z + 1;
+        const tableX = house.x + Math.min(2, house.w - 1);
+        const tableZ = house.z + Math.min(2, house.d - 1);
+        if (shape !== 'barn' && shape !== 'spire') {
+            plan.beds.push({ x: bedX, z: bedZ, y: y0, role: house.role || 'bed' });
+        }
+        plan.props.push({ kind: 'chest', x: house.x + house.w - 2, z: chestZ, y: y0 });
+        if (extra !== 'void') plan.props.push({ kind: 'torch', x: doorX, z: house.z + Math.min(2, house.d - 1), y: y0 + 2 });
+        if (extra === 'hearth' || extra === 'ore' || extra === 'gold') {
+            plan.props.push({ kind: 'furnace', x: house.x + house.w - 2, z: house.z + 2, y: y0 });
+        }
+        if (extra === 'crystal' || extra === 'void' || house.role === 'word') {
+            plan.props.push({ kind: 'bookshelf', x: house.x + 1, z: house.z + 2, y: y0 });
+        }
+        if (extra === 'crate') {
+            plan.props.push({ kind: 'chest', x: tableX, z: house.z + house.d - 2, y: y0 });
+        }
+        if (extra === 'crops' || extra === 'grove') {
+            plan.crops.push({ x: tableX, z: house.z + 1, y: y0, kind: 'wheat', grown: true });
+        }
+        if (extra === 'sand') {
+            plan.crops.push({ x: tableX, z: house.z + 1, y: y0, kind: 'deadbush', grown: false });
+        }
+        if (extra === 'grove') {
+            plan.props.push({ kind: 'chair', x: house.x + 2, z: house.z + 3, y: y0 });
+        }
+        if (extra === 'gold') {
+            putBlock(edits, doorX, y0 + 2, doorZ, 'gold');
+        }
+        plan.props.push({ kind: 'table', x: tableX, z: tableZ, y: y0 });
+        plan.props.push({ kind: 'chair', x: house.x + 1, z: house.z + Math.min(3, house.d - 1), y: y0 });
+        plan.villagers.push({
+            x: doorX + 0.5,
+            z: doorZ + 1.35,
+            homeX: doorX + 0.5,
+            homeZ: doorZ + 1.35,
+            yaw: 0,
+            phase: hash3(doorX, 1, doorZ),
+            role: house.role === 'trader' ? 'trader'
+                : house.role === 'word' ? 'teacher'
+                    : house.role === 'farm' ? 'farmer'
+                        : 'villager'
+        });
+    }
+
     function stampVillage(n, heights, edits, ponds, plan) {
         if (!plan) return;
         plan.beds = [];
@@ -402,6 +808,10 @@
         const post = mats.post;
         const roof = mats.roof;
         plan.houses.forEach(function (house) {
+            if (plan.kind === 'city') {
+                stampCityHouse(n, heights, edits, plan, house, mats);
+                return;
+            }
             let y0 = 99;
             for (let z = house.z; z < house.z + house.d; z += 1) {
                 for (let x = house.x; x < house.x + house.w; x += 1) {
@@ -413,7 +823,8 @@
             house.y0 = y0;
             const barn = house.role === 'farm';
             const stories = house.stories || (house.role === 'trader' || house.role === 'word' ? 2 : 1);
-            const wallH = Math.min(stories === 2 ? 6 : 4, HEIGHT_MAX - y0 - 2);
+            const cityH = stories >= 4 ? 12 : stories === 3 ? 9 : stories === 2 ? 6 : 4;
+            const wallH = Math.min(plan.kind === 'city' ? cityH : (stories === 2 ? 6 : 4), HEIGHT_MAX - y0 - 2);
             const doorX = house.x + Math.floor(house.w / 2);
             const doorZ = house.z + house.d - 1;
             const winZ = house.z + 1;
@@ -497,7 +908,8 @@
                     x: tableX,
                     z: house.z + 1,
                     y: y0,
-                    kind: plan.style === 'desert' ? 'deadbush' : 'wheat'
+                    kind: plan.style === 'desert' ? 'deadbush' : 'wheat',
+                    grown: plan.style !== 'desert'
                 });
             } else {
                 plan.props.push({ kind: 'table', x: tableX, z: tableZ, y: y0 });
@@ -529,7 +941,7 @@
                 else z += z < ez ? 1 : -1;
             }
         }
-        if (plan.houses.length >= 2) {
+        if (plan.kind !== 'city' && plan.houses.length >= 2) {
             const a = plan.houses[0];
             for (let hi = 1; hi < plan.houses.length; hi += 1) {
                 const b = plan.houses[hi];
@@ -560,7 +972,8 @@
                         x: x,
                         z: z,
                         y: y,
-                        kind: plan.style === 'desert' ? 'deadbush' : 'wheat'
+                        kind: plan.style === 'desert' ? 'deadbush' : 'wheat',
+                        grown: plan.style !== 'desert'
                     });
                 }
             }
@@ -670,6 +1083,62 @@
         return y0;
     }
 
+    function stampHubInterior(heights, n, edits, props, beds, house, spec) {
+        const x = house.x;
+        const z = house.z;
+        const w = house.w || 7;
+        const d = house.d || 7;
+        const y0 = house.y0;
+        const id = spec && spec.id;
+        let ix, iz;
+        for (iz = z + 1; iz < z + d - 1; iz += 1) {
+            for (ix = x + 1; ix < x + w - 1; ix += 1) {
+                putBlock(edits, ix, y0 - 1, iz, 'plank');
+            }
+        }
+        function furn(kind, fx, fz, fy) {
+            props.push({
+                kind: kind,
+                x: fx,
+                y: fy == null ? y0 : fy,
+                z: fz,
+                hub: true,
+                house: id
+            });
+        }
+        furn('bed', x + 1, z + 1);
+        beds.push({ x: x + 1, z: z + 1, y: y0, hub: true, house: id });
+        furn('chest', x + w - 2, z + 1);
+        furn('table', x + 2, z + 2);
+        furn('chair', x + 1, z + 3);
+        furn('torch', x + Math.floor(w / 2), z + 2, y0 + 2);
+        if (id === 'library' || id === 'word' || id === 'teacher') {
+            furn('bookshelf', x + w - 2, z + 2);
+        }
+        if (id === 'furnace' || id === 'trade') {
+            furn('furnace', x + w - 2, z + 3);
+        }
+        if (id === 'craft') {
+            furn('table', x + 3, z + 2);
+        }
+        if (id === 'chest') {
+            furn('chest', x + w - 2, z + 3);
+        }
+        if (id === 'bed') {
+            furn('bed', x + 2, z + 1);
+            beds.push({ x: x + 2, z: z + 1, y: y0, hub: true, house: id });
+        }
+        if (id === 'lookout') {
+            furn('torch', x + Math.floor(w / 2), z + 2, y0 + 4);
+        }
+        if (id === 'dock') {
+            furn('chest', x + w - 2, z + 3);
+        }
+        if (id === 'farm') {
+            furn('chair', x + 2, z + 3);
+        }
+    }
+
     function defaultHubPortalSpecs(cx, cz) {
         const spots = (global.BlockLegendLevels && global.BlockLegendLevels.HUB_SPOTS) || [];
         const list = spots.length ? spots : (function () {
@@ -705,10 +1174,196 @@
         });
     }
 
-    function hubKeepoutBoxes(cx, cz, portals) {
+    function hubKeepoutBoxes(cx, cz, portals, plaza) {
         const boxes = levelPortalBoxes(portals);
         boxes.push({ x0: cx - 3, z0: cz - 8, x1: cx + 3, z1: cz + 1 });
+        (plaza || []).forEach(function (b) {
+            const x = Math.round(b.x || 0);
+            const z = Math.round(b.z || 0);
+            boxes.push({ x0: x - 1, z0: z - 1, x1: x + (b.w || 5) + 1, z1: z + (b.d || 5) + 1 });
+        });
+        boxes.push({ x0: cx - 62, z0: cz - 50, x1: cx + 72, z1: cz + 50 });
         return boxes;
+    }
+
+    function stampHubLand(n, ponds, heights, edits, cx, cz) {
+        const Lv = global.BlockLegendLevels;
+        const land = Lv && Lv.hubLandOf ? Lv.hubLandOf({ cx: cx, cz: cz }) : null;
+        if (!land) return;
+        (land.lakes || []).forEach(function (lake) {
+            const px = Math.round(lake.x);
+            const pz = Math.round(lake.z);
+            const r = Math.max(3, Number(lake.r) || 6);
+            fillPond(ponds, n, px, pz, r, [], cx, cz);
+            let dz, dx;
+            for (dz = -r; dz <= r; dz += 1) {
+                for (dx = -r; dx <= r; dx += 1) {
+                    if (dx * dx + dz * dz > r * r) continue;
+                    const x = px + dx;
+                    const z = pz + dz;
+                    if (!ponds[x + ',' + z] || x < 1 || z < 1 || x >= n - 1 || z >= n - 1) continue;
+                    heights[z * n + x] = Math.max(2, heights[z * n + x] - 1);
+                }
+            }
+        });
+        const pts = (land.river && land.river.points) || [];
+        let i;
+        for (i = 0; i < pts.length - 1; i += 1) {
+            const cells = hubLineCells(pts[i].x, pts[i].z, pts[i + 1].x, pts[i + 1].z);
+            cells.forEach(function (c, step) {
+                if (Math.abs(c.x - cx) < 8 && Math.abs(c.z - cz) < 8) return;
+                fillPond(ponds, n, c.x, c.z, step % 7 === 0 ? 2 : 1, [], cx, cz);
+                if (c.x >= 1 && c.z >= 1 && c.x < n - 1 && c.z < n - 1) {
+                    heights[c.z * n + c.x] = Math.max(2, (heights[c.z * n + c.x] || 3) - 1);
+                }
+            });
+        }
+        (land.hills || []).forEach(function (hill) {
+            const hx = Math.round(hill.x);
+            const hz = Math.round(hill.z);
+            const r = Math.max(3, Number(hill.r) || 5);
+            const lift = Math.max(1, Number(hill.h) || 3);
+            let dz, dx;
+            for (dz = -r; dz <= r; dz += 1) {
+                for (dx = -r; dx <= r; dx += 1) {
+                    const dist2 = dx * dx + dz * dz;
+                    if (dist2 > r * r) continue;
+                    const x = hx + dx;
+                    const z = hz + dz;
+                    if (x < 1 || z < 1 || x >= n - 1 || z >= n - 1) continue;
+                    const drop = Math.floor(Math.sqrt(dist2) / 2);
+                    heights[z * n + x] = Math.min(HEIGHT_MAX, (heights[z * n + x] || 3) + lift - drop);
+                }
+            }
+        });
+    }
+
+    function stampHubPlaza(n, heights, edits, cx, cz) {
+        const Lv = global.BlockLegendLevels;
+        const specs = (Lv && Lv.hubPlazaOf) ? Lv.hubPlazaOf({ cx: cx, cz: cz }) : [];
+        const houses = [];
+        const props = [];
+        const services = [];
+        const beds = [];
+        const wells = [];
+        const villagers = [];
+        const plants = [];
+        const animals = [];
+        specs.forEach(function (b) {
+            const x = Math.round(b.x);
+            const z = Math.round(b.z);
+            const w = b.w || 7;
+            const d = b.d || 7;
+            flattenPad(heights, n, x - 1, z - 1, w + 2, d + 2);
+            const y0 = yAt(heights, n, x + 3, z + 3);
+            const h = b.shape === 'tower' ? 8 : 5;
+            stampTowerAt(edits, x, z, w, d, h, b.wall || 'plank', b.roof || 'leaf', true, y0);
+            putBlock(edits, x + Math.floor(w / 2), y0 + 4, z + d, 'gold');
+            const doorX = x + Math.floor(w / 2) + 0.5;
+            const doorZ = z + d - 0.2;
+            houses.push({
+                x: x, z: z, w: w, d: d, y0: y0,
+                role: b.role, hubService: b.id, label: b.label
+            });
+            stampHubInterior(heights, n, edits, props, beds, houses[houses.length - 1], b);
+            if (b.id === 'teacher') {
+                villagers.push({
+                    x: doorX,
+                    z: doorZ - 1.2,
+                    homeX: doorX,
+                    homeZ: doorZ - 1.2,
+                    role: 'teacher',
+                    yaw: 0,
+                    phase: 0.4,
+                    hub: true
+                });
+            }
+            if (b.id === 'dock') {
+                let pier;
+                for (pier = 0; pier < 8; pier += 1) {
+                    const px = x + w + pier;
+                    const pz = z + 3;
+                    setY(heights, n, px, pz, y0);
+                    setY(heights, n, px, pz + 1, y0);
+                    paveTop(heights, n, edits, px, pz, 'plank');
+                    paveTop(heights, n, edits, px, pz + 1, 'plank');
+                }
+            }
+            if (b.id === 'barn') {
+                ['pig', 'cow', 'sheep'].forEach(function (kind, ai) {
+                    animals.push({
+                        x: doorX + 1.2 + ai,
+                        z: doorZ + 1.6,
+                        kind: kind,
+                        habitat: 'ground',
+                        homeX: doorX + 1.2 + ai,
+                        homeZ: doorZ + 1.6,
+                        yaw: 0.4 * ai,
+                        phase: 0.2 * ai,
+                        hub: true
+                    });
+                });
+            }
+            if (b.id === 'farm') {
+                let fx, fz;
+                for (fz = 0; fz < 4; fz += 1) {
+                    for (fx = 0; fx < 5; fx += 1) {
+                        plants.push({ x: x + 1 + fx, z: z + d + 1 + fz, kind: 'wheat' });
+                    }
+                }
+            }
+            services.push({
+                id: b.id,
+                label: b.label,
+                en: b.en,
+                role: b.role,
+                x: doorX,
+                z: doorZ,
+                y: y0
+            });
+        });
+        const wellX = cx + 2;
+        const wellZ = cz + 10;
+        wells.push({ x: wellX, z: wellZ });
+        putBlock(edits, wellX, yAt(heights, n, wellX, wellZ) + 1, wellZ, 'stone_brick');
+        putBlock(edits, wellX, yAt(heights, n, wellX, wellZ), wellZ, 'water');
+        const fireX = cx - 2;
+        const fireZ = cz + 5;
+        putBlock(edits, fireX, yAt(heights, n, fireX, fireZ), fireZ, 'campfire');
+        services.push({
+            id: 'campfire',
+            label: '营火',
+            en: 'Campfire',
+            role: 'campfire',
+            x: fireX + 0.5,
+            z: fireZ + 0.5,
+            y: yAt(heights, n, fireX, fireZ)
+        });
+        let gx, gz;
+        for (gz = 0; gz < 3; gz += 1) {
+            for (gx = 0; gx < 4; gx += 1) {
+                plants.push({ x: cx + 12 + gx, z: cz + 18 + gz, kind: 'wheat' });
+            }
+        }
+        services.push({
+            id: 'garden',
+            label: '菜园',
+            en: 'Garden',
+            role: 'garden',
+            x: cx + 13.5,
+            z: cz + 19.5,
+            y: yAt(heights, n, cx + 13, cz + 19)
+        });
+        return {
+            services: services,
+            houses: houses,
+            props: props,
+            beds: beds,
+            wells: wells,
+            villagers: villagers,
+            plants: plants,
+            animals: animals
+        };
     }
 
     function paveTop(heights, n, edits, x, z, kind) {
@@ -734,18 +1389,92 @@
         return out;
     }
 
-    function stampHubRoad(n, heights, edits, cx, cz, specs) {
-        const ox = cx;
-        const oz = cz - 2;
-        (specs || []).forEach(function (p) {
-            const cells = hubLineCells(ox, oz, Math.round(p.x || 0) + 1, Math.round(p.z || 0) + 3);
-            cells.forEach(function (c) {
-                for (let dz = -1; dz <= 1; dz += 1) {
-                    for (let dx = -1; dx <= 1; dx += 1) {
-                        paveTop(heights, n, edits, c.x + dx, c.z + dz, 'dirt');
-                    }
+    function stampHubLamp(heights, n, edits, x, z, y0) {
+        putBlock(edits, x, y0, z, 'stone_brick');
+        putBlock(edits, x, y0 + 1, z, 'stone_brick');
+        putBlock(edits, x, y0 + 2, z, 'gold');
+    }
+
+    function stampHubApron(heights, n, edits, x, z, y0, fill, edge) {
+        const px = Math.round(x);
+        const pz = Math.round(z);
+        let ix, iz;
+        for (iz = pz - 1; iz <= pz + 4; iz += 1) {
+            for (ix = px - 3; ix <= px + 3; ix += 1) {
+                setY(heights, n, ix, iz, y0);
+                const rim = iz === pz - 1 || iz === pz + 4 || ix === px - 3 || ix === px + 3;
+                paveTop(heights, n, edits, ix, iz, rim ? (edge || 'stone_brick') : (fill || 'dirt'));
+            }
+        }
+    }
+
+    function stampHubYard(heights, n, edits, yard, y0) {
+        if (!yard) return;
+        const r = Number(yard.r) || 8;
+        const ox = Math.round(yard.x);
+        const oz = Math.round(yard.z);
+        let dx, dz;
+        for (dz = -r; dz <= r; dz += 1) {
+            for (dx = -r; dx <= r; dx += 1) {
+                if ((dx * dx + dz * dz) > r * r) continue;
+                const ax = ox + dx;
+                const az = oz + dz;
+                setY(heights, n, ax, az, y0);
+                const ring = (dx * dx + dz * dz) >= (r - 1) * (r - 1);
+                paveTop(heights, n, edits, ax, az, ring ? (yard.edge || 'stone_brick') : (yard.fill || 'dirt'));
+            }
+        }
+    }
+
+    function stampHubStroke(n, heights, edits, stroke, y0) {
+        const s = stroke || {};
+        const cells = hubLineCells(s.x0, s.z0, s.x1, s.z1);
+        const half = Math.max(1, Math.floor((Number(s.width) || 3) / 2));
+        cells.forEach(function (c, i) {
+            let dx, dz;
+            for (dz = -half - 1; dz <= half + 1; dz += 1) {
+                for (dx = -half - 1; dx <= half + 1; dx += 1) {
+                    const dist = Math.max(Math.abs(dx), Math.abs(dz));
+                    const ax = c.x + dx;
+                    const az = c.z + dz;
+                    setY(heights, n, ax, az, y0);
+                    if (dist <= half) paveTop(heights, n, edits, ax, az, s.fill || 'dirt');
+                    else if (dist === half + 1) paveTop(heights, n, edits, ax, az, s.edge || 'stone_brick');
                 }
+            }
+            if (s.lamps && i > 0 && i % 8 === 0) {
+                stampHubLamp(heights, n, edits, c.x + half + 1, c.z, y0);
+                stampHubLamp(heights, n, edits, c.x - half - 1, c.z, y0);
+            }
+        });
+        if (s.apron) stampHubApron(heights, n, edits, s.x1, s.z1, y0, s.fill, s.edge);
+    }
+
+    function stampHubRoad(n, heights, edits, cx, cz, specs) {
+        const Lv = global.BlockLegendLevels;
+        const y0 = yAt(heights, n, cx, cz);
+        const plaza = Lv && Lv.hubPlazaOf ? Lv.hubPlazaOf({ cx: cx, cz: cz }) : [];
+        const plan = Lv && Lv.hubRoadPlanOf
+            ? Lv.hubRoadPlanOf({ cx: cx, cz: cz, portals: specs || [], plaza: plaza })
+            : null;
+        if (!plan) {
+            const ox = cx;
+            const oz = cz - 2;
+            (specs || []).forEach(function (p) {
+                stampHubStroke(n, heights, edits, {
+                    x0: ox, z0: oz,
+                    x1: Math.round(p.x || 0) + 1,
+                    z1: Math.round(p.z || 0) + 3,
+                    width: 3, fill: 'dirt', edge: 'stone_brick'
+                }, y0);
             });
+            return;
+        }
+        (plan.yards && plan.yards.length ? plan.yards : [plan.plaza]).forEach(function (yard) {
+            stampHubYard(heights, n, edits, yard, y0);
+        });
+        (plan.strokes || []).forEach(function (s) {
+            stampHubStroke(n, heights, edits, s, y0);
         });
     }
 
@@ -1565,35 +2294,65 @@
             }
         }
         stampRidge(n, heights, biomes, cx, cz);
+        const scenic = scenicPlan(climateName, cx, cz, n);
+        stampWoodsBiome(n, biomes, scenic, cx, cz, climateName);
         const mainVillage = villagePlan(climateName, cx, cz);
         const hamlets = hamletPlans(climateName, cx, cz, n);
-        const towns = (mainVillage ? [mainVillage] : []).concat(hamlets);
+        const villages = (mainVillage ? [mainVillage] : []).concat(hamlets);
+        const city = cityPlan(climateName, cx, cz, n, villages);
+        const towns = villages.concat(city ? [city] : []);
         const ponds = {};
-        stampRiver(n, ponds, heights, climateName, cx, cz, towns);
-        stampPonds(n, ponds, rng, climateName, cx, cz, towns);
+        stampRiver(n, ponds, heights, climateName, cx, cz, villages);
+        stampPonds(n, ponds, rng, climateName, cx, cz, villages);
+        stampScenicLakes(n, ponds, heights, scenic, towns, cx, cz);
         const edits = {};
-        towns.forEach(function (plan) {
+        villages.forEach(function (plan) {
             stampVillage(n, heights, edits, ponds, plan);
         });
+        if (city) {
+            stampCityRoads(n, heights, edits, city);
+            stampVillage(n, heights, edits, ponds, city);
+            if (city.tower) {
+                stampTower(edits, heights, n, city.tower.x, city.tower.z, city.tower.w, city.tower.d, city.tower.h, 'stone', 'gold', true);
+            }
+        }
         const landmarkSites = [];
         const landmarkProps = [];
         const landmarkTags = [];
-        stampLandmarks(n, heights, edits, ponds, climateName, cx, cz, towns, rng, landmarkSites, landmarkProps, landmarkTags);
+        stampLandmarks(n, heights, edits, ponds, climateName, cx, cz, villages, rng, landmarkSites, landmarkProps, landmarkTags);
         const skyMarks = [];
         stampSkyMark(n, heights, edits, climateName, cx, cz, towns, skyMarks);
         const wordCells = {};
         let levelPortals = [];
         let unlockPost = null;
+        let hubServices = [];
+        let plazaHouses = [];
+        let plazaProps = [];
+        let plazaBeds = [];
+        let plazaWells = [];
+        let plazaVillagers = [];
+        let plazaPlants = [];
+        let plazaAnimals = [];
         if (opts.hub) {
             const specs = (opts.portals && opts.portals.length)
                 ? opts.portals
                 : defaultHubPortalSpecs(cx, cz);
+            stampHubLand(n, ponds, heights, edits, cx, cz);
             stampHubRoad(n, heights, edits, cx, cz, specs);
             levelPortals = stampLevelPortals(n, heights, edits, specs, wordCells);
             unlockPost = stampUnlockPost(n, heights, edits, cx, cz);
+            const plaza = stampHubPlaza(n, heights, edits, cx, cz);
+            hubServices = plaza.services || [];
+            plazaHouses = plaza.houses || [];
+            plazaProps = plaza.props || [];
+            plazaBeds = plaza.beds || [];
+            plazaWells = plaza.wells || [];
+            plazaVillagers = plaza.villagers || [];
+            plazaPlants = plaza.plants || [];
+            plazaAnimals = plaza.animals || [];
         }
         const blocked = towns.concat(landmarkSites).concat(
-            opts.hub ? hubKeepoutBoxes(cx, cz, levelPortals) : levelPortalBoxes(levelPortals)
+            opts.hub ? hubKeepoutBoxes(cx, cz, levelPortals, hubServices) : levelPortalBoxes(levelPortals)
         );
         const trees = [];
         let guard = 0;
@@ -1633,6 +2392,7 @@
                                 : 4 + Math.floor(rng() * 2);
             trees.push({ x: tx, z: tz, surface: at(tx, tz), trunk: trunk, species: species });
         }
+        stampWoodsTrees(n, trees, heights, ponds, blocked, scenic, climateName);
         const flowers = [];
         guard = 0;
         const wantFlowers = Math.round(climate.flowers * mapScale);
@@ -1655,6 +2415,7 @@
             flowers.push({ x: fx, z: fz, kind: kind });
         }
         const plants = [];
+        if (plazaPlants.length) plants.push.apply(plants, plazaPlants);
         towns.forEach(function (plan) {
             if (plan.crops) plants.push.apply(plants, plan.crops);
         });
@@ -1679,6 +2440,7 @@
             plants.push({ x: px, z: pz, kind: pkind });
         }
         const animals = [];
+        if (plazaAnimals.length) animals.push.apply(animals, plazaAnimals);
         const animalKinds = climateName === 'nether' || climateName === 'desert' || climateName === 'volcano' || climateName === 'end' ? []
             : climateName === 'crystal' ? ['sheep', 'chicken']
                 : climateName === 'duskvale' ? ['wolf', 'cow', 'chicken']
@@ -1775,6 +2537,25 @@
                     phase: rng()
                 });
             }
+            const wantFish = climateName === 'ocean'
+                ? Math.min(12, Math.max(6, pondKeys.length))
+                : Math.min(6, Math.max(3, Math.floor(pondKeys.length / 2)));
+            for (let fi = 0; fi < wantFish; fi += 1) {
+                const key = pondKeys[Math.floor(rng() * pondKeys.length)];
+                const parts = key.split(',');
+                const fx = Number(parts[0]) + 0.5;
+                const fz = Number(parts[1]) + 0.5;
+                animals.push({
+                    x: fx,
+                    z: fz,
+                    kind: 'fish',
+                    habitat: 'water',
+                    homeX: fx,
+                    homeZ: fz,
+                    yaw: rng() * Math.PI * 2,
+                    phase: rng()
+                });
+            }
         }
         const treeSet = {};
         trees.forEach(function (t) { treeSet[t.x + ',' + t.z] = 1; });
@@ -1790,6 +2571,11 @@
         const allPens = [];
         const allPaths = {};
         const golems = [];
+        if (plazaHouses.length) allHouses.push.apply(allHouses, plazaHouses);
+        if (plazaProps.length) allProps.push.apply(allProps, plazaProps);
+        if (plazaBeds.length) allBeds.push.apply(allBeds, plazaBeds);
+        if (plazaWells.length) allWells.push.apply(allWells, plazaWells);
+        if (plazaVillagers.length) allVillagers.push.apply(allVillagers, plazaVillagers);
         towns.forEach(function (plan) {
             if (plan.houses) allHouses.push.apply(allHouses, plan.houses);
             if (plan.villagers) allVillagers.push.apply(allVillagers, plan.villagers);
@@ -1845,7 +2631,10 @@
             hub: !!opts.hub,
             levelPortals: levelPortals,
             unlockPost: unlockPost,
+            hubServices: hubServices,
             houses: allHouses,
+            city: city,
+            scenic: scenic,
             landmarks: landmarkTags,
             skyMarks: skyMarks,
             surfaceAt: function (x, z) { return surfaceAtWorld(this, x, z); },
@@ -1876,6 +2665,8 @@
         if (n > goldCut) return 'gold';
         if (n > 0.975) return 'iron';
         if (n > 0.94) return 'coal';
+        if (n > 0.91) return 'gravel';
+        if (climate === 'nether' && n > 0.82) return 'quartz';
         return 'stone';
     }
 
@@ -1892,14 +2683,22 @@
             return oreOrStone(x, y, z, world.climate);
         }
         if (biome === 'snow') {
-            if (y === h - 1) return 'snow';
-            if (y === h - 2) return 'dirt';
+            if (y === h - 1) return oreNoise(x, 7, z) > 0.72 ? 'ice' : 'snow';
+            if (y === h - 2) return dirtLayerKind(world, x, z, biome);
             return oreOrStone(x, y, z, world.climate);
         }
         if (biome === 'mountain' && h >= 11 && y === h - 1 && world.climate !== 'crystal' && world.climate !== 'cherry') return 'stone';
         if (y === h - 1) return 'grass';
-        if (y === h - 2) return 'dirt';
+        if (y === h - 2) return dirtLayerKind(world, x, z, biome);
         return oreOrStone(x, y, z, world.climate);
+    }
+
+    function dirtLayerKind(world, x, z, biome) {
+        const g = oreNoise(x, 3, z);
+        const wet = world.climate === 'ocean' || biome === 'plains' || biome === 'forest';
+        if (wet && g > 0.78) return 'clay';
+        if (g < 0.14) return 'gravel';
+        return 'dirt';
     }
 
     function eachTreeVoxel(tree, fn) {
@@ -2070,11 +2869,40 @@
         return n;
     }
 
+    function harvestWheat(world, x, z) {
+        const plants = (world && world.plants) || [];
+        const px = Math.floor(Number(x) || 0);
+        const pz = Math.floor(Number(z) || 0);
+        for (let i = 0; i < plants.length; i += 1) {
+            const p = plants[i];
+            if (!p || p.kind !== 'wheat') continue;
+            if (Math.floor(p.x) !== px || Math.floor(p.z) !== pz) continue;
+            if (!p.grown) return { ok: false, reason: 'wheat still growing' };
+            p.grown = false;
+            if (p.mesh && p.mesh.scale) {
+                p.mesh.scale.y = Math.max(0.4, (Number(p.mesh.scale.y) || 1) / 1.7);
+                if (p.mesh.position) p.mesh.position.y -= 0.14;
+            }
+            return { ok: true, drop: 'wheat', x: px, z: pz };
+        }
+        return { ok: false, reason: 'no wheat' };
+    }
+
+    function catchFish(world, fish) {
+        if (!fish || fish.kind !== 'fish' || !world) return { ok: false, reason: 'no fish' };
+        const list = world.animals || [];
+        const at = list.indexOf(fish);
+        if (at < 0) return { ok: false, reason: 'no fish' };
+        list.splice(at, 1);
+        if (fish.mesh && fish.mesh.parent) fish.mesh.parent.remove(fish.mesh);
+        return { ok: true, drop: 'fish' };
+    }
+
     function habitatOf(kind) {
         if (kind === 'bee' || kind === 'phantom' || kind === 'vex' || kind === 'blaze'
             || kind === 'ghast' || kind === 'fire_spirit' || kind === 'wither'
             || kind === 'dragon' || kind === 'storm') return 'air';
-        if (kind === 'pufferfish' || kind === 'guardian' || kind === 'elder_guardian') return 'water';
+        if (kind === 'pufferfish' || kind === 'guardian' || kind === 'elder_guardian' || kind === 'fish') return 'water';
         return 'ground';
     }
 
@@ -2196,7 +3024,12 @@
 
     function isGroundKind(kind) {
         return kind === 'grass' || kind === 'dirt' || kind === 'stone' || kind === 'sand' || kind === 'snow'
-            || kind === 'water' || kind === 'coal' || kind === 'iron' || kind === 'gold' || kind === 'diamond' || kind === 'plank';
+            || kind === 'water' || kind === 'coal' || kind === 'iron' || kind === 'gold' || kind === 'diamond' || kind === 'plank'
+            || kind === 'gravel' || kind === 'clay' || kind === 'sandstone' || kind === 'stone_brick' || kind === 'brick'
+            || kind === 'wool' || kind === 'carpet' || kind === 'ice' || kind === 'packed_ice' || kind === 'quartz'
+            || kind === 'quartz_block' || kind === 'snow_block' || kind === 'slab' || kind === 'stairs'
+            || kind === 'trapdoor' || kind === 'coal_block' || kind === 'iron_block' || kind === 'gold_block'
+            || kind === 'diamond_block' || kind === 'campfire' || kind === 'hay';
     }
 
     function surfaceAtWorld(world, x, z) {
@@ -2240,7 +3073,14 @@
     }
 
     function placeVoxel(world, x, y, z, kind) {
-        const allowed = { dirt: true, stone: true, log: true, plank: true, table: true, sand: true, glass: true, tnt: true };
+        const allowed = {
+            dirt: true, stone: true, log: true, plank: true, table: true, sand: true, glass: true, tnt: true,
+            gravel: true, clay: true, sandstone: true, stone_brick: true, brick: true, wool: true, carpet: true,
+            slab: true, stairs: true, trapdoor: true, pressure_plate: true, button: true, fence_gate: true,
+            sign: true, painting: true, flower_pot: true, campfire: true,
+            coal_block: true, iron_block: true, gold_block: true, diamond_block: true,
+            snow_block: true, ice: true, packed_ice: true, quartz_block: true, hay: true
+        };
         if (y <= 0 || !allowed[kind]) return { ok: false };
         if (voxelAt(world, x, y, z)) return { ok: false };
         if (x < 0 || z < 0 || x >= world.size || z >= world.size) return { ok: false };
@@ -2253,15 +3093,16 @@
         WORLD_SIZE, HEIGHT_MAX, STEP_UP, TREE_COUNT, FLOWER_COUNT, BIOME_NAMES, CLIMATES,
         makeRng, hash3, climateOf, makeGrid, sampleGrid, pickBiome, biomeAt, ridgeSigned,
         inRect, inAnyRect, villageStyle, villageMats, villagePlan, hamletPlans,
+        cityPlan, cityLayoutOf, cityLotSize, stampCityHouse, stampCityRoads, scenicPlan, stampScenicLakes, stampWoodsBiome, stampWoodsTrees,
         fillPond, stampRiver, stampRidge, stampPonds, stampVillage, yAt, setY,
         putBlock, flattenPad, defaultHubPortalSpecs, levelPortalBoxes,
-        hubKeepoutBoxes, paveTop, hubLineCells, stampHubRoad, stampHubLetters,
-        stampHubBuilding, stampTowerAt, stampLevelPortals, stampUnlockPost,
+        hubKeepoutBoxes, paveTop, hubLineCells, stampHubLand, stampHubInterior, stampHubRoad, stampHubLetters,
+        stampHubBuilding, stampHubPlaza, stampHubStroke, stampHubYard, stampTowerAt, stampLevelPortals, stampUnlockPost,
         stampTower, stampPillar, stampCrater, stampLandmarks, stampSkyMark, stampWordCubes,
         addWordArch, stampWordGates, openWordGate, carveCaves, createWorld,
         rawHeight, oreNoise, oreOrStone, groundKind, eachTreeVoxel,
         buildTreeCols, treeVoxelAt, treeKindAt, editKey, voxelAt, voxelSpecies,
-        hasBlock, blockKindAt, inHouse, growWheat, habitatOf, lifeAltitude,
+        hasBlock, blockKindAt, inHouse, growWheat, harvestWheat, catchFish, habitatOf, lifeAltitude,
         wanderBlocked, stepWander, ensureWalkTick, columnBlockedAt, wallBetween,
         isGroundKind, surfaceAtWorld, removeTree, breakVoxel, placeVoxel,
         columnScanYEnd

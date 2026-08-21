@@ -213,8 +213,8 @@ test('下龙没有第三人称偏移', () => {
 test('骑乘相机：后拉抬高，俯仰跟着看，略低头看龙', () => {
   const flat = FX.rideCam({ mounted: true, pitch: 0 });
   assert.ok(flat);
-  assert.ok(flat.back >= 5 && flat.back <= 8.5, '后拉要看见整条龙，又别拉到世界边缘');
-  assert.ok(flat.up >= 1.8 && flat.up <= 3.4);
+  assert.ok(flat.back >= 7 && flat.back <= 11, '后拉要看见整条龙和脚下村子');
+  assert.ok(flat.up >= 2.6 && flat.up <= 4.2);
   assert.ok(flat.pitchScale > 0.5 && flat.pitchScale < 1, '俯仰要跟，但比第一人称软');
   assert.ok(flat.pitchBias > 0 && flat.pitchBias < 0.28);
   const up = FX.rideCam({ mounted: true, pitch: 0.7 });
@@ -249,6 +249,24 @@ test('起降 FOV：上龙拉宽、下龙收回，寿命短', () => {
   assert.ok(down.add < 0 && down.add >= -10);
   assert.ok(up.life > 0 && up.life <= 0.4);
   assert.ok(down.life > 0 && down.life <= 0.4);
+});
+
+test('骑龙巡航高出地面至少 10 格，上龙就抬到巡航高度', () => {
+  assert.ok(FX.RIDE_CRUISE >= 10);
+  assert.equal(FX.rideFloor(4), 4 + FX.RIDE_CRUISE);
+  assert.ok(FX.rideMountY(4, 4.12) >= 4 + FX.RIDE_CRUISE);
+});
+
+test('翅膀挥动：飞时更慢更大，带二次谐波', () => {
+  let max = 0;
+  for (let t = 0; t < Math.PI * 2; t += 0.04) {
+    max = Math.max(max, Math.abs(FX.wingFlap(t, true)));
+  }
+  assert.ok(max >= 0.7 && max <= 1.05);
+  assert.ok(Math.abs(FX.wingFlap(0.4, true)) >= Math.abs(FX.wingFlap(0.4, false)));
+  const a = FX.wingFlap(0.2, true);
+  const slow = Math.sin(0.2 * 6.2) * 0.72 + Math.sin(0.2 * 12.4) * 0.12;
+  assert.ok(Math.abs(a - slow) < 1e-9);
 });
 
 test('放置碎屑：有颜色、比挖掘少', () => {

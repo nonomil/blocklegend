@@ -8,7 +8,12 @@
     const SLOT_IDS = ['fist', 'sword', 'axe', 'pickaxe', 'shovel'];
     const DEFAULT_HOTBAR = ['fist', null, null, null, 'oak-log', 'plank', null, null, null];
     const START_BAG = { 'oak-log': 3, plank: 4 };
-    const FOOD = { pork: 4, beef: 4, mutton: 4, chicken: 3, egg: 2 };
+    const FOOD = {
+        pork: 4, beef: 4, mutton: 4, chicken: 3, egg: 2,
+        bread: 5, cookie: 2, cake: 8, apple: 3, golden_apple: 10,
+        cooked_pork: 6, cooked_beef: 6, cooked_mutton: 6, cooked_chicken: 5, milk: 3, fish: 4,
+        cooked_fish: 6
+    };
 
     function emptyHotbar() {
         return DEFAULT_HOTBAR.slice();
@@ -43,7 +48,9 @@
     function isHotTool(id) {
         if (!id) return false;
         if (id === 'fist' || id === 'sword' || id === 'axe' || id === 'pickaxe' || id === 'shovel' || id === 'place') return true;
-        return /_(sword|pick|axe|shovel|bow|shield)$/.test(id) || id === 'flint_and_steel' || id === 'arrow';
+        return /_(sword|pick|axe|shovel|bow|shield|hoe)$/.test(id)
+            || id === 'flint_and_steel' || id === 'arrow' || id === 'snowball'
+            || id === 'shears' || id === 'fishing_rod' || id === 'bucket' || id === 'lead';
     }
 
     function isLegacyLoadout(bar) {
@@ -53,12 +60,13 @@
     function toolRole(id) {
         const key = String(id || '');
         if (!key || key === 'fist') return 'fist';
+        if (/hoe/.test(key)) return 'hoe';
         if (/pick/.test(key)) return 'pickaxe';
         if (/axe/.test(key)) return 'axe';
         if (/shovel/.test(key)) return 'shovel';
         if (/sword/.test(key) || key === 'sword') return 'sword';
-        if (key === 'flint_and_steel' || key === 'flint') return 'flint';
-        if (key === 'arrow' || key === 'wood_bow' || /bow/.test(key)) return key.indexOf('bow') >= 0 ? 'bow' : 'arrow';
+        if (key === 'flint_and_steel') return 'flint';
+        if (key === 'arrow' || key === 'snowball' || key === 'wood_bow' || /bow/.test(key)) return key.indexOf('bow') >= 0 ? 'bow' : 'arrow';
         return 'fist';
     }
 
@@ -91,7 +99,27 @@
         word: 280,
         gate: 400,
         glass: 600,
-        tnt: 400
+        tnt: 400,
+        gravel: 480,
+        clay: 500,
+        sandstone: 1100,
+        stone_brick: 1400,
+        brick: 1200,
+        wool: 360,
+        carpet: 280,
+        ice: 700,
+        packed_ice: 800,
+        quartz: 1400,
+        quartz_block: 1400,
+        snow_block: 400,
+        slab: 500,
+        stairs: 600,
+        trapdoor: 600,
+        coal_block: 1100,
+        iron_block: 1600,
+        gold_block: 1600,
+        diamond_block: 1800,
+        campfire: 500
     };
     const TOOLS = {
         fist: { id: 'fist', melee: 0.22, mine: { log: 0.28, leaf: 0.4, dirt: 0.42, grass: 0.42, sand: 0.4, snow: 0.4, stone: 0.1, water: 0.3, coal: 0.1, iron: 0.08, gold: 0.08, diamond: 0.06, plank: 0.28, table: 0.28, word: 1, gate: 1, glass: 0.16, tnt: 0.5 } },
@@ -99,6 +127,7 @@
         axe: { id: 'axe', melee: 0.55, mine: { log: 1, leaf: 1, dirt: 0.34, grass: 0.34, sand: 0.34, snow: 0.34, stone: 0.2, water: 0.34, coal: 0.2, iron: 0.18, gold: 0.16, diamond: 0.14, plank: 1, table: 1, word: 1, gate: 1, glass: 0.22, tnt: 0.5 } },
         pickaxe: { id: 'pickaxe', melee: 0.42, mine: { log: 0.4, leaf: 0.4, dirt: 0.72, grass: 0.72, sand: 0.72, snow: 0.72, stone: 1, water: 0.4, coal: 1, iron: 1, gold: 1, diamond: 1, plank: 0.45, table: 0.45, word: 1, gate: 1, glass: 1, tnt: 0.6 } },
         shovel: { id: 'shovel', melee: 0.35, mine: { log: 0.25, leaf: 0.3, dirt: 1, grass: 1, sand: 1, snow: 1, stone: 0.14, water: 1, coal: 0.14, iron: 0.12, gold: 0.12, diamond: 0.1, plank: 0.28, table: 0.28, word: 1, gate: 1, glass: 0.18, tnt: 0.5 } },
+        hoe: { id: 'hoe', melee: 0.28, mine: { log: 0.25, leaf: 0.3, dirt: 0.9, grass: 0.9, sand: 0.7, snow: 0.7, stone: 0.14, water: 0.4, coal: 0.14, iron: 0.12, gold: 0.12, diamond: 0.1, plank: 0.28, table: 0.28, word: 1, gate: 1, glass: 0.18, tnt: 0.5 } },
         flint: { id: 'flint', melee: 0.2, mine: { log: 0.2, leaf: 0.2, dirt: 0.2, grass: 0.2, sand: 0.2, snow: 0.2, stone: 0.12, water: 0.2, coal: 0.12, iron: 0.1, gold: 0.1, diamond: 0.08, plank: 0.2, table: 0.2, word: 1, gate: 1, glass: 0.14, tnt: 1 } },
         place: { id: 'place', melee: 0.28, mine: { log: 0.22, leaf: 0.28, dirt: 0.32, grass: 0.32, sand: 0.32, snow: 0.32, stone: 0.12, water: 0.3, coal: 0.12, iron: 0.1, gold: 0.1, diamond: 0.08, plank: 0.24, table: 0.24, word: 1, gate: 1, glass: 0.14, tnt: 0.5 } }
     };
@@ -109,7 +138,20 @@
         grass: 'dirt',
         sand: 'sand',
         glass: 'glass',
-        snow: 'dirt',
+        snow: 'snowball',
+        ice: 'ice',
+        packed_ice: 'packed_ice',
+        quartz: 'quartz',
+        quartz_block: 'quartz_block',
+        snow_block: 'snow_block',
+        slab: 'slab',
+        stairs: 'stairs',
+        trapdoor: 'trapdoor',
+        coal_block: 'coal_block',
+        iron_block: 'iron_block',
+        gold_block: 'gold_block',
+        diamond_block: 'diamond_block',
+        campfire: 'campfire',
         stone: 'cobble',
         water: 'dirt',
         coal: 'coal',
@@ -118,7 +160,14 @@
         diamond: 'diamond',
         plank: 'plank',
         table: 'table',
-        tnt: 'tnt'
+        tnt: 'tnt',
+        gravel: 'gravel',
+        clay: 'clay',
+        sandstone: 'sandstone',
+        stone_brick: 'stone_brick',
+        brick: 'bricks',
+        wool: 'wool',
+        carpet: 'carpet'
     };
 
     function toolOf(id) {
@@ -126,15 +175,33 @@
         return TOOLS[toolRole(id)] || TOOLS.fist;
     }
 
+    function mineSpeedOf(tool, kind) {
+        if (tool.mine && tool.mine[kind] != null) return tool.mine[kind];
+        if (kind === 'gravel' || kind === 'clay' || kind === 'snow_block') return tool.mine.sand || 0.4;
+        if (kind === 'sandstone' || kind === 'stone_brick' || kind === 'brick' || kind === 'quartz' || kind === 'quartz_block'
+            || kind === 'coal_block' || kind === 'iron_block' || kind === 'gold_block' || kind === 'diamond_block') {
+            return tool.mine.stone || 0.2;
+        }
+        if (kind === 'ice' || kind === 'packed_ice') return tool.mine.glass || tool.mine.stone || 0.2;
+        if (kind === 'wool' || kind === 'carpet' || kind === 'hay') return tool.mine.leaf || 0.4;
+        return 0.25;
+    }
+
     function breakMs(toolId, kind) {
         const base = BASE_BREAK_MS[kind] || 800;
         const tool = toolOf(toolId);
-        const speed = (tool.mine && tool.mine[kind]) || 0.25;
+        const speed = mineSpeedOf(tool, kind);
         return Math.max(120, Math.round(base / speed));
     }
 
     function meleeScale(toolId) {
         return toolOf(toolId).melee;
+    }
+
+    function extraDrop(kind, x, y, z) {
+        if (kind !== 'leaf') return null;
+        const n = Math.abs((Number(x) || 0) * 3 + (Number(y) || 0) * 5 + (Number(z) || 0) * 7);
+        return n % 6 === 0 ? 'apple' : null;
     }
 
     function dropOf(kind) {
@@ -171,17 +238,23 @@
         return { hit: false, prev: last };
     }
 
+    const PLACE_OF = {
+        dirt: 'dirt', cobble: 'stone', 'oak-log': 'log', plank: 'plank', table: 'table',
+        sand: 'sand', glass: 'glass', tnt: 'tnt', gravel: 'gravel', clay: 'clay',
+        sandstone: 'sandstone', stone_brick: 'stone_brick', bricks: 'brick', brick: 'brick',
+        wool: 'wool', carpet: 'carpet', stone: 'stone',
+        slab: 'slab', stairs: 'stairs', trapdoor: 'trapdoor',
+        pressure_plate: 'pressure_plate', button: 'button', fence_gate: 'fence_gate',
+        sign: 'sign', painting: 'painting', flower_pot: 'flower_pot', campfire: 'campfire',
+        coal_block: 'coal_block', iron_block: 'iron_block', gold_block: 'gold_block',
+        diamond_block: 'diamond_block', snow_block: 'snow_block', ice: 'ice',
+        packed_ice: 'packed_ice', quartz_block: 'quartz_block', hay: 'hay',
+        chest: 'chest', furnace: 'furnace', torch: 'torch', bed: 'bed',
+        door: 'door', ladder: 'ladder', fence: 'fence', boat: 'boat', lantern: 'lantern'
+    };
+
     function placeKindOf(loot) {
-        if (loot === 'dirt') return 'dirt';
-        if (loot === 'cobble') return 'stone';
-        if (loot === 'oak-log') return 'log';
-        if (loot === 'plank') return 'plank';
-        if (loot === 'table') return 'table';
-        if (loot === 'sand') return 'sand';
-        if (loot === 'glass') return 'glass';
-        if (loot === 'tnt') return 'tnt';
-        if (loot === 'chest' || loot === 'furnace' || loot === 'torch') return loot;
-        return null;
+        return PLACE_OF[loot] || null;
     }
 
     function lootOfPlace(kind) {
@@ -193,6 +266,14 @@
         if (kind === 'sand') return 'sand';
         if (kind === 'glass') return 'glass';
         if (kind === 'tnt') return 'tnt';
+        if (kind === 'gravel') return 'gravel';
+        if (kind === 'clay') return 'clay';
+        if (kind === 'sandstone') return 'sandstone';
+        if (kind === 'stone_brick') return 'stone_brick';
+        if (kind === 'brick') return 'bricks';
+        if (kind === 'wool') return 'wool';
+        if (kind === 'carpet') return 'carpet';
+        if (PLACE_OF[kind]) return kind === 'stone' ? 'cobble' : kind;
         return null;
     }
 
@@ -204,6 +285,7 @@
         breakMs: breakMs,
         meleeScale: meleeScale,
         dropOf: dropOf,
+        extraDrop: extraDrop,
         lookDir: lookDir,
         voxelRay: voxelRay,
         placeKindOf: placeKindOf,

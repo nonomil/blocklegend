@@ -186,13 +186,30 @@
         return null;
     }
 
+    const RIDE_CRUISE = 12;
+
+    function rideFloor(surfaceY) {
+        return (Number(surfaceY) || 0) + RIDE_CRUISE;
+    }
+
+    function rideMountY(surfaceY, dragonY) {
+        const seat = (dragonY != null ? Number(dragonY) : Number(surfaceY) || 0) + 1.32;
+        return Math.max(seat, rideFloor(surfaceY));
+    }
+
+    function wingFlap(t, moving) {
+        const time = Number(t) || 0;
+        if (moving) return Math.sin(time * 6.2) * 0.72 + Math.sin(time * 12.4) * 0.12;
+        return Math.sin(time * 2.2) * 0.1;
+    }
+
     function rideCam(opts) {
         const o = opts || {};
         if (!o.mounted) return null;
         const pitch = Number(o.pitch) || 0;
         return {
-            back: 6.4,
-            up: 2.5,
+            back: 8.6,
+            up: 3.4,
             pitchScale: 0.72,
             pitchBias: 0.14,
             yLift: pitch * 1.15
@@ -234,6 +251,10 @@
         hitPunch: hitPunch,
         hitLight: hitLight,
         fogAltitudeScale: fogAltitudeScale,
+        RIDE_CRUISE: RIDE_CRUISE,
+        rideFloor: rideFloor,
+        rideMountY: rideMountY,
+        wingFlap: wingFlap,
         rideCam: rideCam,
         rideFov: rideFov,
         waterFlow: waterFlow,

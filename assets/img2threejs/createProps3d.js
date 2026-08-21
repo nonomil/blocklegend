@@ -88,6 +88,124 @@
         return g;
     }
 
+    function createLantern(THREE) {
+        const g = new THREE.Group();
+        g.name = 'lantern';
+        const cage = box(THREE, 0.28, 0.32, 0.28, 0x8a929c);
+        const glass = box(THREE, 0.2, 0.22, 0.2, 0xffc04a, { emissive: 0xaa5500 });
+        const cap = box(THREE, 0.22, 0.08, 0.22, 0x5a6068);
+        const hook = box(THREE, 0.06, 0.16, 0.06, 0x6a7078);
+        cage.position.y = 0.28;
+        glass.position.y = 0.28;
+        cap.position.y = 0.46;
+        hook.position.y = 0.58;
+        g.add(cage);
+        g.add(glass);
+        g.add(cap);
+        g.add(hook);
+        g.userData.tick = function (t) {
+            const s = 1 + Math.sin(t * 9) * 0.08;
+            glass.scale.set(s, 1 + Math.sin(t * 11) * 0.1, s);
+        };
+        return g;
+    }
+
+    function createDoor(THREE) {
+        const g = new THREE.Group();
+        g.name = 'door';
+        const frameL = box(THREE, 0.08, 1.7, 0.1, 0x5d4037);
+        const frameR = box(THREE, 0.08, 1.7, 0.1, 0x5d4037);
+        const frameT = box(THREE, 0.86, 0.08, 0.1, 0x4e342e);
+        const panel = box(THREE, 0.72, 1.52, 0.06, 0x8d6e48);
+        const knob = box(THREE, 0.08, 0.08, 0.1, 0xe0b040);
+        frameL.position.set(-0.4, 0.85, 0);
+        frameR.position.set(0.4, 0.85, 0);
+        frameT.position.set(0, 1.66, 0);
+        panel.position.set(0, 0.8, 0);
+        knob.position.set(0.26, 0.78, 0.06);
+        const swing = new THREE.Group();
+        swing.position.set(-0.36, 0, 0);
+        panel.position.x = 0.36;
+        knob.position.x = 0.62;
+        swing.add(panel);
+        swing.add(knob);
+        g.add(frameL); g.add(frameR); g.add(frameT); g.add(swing);
+        g.userData.open = false;
+        g.userData.toggle = function () {
+            g.userData.open = !g.userData.open;
+            swing.rotation.y = g.userData.open ? -1.2 : 0;
+        };
+        return g;
+    }
+
+    function createLadder(THREE) {
+        const g = new THREE.Group();
+        g.name = 'ladder';
+        const railL = box(THREE, 0.06, 1.7, 0.06, 0x6d4c41);
+        const railR = box(THREE, 0.06, 1.7, 0.06, 0x6d4c41);
+        railL.position.set(-0.22, 0.85, 0);
+        railR.position.set(0.22, 0.85, 0);
+        g.add(railL); g.add(railR);
+        for (let i = 0; i < 6; i += 1) {
+            const rung = box(THREE, 0.48, 0.05, 0.05, 0x8d6e48);
+            rung.position.set(0, 0.22 + i * 0.26, 0);
+            g.add(rung);
+        }
+        return g;
+    }
+
+    function createFence(THREE) {
+        const g = new THREE.Group();
+        g.name = 'fence';
+        const postL = box(THREE, 0.1, 0.9, 0.1, 0x6d4c41);
+        const postR = box(THREE, 0.1, 0.9, 0.1, 0x6d4c41);
+        const railA = box(THREE, 0.92, 0.08, 0.06, 0x8d6e48);
+        const railB = box(THREE, 0.92, 0.08, 0.06, 0x8d6e48);
+        postL.position.set(-0.4, 0.45, 0);
+        postR.position.set(0.4, 0.45, 0);
+        railA.position.set(0, 0.38, 0);
+        railB.position.set(0, 0.68, 0);
+        g.add(postL); g.add(postR); g.add(railA); g.add(railB);
+        return g;
+    }
+
+    function createBoat(THREE) {
+        const g = new THREE.Group();
+        g.name = 'boat';
+        const hull = box(THREE, 1.35, 0.18, 0.62, 0x6d4c41);
+        const sideL = box(THREE, 1.28, 0.22, 0.08, 0x8d6e48);
+        const sideR = box(THREE, 1.28, 0.22, 0.08, 0x8d6e48);
+        const bow = box(THREE, 0.22, 0.2, 0.5, 0x5d4037);
+        const bench = box(THREE, 0.42, 0.08, 0.46, 0xa07848);
+        hull.position.y = 0.12;
+        sideL.position.set(0, 0.24, 0.27);
+        sideR.position.set(0, 0.24, -0.27);
+        bow.position.set(0.62, 0.22, 0);
+        bench.position.set(-0.1, 0.22, 0);
+        g.add(hull); g.add(sideL); g.add(sideR); g.add(bow); g.add(bench);
+        return g;
+    }
+
+    function createFish(THREE) {
+        const g = new THREE.Group();
+        g.name = 'fish';
+        const body = box(THREE, 0.58, 0.2, 0.26, 0xf4a024);
+        const belly = box(THREE, 0.4, 0.1, 0.2, 0xf8e0a0);
+        const tail = box(THREE, 0.18, 0.22, 0.06, 0xe87820);
+        const fin = box(THREE, 0.16, 0.14, 0.04, 0xe07018);
+        const eye = box(THREE, 0.06, 0.06, 0.06, 0x1a1a1a);
+        body.position.y = 0.12;
+        belly.position.set(0.02, 0.06, 0);
+        tail.position.set(-0.36, 0.14, 0);
+        fin.position.set(0.02, 0.28, 0);
+        eye.position.set(0.2, 0.16, 0.1);
+        g.add(body); g.add(belly); g.add(tail); g.add(fin); g.add(eye);
+        g.userData.tick = function (t) {
+            tail.rotation.y = Math.sin(t * 10) * 0.45;
+        };
+        return g;
+    }
+
     function createBed(THREE) {
         const g = new THREE.Group();
         g.name = 'bed';
@@ -601,7 +719,13 @@
         createChest: createChest,
         createFurnace: createFurnace,
         createTorch: createTorch,
+        createLantern: createLantern,
         createBed: createBed,
+        createDoor: createDoor,
+        createLadder: createLadder,
+        createFence: createFence,
+        createBoat: createBoat,
+        createFish: createFish,
         createVillager: createVillager,
         createTrader: createTrader,
         createTeacher: createTeacher,

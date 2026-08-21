@@ -11,9 +11,32 @@
         { id: 'iron-blade', en: 'Iron Blade', zh: '铁刃', slot: 'weapon', def: 0, atk: 4, heal: 0, cost: 40 },
         { id: 'hp-potion', en: 'HP Potion', zh: '生命药水', slot: 'consumable', def: 0, atk: 0, heal: 8, cost: 12 }
     ];
+    const UNLOCK_STOCK = [
+        { id: 'torch-pack', en: 'Torch Pack', zh: '火把×8', slot: 'bag', bagId: 'torch', qty: 8, cost: 8, unlock: 1 },
+        { id: 'stone-pick', en: 'Stone Pick', zh: '石镐', slot: 'bag', bagId: 'stone_pick', qty: 1, cost: 18, unlock: 1 },
+        { id: 'arrow-pack', en: 'Arrows', zh: '箭×12', slot: 'bag', bagId: 'arrow', qty: 12, cost: 15, unlock: 2 },
+        { id: 'bow-kit', en: 'Bow', zh: '木弓', slot: 'bag', bagId: 'wood_bow', qty: 1, cost: 28, unlock: 2 },
+        { id: 'iron-ingot-pack', en: 'Iron Ingots', zh: '铁锭×2', slot: 'bag', bagId: 'iron_ingot', qty: 2, cost: 24, unlock: 3 },
+        { id: 'shears-kit', en: 'Shears', zh: '剪刀', slot: 'bag', bagId: 'shears', qty: 1, cost: 22, unlock: 3 },
+        { id: 'bucket-kit', en: 'Bucket', zh: '桶', slot: 'bag', bagId: 'bucket', qty: 1, cost: 16, unlock: 4 },
+        { id: 'iron-sword-kit', en: 'Iron Sword', zh: '铁剑', slot: 'bag', bagId: 'iron_sword', qty: 1, cost: 48, unlock: 5 }
+    ];
 
     function itemOf(id) {
-        return ITEMS.find(function (it) { return it.id === id; }) || null;
+        return ITEMS.concat(UNLOCK_STOCK).find(function (it) { return it.id === id; }) || null;
+    }
+
+    function catalogOf(opts) {
+        const o = opts || {};
+        const unlocked = Math.max(1, Number(o.unlockedLevel) || 1);
+        const cleared = (o.clearedLevels || []).map(Number);
+        let progress = unlocked;
+        cleared.forEach(function (n) {
+            if (n + 1 > progress) progress = n + 1;
+        });
+        return ITEMS.concat(UNLOCK_STOCK.filter(function (it) {
+            return (Number(it.unlock) || 1) <= progress;
+        }));
     }
 
     function statsOf(gear) {
@@ -40,6 +63,18 @@
         const cost = (rate > 0 && rate < 1) ? Math.max(1, Math.round(item ? item.cost * rate : 0)) : (item ? item.cost : 0);
         if (!item) return { ok: false, reason: 'unknown', coined: coined, gear: gear, heal: 0 };
         if (coined < cost) return { ok: false, reason: 'poor', coined: coined, gear: gear, heal: 0 };
+        if (item.slot === 'bag') {
+            return {
+                ok: true,
+                coined: coined - cost,
+                gear: gear,
+                heal: 0,
+                bagId: item.bagId,
+                qty: Number(item.qty) || 1,
+                item: item,
+                cost: cost
+            };
+        }
         if (item.slot === 'consumable') {
             return { ok: true, coined: coined - cost, gear: gear, heal: item.heal, item: item, cost: cost };
         }
@@ -50,6 +85,8 @@
 
     global.BlockLegendShop = {
         ITEMS: ITEMS,
+        UNLOCK_STOCK: UNLOCK_STOCK,
+        catalogOf: catalogOf,
         itemOf: itemOf,
         statsOf: statsOf,
         mitigate: mitigate,

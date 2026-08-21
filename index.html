@@ -4,13 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
     <title>我的方块学园 · 地下城闯关，边打边学</title>
-    <link rel="stylesheet" href="./game.css?v=20260820-act1">
+    <link rel="stylesheet" href="./game.css?v=20260821-hub1">
 </head>
 <body class="bl-body">
     <main class="bl-stage">
         <canvas id="world-canvas" aria-label="我的方块学园"></canvas>
         <div class="bl-crosshair" aria-hidden="true"></div>
 
+        <button type="button" class="bl-menu-btn" id="hud-menu-btn" aria-expanded="false" aria-controls="hud-fold">菜单</button>
+        <div class="bl-menu-mask" id="hud-menu-mask" hidden></div>
+        <div id="hud-fold" class="bl-hud-fold">
         <header class="bl-topbar">
             <a class="bl-back" id="back-link" href="./">返回工作台</a>
             <strong class="bl-title">我的方块学园</strong>
@@ -55,7 +58,6 @@
                 <span id="side-due"></span>
             </p>
         </aside>
-        <nav id="hub-picks" class="bl-hub-picks is-hidden" aria-label="关卡地图"></nav>
 
         <aside class="bl-learn bl-wood" id="learn-panel" aria-label="词汇学习">
             <p class="bl-heard" id="heard-box"><i class="bl-heard-ico bl-ico bl-ico-mic" aria-hidden="true"></i><b id="heard-text">""</b></p>
@@ -70,6 +72,8 @@
             <p id="parent-three" class="bl-parent-three">开口 0 次 · 已学 0 词 · 明天复习 0 词</p>
             <span id="stat-total" hidden>0</span>
         </aside>
+        </div>
+        <nav id="hub-picks" class="bl-hub-picks is-hidden" aria-label="关卡地图"></nav>
 
         <div class="bl-look-card is-hidden" id="look-card">
             <img class="bl-look-img is-hidden" id="look-img" alt="">
@@ -137,6 +141,16 @@
         <div id="flavor-banner" class="bl-flavor is-hidden" aria-live="polite">
             <strong id="flavor-zh"></strong>
             <em id="flavor-en"></em>
+        </div>
+        <div id="hub-guide" class="bl-hub-guide is-hidden" aria-live="polite">
+            <p class="bl-hub-guide-who" id="hub-guide-who">老师</p>
+            <p class="bl-hub-guide-zh" id="hub-guide-zh"></p>
+            <p class="bl-hub-guide-en" id="hub-guide-en"></p>
+            <div class="bl-hub-guide-prompts" id="hub-guide-prompts"></div>
+            <div class="bl-hub-guide-actions">
+                <button type="button" class="bl-btn" id="hub-guide-next">下一句</button>
+                <button type="button" class="bl-btn is-ghost" id="hub-guide-go">跟着黄光走 · Go</button>
+            </div>
         </div>
         <div class="bl-boss-hud is-hidden" id="boss-hud">
             <span id="boss-name">凋灵</span>
@@ -216,6 +230,25 @@
                 </div>
             </div>
         </div>
+        <div class="bl-layer is-hidden" id="chest-layer">
+            <div class="bl-card bl-craft bl-mc-craft">
+                <h2>箱子 / Chest</h2>
+                <p id="chest-tip">点背包物品放进箱子，点箱子里的物品拿回背包。</p>
+                <div class="bl-chest-cols">
+                    <div>
+                        <p class="bl-mc-inv-label">箱子</p>
+                        <div class="bl-mc-inv" id="chest-store"></div>
+                    </div>
+                    <div>
+                        <p class="bl-mc-inv-label">背包</p>
+                        <div class="bl-mc-inv" id="chest-bag"></div>
+                    </div>
+                </div>
+                <div class="bl-card-actions">
+                    <button type="button" class="bl-btn" id="chest-close">关闭</button>
+                </div>
+            </div>
+        </div>
         <div class="bl-layer is-hidden" id="trade-layer">
             <div class="bl-card">
                 <h2>小卖部 / Shop</h2>
@@ -236,10 +269,66 @@
                 <p id="parent-learned">已学 0 词</p>
                 <p id="parent-due">明天没有到期复习</p>
                 <p id="parent-side">配菜还没开始 · 熟悉 4 个英语词后出识字</p>
-                <p class="bl-pack-label">词包 · 下局生效</p>
-                <div id="word-pack" class="bl-pack-switch" role="group" aria-label="词包">
-                    <button type="button" class="bl-btn is-on" data-pack="core" aria-pressed="true">生活英语</button>
-                    <button type="button" class="bl-btn" data-pack="mc" aria-pressed="false">我的世界英语</button>
+                <div id="parent-gate" class="bl-parent-gate">
+                    <p>改学习设置需要家长密码（默认 8888）</p>
+                    <input id="parent-pin" type="password" maxlength="4" inputmode="numeric" autocomplete="off" placeholder="4 位数字">
+                    <button type="button" class="bl-btn" id="parent-unlock">打开设置</button>
+                    <p id="parent-pin-msg"></p>
+                </div>
+                <div id="parent-study" class="is-hidden">
+                    <p>英语战斗关不能关 · 出词可按击打或拆方块</p>
+                    <p class="bl-pack-label">词包 · 下局生效</p>
+                    <div id="word-pack" class="bl-pack-switch" role="group" aria-label="词包">
+                        <button type="button" class="bl-btn is-on" data-pack="core" aria-pressed="true">生活英语</button>
+                        <button type="button" class="bl-btn" data-pack="mc" aria-pressed="false">我的世界英语</button>
+                    </div>
+                    <p class="bl-pack-label">学习的学科</p>
+                    <label class="bl-study-check"><input type="checkbox" data-study-subject="literacy" checked> 识字</label>
+                    <label class="bl-study-check"><input type="checkbox" data-study-subject="pinyin" checked> 拼音</label>
+                    <label class="bl-study-check"><input type="checkbox" data-study-subject="phonics" checked> 拼读</label>
+                    <label class="bl-study-check"><input type="checkbox" data-study-subject="math" checked> 口算</label>
+                    <p class="bl-pack-label">出现频率 · 英语出词</p>
+                    <div class="bl-pack-switch" role="group" aria-label="出词方式">
+                        <button type="button" class="bl-btn is-on" data-study-spawn="hit">击打</button>
+                        <button type="button" class="bl-btn" data-study-spawn="break">拆方块</button>
+                        <button type="button" class="bl-btn" data-study-spawn="both">都算</button>
+                    </div>
+                    <p class="bl-pack-label">每几次出一题</p>
+                    <div class="bl-pack-switch" role="group" aria-label="出词间隔">
+                        <button type="button" class="bl-btn" data-study-spawn-every="1">1</button>
+                        <button type="button" class="bl-btn" data-study-spawn-every="2">2</button>
+                        <button type="button" class="bl-btn is-on" data-study-spawn-every="4">4</button>
+                        <button type="button" class="bl-btn" data-study-spawn-every="8">8</button>
+                    </div>
+                    <p class="bl-pack-label">配菜节奏 · 每熟悉几个英语词出配菜</p>
+                    <div class="bl-pack-switch" role="group" aria-label="配菜节奏">
+                        <button type="button" class="bl-btn" data-study-every="2">密 · 2</button>
+                        <button type="button" class="bl-btn is-on" data-study-every="4">中 · 4</button>
+                        <button type="button" class="bl-btn" data-study-every="8">疏 · 8</button>
+                    </div>
+                    <p class="bl-pack-label">配菜本局道数</p>
+                    <div class="bl-pack-switch" role="group" aria-label="本局道数">
+                        <button type="button" class="bl-btn" data-study-cap="3">3</button>
+                        <button type="button" class="bl-btn is-on" data-study-cap="6">6</button>
+                        <button type="button" class="bl-btn" data-study-cap="9">9</button>
+                    </div>
+                    <p class="bl-pack-label">英语单词数量 · 本关最多出几个</p>
+                    <div class="bl-pack-switch" role="group" aria-label="单词数量">
+                        <button type="button" class="bl-btn is-on" data-study-words="0">不限</button>
+                        <button type="button" class="bl-btn" data-study-words="8">8</button>
+                        <button type="button" class="bl-btn" data-study-words="12">12</button>
+                        <button type="button" class="bl-btn" data-study-words="16">16</button>
+                    </div>
+                    <p class="bl-pack-label">识字级别</p>
+                    <div id="literacy-band" class="bl-pack-switch" role="group" aria-label="识字级别">
+                        <button type="button" class="bl-btn is-on" data-study-band="auto">自动</button>
+                        <button type="button" class="bl-btn" data-study-band="L1">L1</button>
+                        <button type="button" class="bl-btn" data-study-band="L2">L2</button>
+                        <button type="button" class="bl-btn" data-study-band="L3">L3</button>
+                    </div>
+                    <p class="bl-pack-label">改密码</p>
+                    <input id="parent-new-pin" type="password" maxlength="4" inputmode="numeric" autocomplete="off" placeholder="新的 4 位数字">
+                    <button type="button" class="bl-btn" id="parent-save-pin">保存密码</button>
                 </div>
                 <ul id="parent-levels"></ul>
                 <p id="parent-advice">今天可以开口一个新词</p>
@@ -498,13 +587,19 @@
     <script src="./preschool-english-vocab.js?v=20260819-w1s1"></script>
     <script src="./child-courses.js?v=20260819-w1s1"></script>
     <script src="./vendor/three.min.js?v=20260815-bl-s1"></script>
-    <script src="./data/shop.js?v=20260819-bl-side2"></script>
-    <script src="./data/tools.js?v=20260820-blocks1"></script>
-    <script src="./data/craft.js?v=20260820-blocks1"></script>
+    <script src="./vendor/GLTFLoader.js?v=20260820-gltf1"></script>
+    <script src="./data/shop.js?v=20260821-hub3"></script>
+        <script src="./data/tools.js?v=20260820-smelt2"></script>
+        <script src="./data/craft.js?v=20260820-chest1"></script>
     <script src="./data/atlas-paint.js?v=20260820-seam1"></script>
-    <script src="./data/fx.js?v=20260820-sky1"></script>
-    <script src="./data/world-gen.js?v=20260820-blocks1"></script>
-    <script src="./engine.js?v=20260820-blocks1"></script>
+    <script src="./data/fx.js?v=20260820-ride1"></script>
+    <script src="./data/dragon-rig.js?v=20260820-rig1"></script>
+    <script src="./data/dragon-gltf.js?v=20260820-gltf1"></script>
+    <script src="./data/academy-dragon.js?v=20260820-bcd1"></script>
+    <script src="./data/perf.js?v=20260820-perf2"></script>
+    <script src="./data/mobile-chrome.js?v=20260820-hud2"></script>
+    <script src="./data/world-gen.js?v=20260821-hub7"></script>
+    <script src="./engine.js?v=20260820-smelt2"></script>
     <script src="./data/combat.js?v=20260820-blocks1"></script>
     <script src="./data/speech-input.js?v=20260819-e1s2"></script>
     <script src="./data/speech-hud.js?v=20260820-voice1"></script>
@@ -512,12 +607,12 @@
     <script src="./data/scenes.js?v=20260819-e4s1"></script>
     <script src="./data/scene-loop.js?v=20260819-e4s1"></script>
     <script src="./data/companion.js?v=20260819-bl-mode1"></script>
-    <script src="./data/words.js?v=20260820-blocks1"></script>
-    <script src="./data/question-port.js?v=20260819-bl-side7"></script>
+        <script src="./data/words.js?v=20260820-study2"></script>
+    <script src="./data/question-port.js?v=20260820-study2"></script>
     <script src="./data/review-schedule.js?v=20260819-e2s3"></script>
     <script src="./data/word-memory.js?v=20260819-d1s3"></script>
     <script src="./data/difficulty.js?v=20260819-d2s1"></script>
-    <script src="./data/levels.js?v=20260820-act1"></script>
+    <script src="./data/levels.js?v=20260821-hub6"></script>
     <script src="./data/quests.js?v=20260819-bl-opt55"></script>
     <script src="./data/skins.js?v=20260817-bl-art3"></script>
     <script src="./assets/img2threejs/voxelPix.js?v=20260816-bl-mobs3"></script>
@@ -554,7 +649,7 @@
     <script src="./assets/atlas4v/trader-atlas.js?v=20260819-bl-opt3"></script>
     <script src="./assets/atlas4v/bee-atlas.js?v=20260819-bl-opt16"></script>
     <script src="./assets/atlas4v/wither-atlas.js?v=20260819-bl-opt51"></script>
-    <script src="./assets/atlas4v/dragon-atlas.js?v=20260819-bl-opt11"></script>
+    <script src="./assets/atlas4v/dragon-atlas.js?v=20260821-chunky1"></script>
     <script src="./assets/atlas4v/storm-atlas.js?v=20260819-bl-opt51"></script>
     <script src="./assets/atlas4v/husk-atlas.js?v=20260819-bl-opt53"></script>
     <script src="./assets/atlas4v/pillager-atlas.js?v=20260819-bl-opt34"></script>
@@ -571,7 +666,10 @@
     <script src="./assets/atlas4v/fire_spirit-atlas.js?v=20260819-bl-opt3"></script>
     <script src="./assets/atlas4v/sculk_worm-atlas.js?v=20260819-bl-opt49"></script>
     <script src="./assets/atlas4v/shadow_stalker-atlas.js?v=20260819-bl-opt42"></script>
-    <script src="./assets/img2threejs/fourViewModel.js?v=20260818-bl-4vnew3"></script>
+    <script src="./assets/img2threejs/roundedBox.js?v=20260821-round1"></script>
+    <script src="./assets/img2threejs/fourViewModel.js?v=20260821-round1"></script>
+    <script src="./assets/img2threejs/dragon-voxels.js?v=20260821-svox2"></script>
+    <script src="./assets/img2threejs/smoothVoxelDragon.js?v=20260821-svox2"></script>
     <script src="./assets/img2threejs/createHuskModel.js?v=20260818-bl-4vnew1"></script>
     <script src="./assets/img2threejs/createPillagerModel.js?v=20260818-bl-4vnew4"></script>
     <script src="./assets/img2threejs/createRavagerModel.js?v=20260818-bl-4vnew1"></script>
@@ -592,11 +690,11 @@
     <script src="./assets/img2threejs/createBlazeModel.js?v=20260817-bl-i2t1"></script>
     <script src="./assets/img2threejs/createWardenModel.js?v=20260817-bl-i2t1"></script>
     <script src="./assets/img2threejs/createWitherModel.js?v=20260816-bl-mobs4"></script>
-    <script src="./assets/img2threejs/createDragonModel.js?v=20260816-bl-mobs4"></script>
+    <script src="./assets/img2threejs/createDragonModel.js?v=20260821-svox2"></script>
     <script src="./assets/img2threejs/createStormModel.js?v=20260816-bl-mobs4"></script>
     <script src="./assets/img2threejs/createTools3d.js?v=20260819-bl-opt51"></script>
-    <script src="./assets/img2threejs/createProps3d.js?v=20260819-villages6"></script>
-    <script src="./mobs.js?v=20260820-light1"></script>
-    <script src="./game.js?v=20260820-act1"></script>
+        <script src="./assets/img2threejs/createProps3d.js?v=20260820-smelt2"></script>
+    <script src="./mobs.js?v=20260821-hub3"></script>
+        <script src="./game.js?v=20260821-hub7"></script>
 </body>
 </html>

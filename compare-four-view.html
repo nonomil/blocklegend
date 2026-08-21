@@ -48,7 +48,7 @@
     <script src="./assets/atlas4v/trader-atlas.js?v=20260819-bl-opt3"></script>
     <script src="./assets/atlas4v/bee-atlas.js?v=20260819-bl-opt16"></script>
     <script src="./assets/atlas4v/wither-atlas.js?v=20260819-bl-opt51"></script>
-    <script src="./assets/atlas4v/dragon-atlas.js?v=20260819-bl-opt11"></script>
+    <script src="./assets/atlas4v/dragon-atlas.js?v=20260821-chunky1"></script>
     <script src="./assets/atlas4v/storm-atlas.js?v=20260819-bl-opt51"></script>
     <script src="./assets/atlas4v/husk-atlas.js?v=20260819-bl-opt53"></script>
     <script src="./assets/atlas4v/pillager-atlas.js?v=20260819-bl-opt34"></script>
@@ -65,7 +65,7 @@
     <script src="./assets/atlas4v/fire_spirit-atlas.js?v=20260819-bl-opt3"></script>
     <script src="./assets/atlas4v/sculk_worm-atlas.js?v=20260819-bl-opt49"></script>
     <script src="./assets/atlas4v/shadow_stalker-atlas.js?v=20260819-bl-opt42"></script>
-    <script src="./assets/img2threejs/fourViewModel.js?v=20260819-bl-opt3"></script>
+    <script src="./assets/img2threejs/fourViewModel.js?v=20260821-box4"></script>
     <script>
     (function () {
         const THREE = window.THREE;
@@ -95,7 +95,7 @@
             { id: 'trader', zh: '流浪商人', opts: { swingArms: false, texQuery: bust } },
             { id: 'bee', zh: '蜜蜂', opts: { texQuery: bust } },
             { id: 'wither', zh: '凋灵', opts: { texQuery: bust } },
-            { id: 'dragon', zh: '末影龙', opts: { texQuery: bust } },
+            { id: 'dragon', zh: '学园龙', opts: { texQuery: bust } },
             { id: 'storm', zh: '凋灵风暴', opts: { texQuery: bust } },
             { id: 'husk', zh: '尸壳', opts: { texQuery: bust } },
             { id: 'pillager', zh: '掠夺者', opts: { texQuery: bust } },
@@ -169,7 +169,7 @@
             paneB.className = 'pane';
             paneB.innerHTML = '<b>' + m.zh + ' · 生图参考</b>';
             const img = document.createElement('img');
-            img.src = './generated/blocklegend-roster/four-view/' + m.id + '-4view.png?v=20260818-bl-4vboss1';
+            img.src = './generated/blocklegend-roster/four-view/' + m.id + '-4view.png?v=20260821-box3';
             paneB.appendChild(img);
             row.appendChild(paneA);
             row.appendChild(paneB);
@@ -223,16 +223,19 @@
             return work.toDataURL('image/png');
         }
 
+        const start = (location.hash || '').replace('#', '');
+        if (start && MODELS.some(m => m.id === start)) { selectTab(start); }
+
         (async function bake() {
-            for (const row of rows) {
+            const ordered = start
+                ? rows.slice().sort(function (a, b) { return a.id === start ? -1 : b.id === start ? 1 : 0; })
+                : rows;
+            for (const row of ordered) {
                 const model = window.BlockLegendFourView.build(THREE, row.model.id, Object.assign({ flat: true }, row.model.opts));
                 await waitTexture(firstMap(model));
                 row.shot.src = paint(row.model);
             }
         }());
-
-        const start = (location.hash || '').replace('#', '');
-        if (start && MODELS.some(m => m.id === start)) { selectTab(start); }
     }());
     </script>
 </body>

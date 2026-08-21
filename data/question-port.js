@@ -162,15 +162,81 @@
         return Math.max(0, Math.floor(Number(quota) || 0) - Math.floor(Number(known) || 0));
     }
 
+    const STUDY_EVERYS = [2, 4, 8];
+    const STUDY_CAPS = [3, 6, 9];
+    const STUDY_WORDS = [0, 8, 12, 16];
+    const STUDY_SPAWN_FROM = ['hit', 'break', 'both'];
+    const STUDY_SPAWN_EVERY = [1, 2, 4, 8];
+    const STUDY_BANDS = ['auto', 'L1', 'L2', 'L3', 'L4', 'L5'];
+    const DEFAULT_PIN = '8888';
+
+    function pickAllowed(value, allowed, fallback) {
+        return allowed.indexOf(value) >= 0 ? value : fallback;
+    }
+
+    function normalizeStudy(raw) {
+        const s = raw && typeof raw === 'object' ? raw : {};
+        const sub = s.subjects && typeof s.subjects === 'object' ? s.subjects : {};
+        const bands = s.bands && typeof s.bands === 'object' ? s.bands : {};
+        function bandOf(kind) {
+            return pickAllowed(String(bands[kind] || 'auto'), STUDY_BANDS, 'auto');
+        }
+        return {
+            subjects: {
+                literacy: sub.literacy !== false,
+                pinyin: sub.pinyin !== false,
+                phonics: sub.phonics !== false,
+                math: sub.math !== false
+            },
+            every: pickAllowed(Number(s.every) || 4, STUDY_EVERYS, 4),
+            sittingCap: pickAllowed(Number(s.sittingCap) || 6, STUDY_CAPS, 6),
+            wordCount: pickAllowed(Number(s.wordCount) || 0, STUDY_WORDS, 0),
+            spawnFrom: pickAllowed(String(s.spawnFrom || 'hit'), STUDY_SPAWN_FROM, 'hit'),
+            spawnEvery: pickAllowed(Number(s.spawnEvery) || 4, STUDY_SPAWN_EVERY, 4),
+            bands: {
+                literacy: bandOf('literacy'),
+                pinyin: bandOf('pinyin'),
+                phonics: bandOf('phonics'),
+                math: bandOf('math')
+            }
+        };
+    }
+
+    function studyBand(kind, known, study) {
+        const s = normalizeStudy(study);
+        const pinned = s.bands[kind];
+        if (pinned && pinned !== 'auto') return pinned;
+        return kind === 'literacy' ? literacyBand(known) : 'L1';
+    }
+
+    function digits4(value) {
+        return String(value == null ? '' : value).replace(/\D/g, '').slice(0, 4);
+    }
+
+    function checkPin(stored, input) {
+        const got = digits4(input);
+        if (got.length !== 4) return false;
+        const have = digits4(stored);
+        return got === (have || DEFAULT_PIN);
+    }
+
+    function setPin(next) {
+        const pin = digits4(next);
+        if (pin.length !== 4) return { ok: false };
+        return { ok: true, pin: pin };
+    }
+
     function sideDue(opts) {
         const o = opts || {};
         const F = Math.max(0, Math.floor(Number(o.enFamiliar) || 0));
         const tracks = o.tracks && typeof o.tracks === 'object' ? o.tracks : {};
+        const study = normalizeStudy(o.study);
+        const every = study.every;
         return {
-            literacy: owed(Math.floor(F / 4) * 2, knownOf(tracks.literacy)),
-            pinyin: owed(Math.floor(F / 8), knownOf(tracks.pinyin)),
-            phonics: owed(Math.floor(F / 12), knownOf(tracks.phonics)),
-            math: owed(Math.floor(F / 16), knownOf(tracks.math))
+            literacy: study.subjects.literacy ? owed(Math.floor(F / every) * 2, knownOf(tracks.literacy)) : 0,
+            pinyin: study.subjects.pinyin ? owed(Math.floor(F / (every * 2)), knownOf(tracks.pinyin)) : 0,
+            phonics: study.subjects.phonics ? owed(Math.floor(F / (every * 3)), knownOf(tracks.phonics)) : 0,
+            math: study.subjects.math ? owed(Math.floor(F / (every * 4)), knownOf(tracks.math)) : 0
         };
     }
 
@@ -435,7 +501,8 @@
             return n > 0 ? (KIND_LABEL[id] + n) : '';
         }).filter(Boolean);
         const done = Math.max(0, Math.floor(Number(opts && opts.done) || 0));
-        const sit = done > 0 ? ('本局 ' + Math.min(6, done) + '/6') : '';
+        const cap = Math.max(1, Math.floor(Number(opts && opts.cap) || 6));
+        const sit = done > 0 ? ('本局 ' + Math.min(cap, done) + '/' + cap) : '';
         if (parts.length && sit) return '还欠 ' + parts.join(' ') + ' · ' + sit;
         if (parts.length) return '还欠 ' + parts.join(' ');
         return sit;
@@ -447,6 +514,10 @@
         cardFromRow: cardFromRow,
         cardsFromCatalog: cardsFromCatalog,
         careerFamiliar: careerFamiliar,
+        normalizeStudy: normalizeStudy,
+        studyBand: studyBand,
+        checkPin: checkPin,
+        setPin: setPin,
         sideDue: sideDue,
         nextDue: nextDue,
         grade: grade,

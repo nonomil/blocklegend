@@ -1005,14 +1005,20 @@
         if (o.bossShielded) return true;
         if (o.quizPassed) return false;
         if (o.firstHit) return true;
-        if (o.lastQuizWrong && (Number(o.hitsSinceQuiz) || 0) >= REASK_HITS) return true;
+        const every = [1, 2, 4, 8].indexOf(Number(o.every)) >= 0 ? Number(o.every) : REASK_HITS;
+        if (o.lastQuizWrong && (Number(o.hitsSinceQuiz) || 0) >= every) return true;
         return false;
     }
 
     const WORLD_QUIZ_EVERY = 0;
 
-    function shouldAskWorldQuiz() {
-        return false;
+    function shouldAskWorldQuiz(opts) {
+        const o = opts || {};
+        const from = String(o.from || 'hit');
+        if (from !== 'break' && from !== 'both') return false;
+        const every = [1, 2, 4, 8].indexOf(Number(o.every)) >= 0 ? Number(o.every) : 0;
+        const broken = Math.max(0, Math.floor(Number(o.broken) || 0));
+        return every > 0 && broken > 0 && broken % every === 0;
     }
 
     function phraseSpeakDelayMs(text) {
@@ -1075,9 +1081,16 @@
         chest: ['chest'],
         furnace: ['furnace'],
         torch: ['torch'],
+        lantern: ['lantern'],
+        glass: ['glass'],
         dragon: ['ender dragon', 'dragon'],
         storm: ['wither storm', 'storm'],
         bed: ['bed'],
+        door: ['door'],
+        ladder: ['ladder'],
+        fence: ['fence'],
+        boat: ['boat'],
+        fish: ['fish'],
         wheat: ['wheat'],
         tree: ['tree'],
         flower: ['flower'],
@@ -1126,12 +1139,48 @@
         sword: ['sword'],
         axe: ['axe'],
         pickaxe: ['pickaxe'],
-        shovel: ['shovel']
+        shovel: ['shovel'],
+        gravel: ['gravel'],
+        clay: ['clay'],
+        sandstone: ['sandstone'],
+        stone_brick: ['stone brick', 'stonebrick'],
+        brick: ['brick'],
+        wool: ['wool'],
+        carpet: ['carpet'],
+        slab: ['slab'],
+        stairs: ['stairs'],
+        trapdoor: ['trapdoor'],
+        ice: ['ice'],
+        packed_ice: ['packed ice'],
+        quartz: ['quartz'],
+        campfire: ['campfire'],
+        lantern: ['lantern'],
+        coal_block: ['coal block'],
+        snow_block: ['snow block']
     };
     const KIND_FALLBACK_ZH = {
         grass: '草方块',
         dirt: '泥土',
         sand: '沙子',
+        gravel: '砂砾',
+        clay: '粘土',
+        sandstone: '砂岩',
+        stone_brick: '石砖',
+        brick: '砖块',
+        wool: '羊毛',
+        carpet: '地毯',
+        slab: '木台阶',
+        stairs: '木楼梯',
+        trapdoor: '活板门',
+        ice: '冰',
+        packed_ice: '浮冰',
+        quartz: '石英',
+        campfire: '营火',
+        lantern: '灯笼',
+        furnace: '熔炉',
+        glass: '玻璃',
+        coal_block: '煤炭块',
+        snow_block: '雪块',
         snow: '雪',
         stone: '石头',
         water: '水',
@@ -1162,6 +1211,11 @@
         dragon: '末影龙',
         storm: '凋灵风暴',
         bed: '床',
+        door: '门',
+        ladder: '梯子',
+        fence: '栅栏',
+        boat: '船',
+        fish: '鱼',
         wheat: '小麦',
         tree: '树',
         flower: '花',

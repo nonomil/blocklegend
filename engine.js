@@ -36,7 +36,7 @@
         WORLD_SIZE, HEIGHT_MAX, STEP_UP, TREE_COUNT,
         makeRng, hash3, climateOf, biomeAt, openWordGate, createWorld,
         breakVoxel, placeVoxel, voxelAt, voxelSpecies, hasBlock, blockKindAt,
-        inHouse, habitatOf, lifeAltitude, stepWander, growWheat,
+        inHouse, habitatOf, lifeAltitude, stepWander, growWheat, harvestWheat, catchFish,
         columnBlockedAt, wallBetween, removeTree, surfaceAtWorld, buildTreeCols,
         ensureWalkTick
     } = W;
@@ -86,7 +86,27 @@
             plank: [0.90, 0.72, 0.48],
             table: [0.78, 0.52, 0.28],
             word: [0.95, 0.78, 0.28],
-            gate: [0.86, 0.62, 0.18]
+            gate: [0.86, 0.62, 0.18],
+            gravel: [0.70, 0.66, 0.58],
+            clay: [0.82, 0.50, 0.36],
+            sandstone: [0.88, 0.76, 0.48],
+            stone_brick: [0.58, 0.56, 0.55],
+            brick: [0.72, 0.32, 0.22],
+            wool: [0.94, 0.92, 0.88],
+            carpet: [0.94, 0.90, 0.86],
+            slab: [0.88, 0.70, 0.46],
+            stairs: [0.86, 0.68, 0.44],
+            trapdoor: [0.80, 0.58, 0.34],
+            coal_block: [0.22, 0.22, 0.24],
+            iron_block: [0.82, 0.82, 0.86],
+            gold_block: [0.96, 0.82, 0.28],
+            diamond_block: [0.48, 0.90, 0.92],
+            snow_block: [0.94, 0.96, 0.98],
+            ice: [0.62, 0.84, 0.94],
+            packed_ice: [0.48, 0.72, 0.92],
+            quartz: [0.92, 0.88, 0.82],
+            quartz_block: [0.94, 0.90, 0.86],
+            hay: [0.86, 0.74, 0.28]
         };
         const base = pal[kind] || pal.dirt;
         if (kind === 'leaf') {
@@ -159,6 +179,19 @@
         if (kind === 'word' || kind === 'gate') return 7;
         if (kind === 'glass') return 14;
         if (kind === 'tnt') return 34;
+        if (kind === 'gravel') return 3;
+        if (kind === 'clay') return 2;
+        if (kind === 'sandstone') return 24;
+        if (kind === 'stone_brick') return 3;
+        if (kind === 'brick') return 25;
+        if (kind === 'wool' || kind === 'carpet') return 0;
+        if (kind === 'ice' || kind === 'packed_ice') return 14;
+        if (kind === 'quartz' || kind === 'quartz_block' || kind === 'snow_block') return 0;
+        if (kind === 'coal_block') return 15;
+        if (kind === 'gold_block') return 32;
+        if (kind === 'diamond_block') return 33;
+        if (kind === 'iron_block') return 3;
+        if (kind === 'slab' || kind === 'stairs' || kind === 'trapdoor' || kind === 'campfire' || kind === 'hay') return 5;
         return 2;
     }
 
@@ -1008,10 +1041,16 @@
             (world.placedProps || []).forEach(function (p) {
                 const factory = p.kind === 'furnace' ? 'createFurnace'
                     : p.kind === 'torch' ? 'createTorch'
+                        : p.kind === 'lantern' ? 'createLantern'
                         : p.kind === 'chair' ? 'createChair'
                             : p.kind === 'bookshelf' ? 'createBookshelf'
                                 : p.kind === 'table' ? 'createTable'
-                                    : 'createChest';
+                                    : p.kind === 'bed' ? 'createBed'
+                                        : p.kind === 'door' ? 'createDoor'
+                                            : p.kind === 'ladder' ? 'createLadder'
+                                                : p.kind === 'fence' ? 'createFence'
+                                                    : p.kind === 'boat' ? 'createBoat'
+                                                        : 'createChest';
                 const mesh = propOf(factory, function () {
                     if (p.kind === 'chair') {
                         const g = new THREE.Group();
@@ -1042,11 +1081,18 @@
                 let animal;
                 if (a.kind === 'dragon' && global.BlockLegendDragonModel) {
                     animal = global.BlockLegendDragonModel.create(THREE);
-                    animal.scale.setScalar(1.22);
+                    animal.scale.setScalar(animal.userData.rideScale != null ? animal.userData.rideScale : 1.62);
                     const shield = animal.userData && animal.userData.sculptRuntime
                         && animal.userData.sculptRuntime.nodes
                         && animal.userData.sculptRuntime.nodes.shield;
                     if (shield) shield.visible = false;
+                } else if (a.kind === 'fish') {
+                    animal = propOf('createFish', function () {
+                        const g = new THREE.Group();
+                        g.add(boxMesh(0.55, 0.18, 0.22, 0xf2a04a, 0.12));
+                        g.add(boxMesh(0.16, 0.16, 0.06, 0xe87828, 0.12));
+                        return g;
+                    });
                 } else if (a.kind === 'pufferfish' && global.BlockLegendPufferfishModel) {
                     animal = global.BlockLegendPufferfishModel.create(THREE);
                 } else if (a.kind === 'guardian' && global.BlockLegendGuardianModel) {
@@ -1207,6 +1253,56 @@
             return columnBlockedAt(world, px, pz, feetY);
         }
 
+        function onLadder(px, pz) {
+            const props = (world.placedProps || []);
+            for (let i = 0; i < props.length; i += 1) {
+                const p = props[i];
+                if (!p || p.kind !== 'ladder') continue;
+                if (Math.hypot(px - (p.x + 0.5), pz - (p.z + 0.5)) < 0.9) return true;
+            }
+            return false;
+        }
+
+        function updateBoatPhysics(dt, input) {
+            const speed = 7.2;
+            const ax = analog.x, ay = analog.y;
+            const useStick = Math.abs(ax) + Math.abs(ay) > 0.001;
+            const dirX = useStick
+                ? (-Math.sin(look.yaw) * ay)
+                : (Math.sin(look.yaw) * (input.back ? 1 : 0) - Math.sin(look.yaw) * (input.fwd ? 1 : 0));
+            const dirZ = useStick
+                ? (-Math.cos(look.yaw) * ay)
+                : (Math.cos(look.yaw) * (input.back ? 1 : 0) - Math.cos(look.yaw) * (input.fwd ? 1 : 0));
+            const rgtX = useStick
+                ? (Math.cos(look.yaw) * ax)
+                : (Math.cos(look.yaw) * (input.right ? 1 : 0) - Math.cos(look.yaw) * (input.left ? 1 : 0));
+            const rgtZ = useStick
+                ? (-Math.sin(look.yaw) * ax)
+                : (-Math.sin(look.yaw) * (input.right ? 1 : 0) + Math.sin(look.yaw) * (input.left ? 1 : 0));
+            let mx = dirX + rgtX, mz = dirZ + rgtZ;
+            const len = Math.hypot(mx, mz);
+            if (len > 0) {
+                mx = mx / len * speed * dt;
+                mz = mz / len * speed * dt;
+                player.x = Math.max(2.5, Math.min(world.size - 2.5, player.x + mx));
+                player.z = Math.max(2.5, Math.min(world.size - 2.5, player.z + mz));
+            }
+            player.vy = 0;
+            player.y = world.surfaceAt(Math.floor(player.x), Math.floor(player.z)) + 0.28;
+            player.onGround = true;
+            const boat = player.mounted;
+            if (boat) {
+                boat.x = Math.floor(player.x);
+                boat.z = Math.floor(player.z);
+                boat.y = player.y - 0.28;
+                boat.yaw = look.yaw + Math.PI;
+                if (boat.mesh) {
+                    boat.mesh.position.set(player.x, boat.y, player.z);
+                    boat.mesh.rotation.y = look.yaw;
+                }
+            }
+        }
+
         function updateMountPhysics(dt, input) {
             const FLY = 9.6;
             const CLIMB = 6.8;
@@ -1272,7 +1368,9 @@
             if (len > 0.001 || input.fwd || useStick) climb -= Math.sin(look.pitch) * 0.9;
             player.vy = 0;
             player.y += climb * CLIMB * dt;
-            const floorY = world.surfaceAt(Math.floor(player.x), Math.floor(player.z)) + 1.55;
+            const FX = globalThis.BlockLegendFx;
+            const surfaceY = world.surfaceAt(Math.floor(player.x), Math.floor(player.z));
+            const floorY = FX && FX.rideFloor ? FX.rideFloor(surfaceY) : surfaceY + 12;
             if (player.y < floorY) player.y = floorY;
             if (player.y > 90) player.y = 90;
             player.onGround = player.y <= floorY + 0.08;
@@ -1297,6 +1395,10 @@
         }
 
         function updatePhysics(dt, input) {
+            if (player.mounted && player.mounted.kind === 'boat') {
+                updateBoatPhysics(dt, input);
+                return;
+            }
             if (player.mounted) {
                 updateMountPhysics(dt, input);
                 return;
@@ -1325,6 +1427,21 @@
                 // 分轴试探：撞墙只挡该轴，可贴墙滑动
                 if (!columnBlocked(player.x + mx + Math.sign(mx) * R, player.z, player.y)) player.x += mx;
                 if (!columnBlocked(player.x, player.z + mz + Math.sign(mz) * R, player.y)) player.z += mz;
+            }
+            if (onLadder(player.x, player.z)) {
+                player.vy = 0;
+                let climb = 0;
+                if (input.jump) climb += 1;
+                if (input.sneak) climb -= 1;
+                if (input.fwd) climb += 0.65;
+                if (input.back) climb -= 0.65;
+                player.y += climb * 4.8 * dt;
+                const groundY = world.surfaceAt(Math.floor(player.x), Math.floor(player.z));
+                if (player.y < groundY) player.y = groundY;
+                if (player.y > groundY + 8) player.y = groundY + 8;
+                player.onGround = player.y <= groundY + 0.08;
+                separatePlayerFromAnimals();
+                return;
             }
             // 竖直
             player.vy -= GRAVITY * dt;
@@ -1448,10 +1565,13 @@
 
         function resize() {
             const rect = canvas.getBoundingClientRect();
-            const w = Math.max(1, Math.floor(rect.width));
-            const h = Math.max(1, Math.floor(rect.height));
-            renderer.setSize(w, h, false);
-            camera.aspect = w / h;
+            const cssW = Math.max(1, Math.floor(rect.width));
+            const cssH = Math.max(1, Math.floor(rect.height));
+            const P = global.BlockLegendPerf;
+            const cap = lite && P && P.LITE_LONG_EDGE ? P.LITE_LONG_EDGE : 0;
+            const size = P && P.internalSize ? P.internalSize(cssW, cssH, cap) : { w: cssW, h: cssH };
+            renderer.setSize(size.w, size.h, false);
+            camera.aspect = cssW / cssH;
             camera.updateProjectionMatrix();
         }
 
@@ -1607,6 +1727,11 @@
                 scene.fog.near = fogBaseN * ext;
                 scene.fog.far = fogBaseF * ext;
             }
+            const Perf = global.BlockLegendPerf;
+            function lifeNear(row, extra) {
+                if (!Perf || !Perf.shouldTickLife) return true;
+                return Perf.shouldTickLife(row, player, extra);
+            }
             (world.animals || []).forEach(function (a) {
                 if (!a.mesh) return;
                 if (player.mounted === a) {
@@ -1625,6 +1750,9 @@
                     }
                     return;
                 }
+                const near = lifeNear(a);
+                a.mesh.visible = near;
+                if (!near) return;
                 const hab = a.habitat || habitatOf(a.kind);
                 const speed = a.rideable ? 0.36 : hab === 'air' ? 1.15 : hab === 'water' ? 0.55 : 0.7;
                 const homeR = a.rideable ? 7 : a.pen ? 2.2 : hab === 'air' ? 16 : hab === 'water' ? 5 : 12;
@@ -1650,6 +1778,9 @@
             });
             (world.villagers || []).forEach(function (v) {
                 if (!v.mesh) return;
+                const near = lifeNear(v);
+                v.mesh.visible = near;
+                if (!near) return;
                 const moved = stepWander(v, dt, world, { speed: 0.38, homeR: 8 });
                 v.y = lifeAltitude(v, world) + Math.sin((v.phase || 0) * 2) * 0.03;
                 v.mesh.position.set(v.x, v.y, v.z);
@@ -1660,6 +1791,9 @@
             });
             (world.golems || []).forEach(function (g) {
                 if (!g.mesh) return;
+                const near = lifeNear(g);
+                g.mesh.visible = near;
+                if (!near) return;
                 const moved = g.guarding ? true : stepWander(g, dt, world, { speed: 0.55, homeR: 8 });
                 g.y = lifeAltitude(g, world);
                 g.mesh.position.set(g.x, g.y, g.z);
@@ -1669,7 +1803,11 @@
                 }
             });
             (world.placedProps || []).forEach(function (p) {
-                if (p.mesh && p.mesh.userData && typeof p.mesh.userData.tick === 'function') {
+                if (!p.mesh) return;
+                const near = lifeNear(p);
+                p.mesh.visible = near;
+                if (!near) return;
+                if (p.mesh.userData && typeof p.mesh.userData.tick === 'function') {
                     p.t = (p.t || 0) + dt;
                     p.mesh.userData.tick(p.t);
                 }
@@ -1727,7 +1865,11 @@
                 api.world = world;
             },
             placeProp: function (kind, x, y, z) {
-                const allowed = { chest: 'createChest', furnace: 'createFurnace', torch: 'createTorch' };
+                const allowed = {
+                    chest: 'createChest', furnace: 'createFurnace', torch: 'createTorch', bed: 'createBed',
+                    door: 'createDoor', ladder: 'createLadder', fence: 'createFence', boat: 'createBoat',
+                    lantern: 'createLantern'
+                };
                 const factory = allowed[kind];
                 if (!factory || y <= 0) return { ok: false };
                 if (!world.placedProps) world.placedProps = [];
@@ -1806,6 +1948,8 @@
         lifeAltitude: lifeAltitude,
         stepWander: stepWander,
         growWheat: growWheat,
+        harvestWheat: harvestWheat,
+        catchFish: catchFish,
         columnBlockedAt: columnBlockedAt,
         wallBetween: wallBetween,
         collectChunkFaces: collectChunkFaces,

@@ -57,11 +57,20 @@
             var w = part.size[0] * px;
             var h = part.size[1] * px;
             var d = part.size[2] * px;
-            var geo = new THREE.BoxGeometry(w, h, d);
-            FACE_ORDER.forEach(function (face, fi) {
-                setFaceUv(geo, fi, part.faces[face], data.size[0], data.size[1]);
-            });
-            var matOpts = { map: tex };
+            var rounded = !!opts.rounded && global.BlockLegendRoundedBox;
+            var geo;
+            var matOpts;
+            if (rounded) {
+                var rad = Math.min(w, h, d) * (opts.roundScale || 0.22);
+                geo = global.BlockLegendRoundedBox.create(THREE, w, h, d, opts.roundSegs || 2, rad);
+                matOpts = { color: global.BlockLegendRoundedBox.tint(part.name) };
+            } else {
+                geo = new THREE.BoxGeometry(w, h, d);
+                FACE_ORDER.forEach(function (face, fi) {
+                    setFaceUv(geo, fi, part.faces[face], data.size[0], data.size[1]);
+                });
+                matOpts = { map: tex };
+            }
             if (opts.emissive && part.name.indexOf(opts.emissive.match) === 0) {
                 matOpts.emissive = opts.emissive.color;
             }
@@ -71,7 +80,7 @@
             nodes[part.name] = mesh;
 
             var isLimb = /^(leg|arm)[LR]$/.test(part.name) || /^leg[FMHB][LR]$/.test(part.name);
-            var isWing = /^wing[LR]$/.test(part.name);
+            var isWing = /^wing[LR]/.test(part.name);
             var swingArms = opts.swingArms !== false;
             if (isLimb && (part.name.charAt(0) === 'l' || swingArms)) {
                 var pivot = new THREE.Group();
@@ -87,9 +96,13 @@
             } else if (isWing) {
                 var wPivot = new THREE.Group();
                 wPivot.name = part.name + 'Pivot';
-                var isLeftWing = part.name.slice(-1) === 'L';
-                wPivot.position.set((part.pos[0] + (isLeftWing ? w / 2 : -w / 2)) * px, (part.pos[1] + part.size[1] / 2) * px, part.pos[2] * px);
-                mesh.position.set(isLeftWing ? -w / 2 * px : w / 2 * px, -h / 2, 0);
+                var isLeftWing = /^wingL/.test(part.name);
+                wPivot.position.set(
+                    (part.pos[0] + (isLeftWing ? part.size[0] / 2 : -part.size[0] / 2)) * px,
+                    (part.pos[1] + part.size[1] / 2) * px,
+                    part.pos[2] * px
+                );
+                mesh.position.set(isLeftWing ? -w / 2 : w / 2, -h / 2, 0);
                 wPivot.add(mesh);
                 root.add(wPivot);
                 swingers.push({ pivot: wPivot, sign: isLeftWing ? 1 : -1, wing: true });
@@ -102,10 +115,12 @@
         root.userData.sculptRuntime = { nodes: nodes };
         root.userData.tick = function (t, moving) {
             var s = Math.sin(t * (moving ? 6.0 : 1.8)) * (moving ? 0.35 : 0.05);
-            var flap = Math.sin(t * (moving ? 12.0 : 3.0)) * (moving ? 0.4 : 0.08);
+            var flapFn = global.BlockLegendFx && global.BlockLegendFx.wingFlap;
+            var flap = flapFn ? flapFn(t, moving) : Math.sin(t * (moving ? 6.2 : 2.2)) * (moving ? 0.72 : 0.1);
             swingers.forEach(function (sw) {
                 if (sw.wing) {
                     sw.pivot.rotation.z = flap * sw.sign;
+                    sw.pivot.rotation.x = flap * 0.18;
                 } else {
                     sw.pivot.rotation.x = s * sw.sign * (sw.arm ? 0.4 : 1);
                 }
