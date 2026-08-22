@@ -715,6 +715,34 @@
         return g;
     }
 
+    function createSign(THREE, spec) {
+        const s = spec || {};
+        const g = new THREE.Group();
+        g.name = 'sign';
+        const post = box(THREE, 0.1, 1.08, 0.1, 0x6b4424);
+        post.position.y = 0.54;
+        const wood = new THREE.MeshLambertMaterial({ color: 0x8a5a28 });
+        let face = new THREE.MeshLambertMaterial({ color: 0xc4a574 });
+        const SB = global.BlockLegendSignboard;
+        const lines = SB && SB.boardLines ? SB.boardLines(s) : [s.who || '', s.zh || '', s.en || ''];
+        if (typeof document !== 'undefined' && document.createElement) {
+            const c = document.createElement('canvas');
+            c.width = 256;
+            c.height = 192;
+            if (SB && SB.paintBoard) SB.paintBoard(c, lines);
+            const tex = new THREE.CanvasTexture(c);
+            tex.magFilter = THREE.NearestFilter;
+            tex.minFilter = THREE.LinearFilter;
+            face = new THREE.MeshLambertMaterial({ map: tex });
+        }
+        const board = new THREE.Mesh(new THREE.BoxGeometry(0.96, 0.64, 0.08), [wood, wood, wood, wood, face, wood]);
+        board.position.y = 1.14;
+        g.add(post);
+        g.add(board);
+        if (s.yaw) g.rotation.y = Number(s.yaw) || 0;
+        return g;
+    }
+
     global.BlockLegendProps3d = {
         createChest: createChest,
         createFurnace: createFurnace,
@@ -738,6 +766,7 @@
         createSheep: createSheep,
         createChicken: createChicken,
         createWolf: createWolf,
-        createBee: createBee
+        createBee: createBee,
+        createSign: createSign
     };
 }(typeof window !== 'undefined' ? window : globalThis));

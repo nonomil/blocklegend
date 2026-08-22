@@ -12,6 +12,15 @@ test('单独跑 engine.js 时明确提示先加载 world-gen', () => {
   assert.match(String(r.stderr || ''), /BlockLegendWorld missing/);
 });
 
+test('冲刺加快、潜行变慢', async () => {
+  await import('../data/world-gen.js');
+  await import('../engine.js');
+  const E = globalThis.BlockLegendEngine;
+  assert.ok(E.moveSpeedMul({ boost: true }) > 1);
+  assert.ok(E.moveSpeedMul({ sneak: true }) < 1);
+  assert.equal(E.moveSpeedMul({}), 1);
+});
+
 test('world-gen 之后叶色在 0–1 且能亮也能暗', async () => {
   await import('../data/world-gen.js');
   await import('../engine.js');

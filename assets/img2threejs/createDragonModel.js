@@ -1,5 +1,5 @@
 /**
- * 骑乘龙：约 5000 体素铺形，再整网 Laplacian 平滑。
+ * 骑乘龙：GLB 本地绑骨优先，无 GLB 回落体素平滑龙。
  */
 (function (global) {
     'use strict';
@@ -15,6 +15,10 @@
 
     function createDragonModel(THREE, options) {
         const opts = options || {};
+        if (global.BlockLegendDragonGltf && global.BlockLegendDragonGltf.isReady()) {
+            const gltfRoot = global.BlockLegendDragonGltf.create(THREE, opts);
+            if (gltfRoot) return gltfRoot;
+        }
         if (global.BlockLegendSmoothVoxelDragon && global.BlockLegendDragonVoxels) {
             const root = global.BlockLegendSmoothVoxelDragon.create(THREE, opts);
             if (root) {

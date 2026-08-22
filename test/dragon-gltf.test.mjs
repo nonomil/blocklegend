@@ -9,7 +9,7 @@ const G = globalThis.BlockLegendDragonGltf;
 assert.ok(G, 'BlockLegendDragonGltf must be injected');
 
 test('GLB 路径锁定，未加载前 isReady 为 false', () => {
-  assert.equal(G.path, 'assets/models/academy-dragon.glb');
+  assert.equal(G.path, 'assets/models/academy-dragon-rig.glb');
   assert.equal(G.isReady(), false);
   assert.equal(G.targetLength, 3.45);
 });

@@ -590,10 +590,10 @@
         deep_dark: '深暗', nether: '下界', quarry: '采石', astral: '星空',
         ocean: '海洋', crystal: '晶簇', volcano: '火山', end: '末地'
     };
-    const HUB_RING = 140;
+    const HUB_RING = 150;
     const HUB_SPOTS = (function () {
-        const out = [];
-        for (let i = 0; i < 12; i += 1) {
+        const out = [{ dx: 4, dz: -5 }];
+        for (let i = 1; i < 12; i += 1) {
             const a = -Math.PI / 2 + i * (Math.PI / 6);
             out.push({
                 dx: Math.round(Math.cos(a) * HUB_RING),
@@ -774,11 +774,7 @@
         const cx = Number.isFinite(Number(o.cx)) ? Number(o.cx) : 192;
         const cz = Number.isFinite(Number(o.cz)) ? Number(o.cz) : 192;
         return [
-            { id: 'center', dx: 0, dz: 0, r: 16, fill: 'dirt', edge: 'stone_brick' },
-            { id: 'school', dx: -19, dz: -19, r: 12, fill: 'dirt', edge: 'stone_brick' },
-            { id: 'market', dx: 22, dz: -8, r: 12, fill: 'dirt', edge: 'stone_brick' },
-            { id: 'rest', dx: 6, dz: 24, r: 11, fill: 'dirt', edge: 'stone_brick' },
-            { id: 'harbor', dx: 40, dz: 6, r: 8, fill: 'plank', edge: 'stone_brick' }
+            { id: 'center', dx: 0, dz: -1, r: 6, fill: 'stone', edge: 'gravel' }
         ].map(function (y) {
             return {
                 id: y.id,
@@ -797,19 +793,18 @@
         const cz = Number.isFinite(Number(o.cz)) ? Number(o.cz) : 192;
         return {
             lakes: [
-                { x: cx + 58, z: cz + 18, r: 8 },
-                { x: cx - 48, z: cz + 36, r: 6 }
+                { x: cx + 92, z: cz + 16, r: 8 },
+                { x: cx - 78, z: cz + 28, r: 6 }
             ],
             river: {
                 points: [
-                    { x: cx - 44, z: cz + 34 },
-                    { x: cx - 10, z: cz + 42 },
-                    { x: cx + 20, z: cz + 36 },
-                    { x: cx + 50, z: cz + 22 }
+                    { x: cx - 40, z: cz + 70 },
+                    { x: cx + 8, z: cz + 88 },
+                    { x: cx + 52, z: cz + 72 }
                 ]
             },
             hills: [
-                { x: cx + 36, z: cz - 36, r: 6, h: 4 }
+                { x: cx + 70, z: cz - 50, r: 6, h: 4 }
             ]
         };
     }
@@ -819,22 +814,22 @@
         const cx = Number.isFinite(Number(o.cx)) ? Number(o.cx) : 192;
         const cz = Number.isFinite(Number(o.cz)) ? Number(o.cz) : 192;
         return [
-            { id: 'word', label: '单词小屋', en: 'Word Hut', role: 'word', dx: -22, dz: -12, wall: 'plank', roof: 'leaf', shape: 'house' },
-            { id: 'dummy', label: '练习房', en: 'Practice', role: 'dummy', dx: 18, dz: -12, wall: 'stone', roof: 'iron', shape: 'hut' },
-            { id: 'trade', label: '商人摊', en: 'Shop', role: 'trader', dx: 8, dz: -26, wall: 'plank', roof: 'gold', shape: 'hut' },
-            { id: 'teacher', label: '学堂', en: 'School', role: 'teacher', dx: -16, dz: -26, wall: 'plank', roof: 'leaf', shape: 'house' },
-            { id: 'craft', label: '工坊', en: 'Workshop', role: 'craft', dx: 26, dz: 2, wall: 'plank', roof: 'gold', shape: 'cabin' },
-            { id: 'furnace', label: '熔炉房', en: 'Furnace', role: 'furnace', dx: 22, dz: 16, wall: 'stone', roof: 'iron', shape: 'forge' },
-            { id: 'chest', label: '存储箱', en: 'Chest', role: 'chest', dx: 8, dz: 22, wall: 'plank', roof: 'iron', shape: 'hut' },
-            { id: 'bed', label: '休息屋', en: 'Rest', role: 'bed', dx: -4, dz: 22, wall: 'plank', roof: 'leaf', shape: 'house' },
-            { id: 'library', label: '图书角', en: 'Library', role: 'library', dx: -36, dz: -6, wall: 'plank', roof: 'gold', shape: 'house' },
-            { id: 'lookout', label: '瞭望塔', en: 'Lookout', role: 'lookout', dx: 36, dz: -32, wall: 'stone', roof: 'gold', shape: 'tower' },
-            { id: 'dock', label: '码头', en: 'Dock', role: 'dock', dx: 42, dz: 4, wall: 'plank', roof: 'leaf', shape: 'cabin' },
-            { id: 'barn', label: '牲口棚', en: 'Barn', role: 'barn', dx: 34, dz: 30, wall: 'plank', roof: 'iron', shape: 'barn' },
-            { id: 'farm', label: '农田', en: 'Farm', role: 'farm', dx: 16, dz: 38, wall: 'plank', roof: 'leaf', shape: 'house' }
+            { id: 'word', label: '单词小屋', en: 'Word Hut', role: 'word', dx: -52, dz: -28, w: 7, d: 6, h: 5, wall: 'plank', roof: 'leaf', shape: 'house' },
+            { id: 'dummy', label: '练习房', en: 'Practice', role: 'dummy', dx: 48, dz: -22, w: 5, d: 5, h: 4, wall: 'stone', roof: 'iron', shape: 'hut' },
+            { id: 'trade', label: '商人摊', en: 'Shop', role: 'trader', dx: 12, dz: -58, w: 6, d: 5, h: 3, wall: 'plank', roof: 'gold', shape: 'stall' },
+            { id: 'teacher', label: '学堂', en: 'School', role: 'teacher', dx: -28, dz: -18, w: 8, d: 6, h: 5, wall: 'plank', roof: 'gold', shape: 'school' },
+            { id: 'craft', label: '工坊', en: 'Workshop', role: 'craft', dx: 62, dz: 8, w: 6, d: 8, h: 4, wall: 'log', roof: 'leaf', shape: 'cabin' },
+            { id: 'furnace', label: '熔炉房', en: 'Furnace', role: 'furnace', dx: 48, dz: 48, w: 5, d: 6, h: 4, wall: 'stone', roof: 'iron', shape: 'forge' },
+            { id: 'chest', label: '存储箱', en: 'Chest', role: 'chest', dx: 18, dz: 62, w: 5, d: 5, h: 4, wall: 'plank', roof: 'iron', shape: 'store' },
+            { id: 'bed', label: '休息屋', en: 'Rest', role: 'bed', dx: -18, dz: 52, w: 7, d: 6, h: 4, wall: 'brick', roof: 'leaf', shape: 'cottage' },
+            { id: 'library', label: '图书角', en: 'Library', role: 'library', dx: -68, dz: 6, w: 8, d: 7, h: 6, wall: 'stone_brick', roof: 'gold', shape: 'hall' },
+            { id: 'lookout', label: '瞭望塔', en: 'Lookout', role: 'lookout', dx: 72, dz: -48, w: 5, d: 5, h: 9, wall: 'stone', roof: 'gold', shape: 'tower' },
+            { id: 'dock', label: '码头', en: 'Dock', role: 'dock', dx: 88, dz: 28, w: 6, d: 5, h: 3, wall: 'plank', roof: 'leaf', shape: 'cabin' },
+            { id: 'barn', label: '牲口棚', en: 'Barn', role: 'barn', dx: 38, dz: 78, w: 9, d: 6, h: 4, wall: 'plank', roof: 'iron', shape: 'barn' },
+            { id: 'farm', label: '农田', en: 'Farm', role: 'farm', dx: -8, dz: 82, w: 6, d: 6, h: 4, wall: 'log', roof: 'leaf', shape: 'house' }
         ].map(function (b) {
-            const w = 7;
-            const d = 7;
+            const w = b.w || 6;
+            const d = b.d || 6;
             return {
                 id: b.id,
                 label: b.label,
@@ -843,6 +838,7 @@
                 wall: b.wall,
                 roof: b.roof,
                 shape: b.shape,
+                h: b.h || 5,
                 w: w,
                 d: d,
                 x: cx + b.dx,
@@ -869,6 +865,26 @@
         }
         if (!primary) primary = portals[0] || null;
         const strokes = [];
+        [
+            { x0: cx, z0: cz + 4, x1: cx, z1: cz - 62, width: 5 },
+            { x0: cx - 4, z0: cz, x1: cx + 82, z1: cz + 8, width: 4 },
+            { x0: cx, z0: cz, x1: cx - 72, z1: cz + 4, width: 4 },
+            { x0: cx, z0: cz, x1: cx + 8, z1: cz + 80, width: 4 },
+            { x0: cx, z0: cz, x1: cx + 70, z1: cz - 48, width: 3 }
+        ].forEach(function (s) {
+            strokes.push({
+                kind: 'spine',
+                x0: s.x0,
+                z0: s.z0,
+                x1: s.x1,
+                z1: s.z1,
+                width: s.width,
+                fill: 'stone',
+                edge: 'gravel',
+                lamps: true,
+                apron: false
+            });
+        });
         plaza.forEach(function (b) {
             strokes.push({
                 kind: 'plaza',
@@ -877,8 +893,8 @@
                 x1: Number(b.interactX != null ? b.interactX : b.x + 2.5),
                 z1: Number(b.interactZ != null ? b.interactZ : b.z + 4),
                 width: 3,
-                fill: 'dirt',
-                edge: 'stone_brick',
+                fill: 'stone',
+                edge: 'gravel',
                 lamps: false,
                 apron: false
             });
@@ -892,8 +908,8 @@
                 x1: Number(primary.x) + 1.5,
                 z1: Number(primary.z) + 3,
                 width: 5,
-                fill: 'dirt',
-                edge: 'stone_brick',
+                fill: 'stone',
+                edge: 'gravel',
                 lamps: true,
                 apron: true
             });
@@ -909,33 +925,49 @@
                 x1: Number(p.x) + 1.5,
                 z1: Number(p.z) + 3,
                 width: open ? 3 : 2,
-                fill: 'dirt',
-                edge: open ? 'gravel' : 'stone',
+                fill: 'stone',
+                edge: open ? 'gravel' : 'stone_brick',
                 lamps: !!open,
-                apron: !!open
-            });
-        });
-        const yards = hubYardsOf(o);
-        yards.forEach(function (y) {
-            if (!y || y.id === 'center') return;
-            strokes.push({
-                kind: 'yard',
-                x0: cx,
-                z0: cz,
-                x1: Number(y.x),
-                z1: Number(y.z),
-                width: 3,
-                fill: y.fill === 'plank' ? 'plank' : 'dirt',
-                edge: y.edge || 'stone_brick',
-                lamps: false,
                 apron: false
             });
         });
+        const yards = hubYardsOf(o);
         return {
-            plaza: yards[0] || { x: cx, z: cz, r: 16, fill: 'dirt', edge: 'stone_brick' },
+            plaza: yards[0] || { x: cx, z: cz, r: 6, fill: 'stone', edge: 'gravel' },
             yards: yards,
             strokes: strokes
         };
+    }
+
+    function hubSignsOf(opts) {
+        const o = opts || {};
+        const cx = Number.isFinite(Number(o.cx)) ? Number(o.cx) : 192;
+        const cz = Number.isFinite(Number(o.cz)) ? Number(o.cz) : 192;
+        const first = HUB_TALK_FIRST;
+        return [
+            {
+                id: 'welcome',
+                kind: 'sign',
+                x: cx - 3,
+                z: cz - 2,
+                yaw: 0,
+                who: first[0].who,
+                zh: first[0].zh,
+                en: first[0].en,
+                prompts: first[0].prompts
+            },
+            {
+                id: 'path',
+                kind: 'sign',
+                x: cx + 1,
+                z: cz - 3,
+                yaw: 0,
+                who: first[1].who,
+                zh: first[1].zh,
+                en: first[1].en,
+                prompts: first[1].prompts
+            }
+        ];
     }
 
     function hubTalkOf(opts) {
@@ -1097,6 +1129,7 @@
         hubLandOf: hubLandOf,
         hubRoadPlanOf: hubRoadPlanOf,
         hubTalkOf: hubTalkOf,
+        hubSignsOf: hubSignsOf,
         guideMarkOf: guideMarkOf,
         bossPhase: bossPhase,
         buildSettlement: buildSettlement,

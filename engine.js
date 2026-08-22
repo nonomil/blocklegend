@@ -22,6 +22,12 @@
     const JUMP_VY = 7.2;        // 格/秒
     const GRAVITY = 22;         // 格/秒²
     const MAX_DT = 0.05;        // 挂起恢复时防大步长穿地
+    function moveSpeedMul(input) {
+        let m = 1;
+        if (input && input.boost) m *= 1.45;
+        if (input && input.sneak) m *= 0.42;
+        return m;
+    }
     const ATLAS_TILE = 16;
     const ATLAS_COLS = 4;
     const ATLAS_ROWS = 9;       // 0–19 旧地形/裂纹锁定；20+ 气候/矿石
@@ -644,7 +650,7 @@
         for (let z = cz0; z < z1; z += 1) {
             for (let x = cx0; x < x1; x += 1) {
                 const surface = world.surfaceAt ? world.surfaceAt(x, z) : 0;
-                const yEnd = scanY(surface, HEIGHT_MAX);
+                const yEnd = scanY(surface, HEIGHT_MAX, world);
                 for (let y = 0; y < yEnd; y += 1) {
                     const kind = voxelAt(world, x, y, z);
                     if (!kind) continue;
@@ -967,9 +973,11 @@
                 mesh.position.y = y;
                 return mesh;
             }
-            function propOf(name, fallback) {
+            function propOf(name, fallback, spec) {
                 const P = global.BlockLegendProps3d;
-                if (P && typeof P[name] === 'function') return P[name](THREE);
+                if (P && typeof P[name] === 'function') {
+                    return name === 'createSign' ? P[name](THREE, spec) : P[name](THREE);
+                }
                 return fallback();
             }
             function placeLife(mesh, x, z, yOff) {
@@ -1050,8 +1058,15 @@
                                             : p.kind === 'ladder' ? 'createLadder'
                                                 : p.kind === 'fence' ? 'createFence'
                                                     : p.kind === 'boat' ? 'createBoat'
+                                                        : p.kind === 'sign' ? 'createSign'
                                                         : 'createChest';
                 const mesh = propOf(factory, function () {
+                    if (p.kind === 'sign') {
+                        const g = new THREE.Group();
+                        g.add(boxMesh(0.1, 1.0, 0.1, 0x6b4424, 0.5));
+                        g.add(boxMesh(0.9, 0.55, 0.08, 0xc4a574, 1.1));
+                        return g;
+                    }
                     if (p.kind === 'chair') {
                         const g = new THREE.Group();
                         g.add(boxMesh(0.42, 0.08, 0.42, 0x8d6e48, 0.22));
@@ -1072,7 +1087,7 @@
                         return g;
                     }
                     return boxMesh(0.7, 0.7, 0.7, 0x8a5a28, 0.35);
-                });
+                }, p);
                 mesh.position.set(p.x + 0.5, p.y, p.z + 0.5);
                 decor.add(mesh);
                 p.mesh = mesh;
@@ -1380,8 +1395,15 @@
                 mount.z = player.z;
                 mount.y = player.y - 1.32;
                 mount.yaw = look.yaw + Math.PI;
-                // 回旋角应用到龙 mesh（本体绕前向轴滚转），供 tickLife 读取
-                mount.roll = rollAngle;
+                const att = FX && FX.rideAttitude
+                    ? FX.rideAttitude({ left: input.left, right: input.right, ax: analog.x, climb: climb })
+                    : { bank: 0, pitch: 0 };
+                const poseSmooth = Math.min(1, dt * 7);
+                mount.bank = (mount.bank || 0) + (att.bank - (mount.bank || 0)) * poseSmooth;
+                mount.pitch = (mount.pitch || 0) + (att.pitch - (mount.pitch || 0)) * poseSmooth;
+                if (mount.breath) mount.breath = Math.max(0, mount.breath - dt * 2.8);
+                // 回旋覆盖倾斜；平时 roll = 左右倾斜
+                mount.roll = rollAngle + (mount.rollState === 'rolling' ? 0 : mount.bank);
                 if (mount.rollState === 'done') {
                     agentRollReset(mount);
                 }
@@ -1421,8 +1443,8 @@
             let mx = dirX + rgtX, mz = dirZ + rgtZ;
             const len = Math.hypot(mx, mz);
             if (len > 0) {
-                mx = mx / len * MOVE_SPEED * dt;
-                mz = mz / len * MOVE_SPEED * dt;
+                mx = mx / len * MOVE_SPEED * moveSpeedMul(input) * dt;
+                mz = mz / len * MOVE_SPEED * moveSpeedMul(input) * dt;
                 const R = 0.3; // 玩家半径
                 // 分轴试探：撞墙只挡该轴，可贴墙滑动
                 if (!columnBlocked(player.x + mx + Math.sign(mx) * R, player.z, player.y)) player.x += mx;
@@ -1742,11 +1764,15 @@
                     a.yaw = look.yaw + Math.PI;
                     a.mesh.position.set(a.x, a.y, a.z);
                     a.mesh.rotation.y = a.yaw;
-                    // 骑乘时叠加回旋(roll):围绕本地Z(前向轴)滚转,读取 updateMountPhysics 写下的 a.roll
+                    // 骑乘：左右倾斜(bank)+回旋(roll)走 Z，抬头低头走 X
                     a.mesh.rotation.z = a.roll || 0;
-                    a.mesh.rotation.x = 0;
+                    a.mesh.rotation.x = a.pitch || 0;
                     if (a.mesh.userData && typeof a.mesh.userData.tick === 'function') {
-                        a.mesh.userData.tick(a.phase, true);
+                        a.mesh.userData.tick(a.phase, true, {
+                            bank: a.bank || 0,
+                            pitch: a.pitch || 0,
+                            breath: a.breath || 0
+                        });
                     }
                     return;
                 }
@@ -1755,7 +1781,7 @@
                 if (!near) return;
                 const hab = a.habitat || habitatOf(a.kind);
                 const speed = a.rideable ? 0.36 : hab === 'air' ? 1.15 : hab === 'water' ? 0.55 : 0.7;
-                const homeR = a.rideable ? 7 : a.pen ? 2.2 : hab === 'air' ? 16 : hab === 'water' ? 5 : 12;
+                const homeR = a.pen ? 2.2 : a.rideable ? 7 : hab === 'air' ? 16 : hab === 'water' ? 5 : 12;
                 const moved = (a.hunting || a.fleeing) ? true : stepWander(a, dt, world, { speed: speed, homeR: homeR });
                 if (isFarmKind(a.kind)) {
                     const min = farmBodyRadius(a.kind) + 0.35;
@@ -1868,7 +1894,7 @@
                 const allowed = {
                     chest: 'createChest', furnace: 'createFurnace', torch: 'createTorch', bed: 'createBed',
                     door: 'createDoor', ladder: 'createLadder', fence: 'createFence', boat: 'createBoat',
-                    lantern: 'createLantern'
+                    lantern: 'createLantern', sign: 'createSign'
                 };
                 const factory = allowed[kind];
                 if (!factory || y <= 0) return { ok: false };
@@ -1928,6 +1954,7 @@
         PIXEL_RATIO_CAP: PIXEL_RATIO_CAP,
         EYE_HEIGHT: EYE_HEIGHT,
         MOVE_SPEED: MOVE_SPEED,
+        moveSpeedMul: moveSpeedMul,
         JUMP_VY: JUMP_VY,
         GRAVITY: GRAVITY,
         STEP_UP: STEP_UP,

@@ -251,6 +251,23 @@ test('起降 FOV：上龙拉宽、下龙收回，寿命短', () => {
   assert.ok(down.life > 0 && down.life <= 0.4);
 });
 
+test('骑龙姿态：左飞右倾、爬升抬头，幅度有上限', () => {
+  const left = FX.rideAttitude({ left: true, climb: 0 });
+  const right = FX.rideAttitude({ right: true, climb: 0 });
+  const up = FX.rideAttitude({ climb: 1 });
+  const down = FX.rideAttitude({ climb: -1 });
+  const still = FX.rideAttitude({});
+  assert.ok(left.bank > 0 && right.bank < 0, '左飞 bank>0，右飞 bank<0');
+  assert.ok(Math.abs(left.bank - 0.38) < 1e-9);
+  assert.ok(up.pitch > 0 && down.pitch < 0, '爬升抬头，俯冲低头');
+  assert.ok(Math.abs(up.pitch - 0.28) < 1e-9);
+  assert.equal(still.bank, 0);
+  assert.equal(still.pitch, 0);
+  const clipped = FX.rideAttitude({ left: true, ax: -1, climb: 4 });
+  assert.ok(clipped.bank <= 0.38 + 1e-9);
+  assert.ok(clipped.pitch <= 0.28 + 1e-9);
+});
+
 test('骑龙巡航高出地面至少 10 格，上龙就抬到巡航高度', () => {
   assert.ok(FX.RIDE_CRUISE >= 10);
   assert.equal(FX.rideFloor(4), 4 + FX.RIDE_CRUISE);

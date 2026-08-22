@@ -9,7 +9,10 @@
         { id: 'leather-cap', en: 'Leather Cap', zh: '皮帽', slot: 'helm', def: 2, atk: 0, heal: 0, cost: 20 },
         { id: 'cloth-robe', en: 'Cloth Robe', zh: '布袍', slot: 'armor', def: 3, atk: 0, heal: 0, cost: 35 },
         { id: 'iron-blade', en: 'Iron Blade', zh: '铁刃', slot: 'weapon', def: 0, atk: 4, heal: 0, cost: 40 },
-        { id: 'hp-potion', en: 'HP Potion', zh: '生命药水', slot: 'consumable', def: 0, atk: 0, heal: 8, cost: 12 }
+        { id: 'hp-potion', en: 'HP Potion', zh: '生命药水', slot: 'consumable', def: 0, atk: 0, heal: 8, cost: 12 },
+        { id: 'dragon-saddle', en: 'Dragon Saddle', zh: '龙鞍', slot: 'saddle', def: 0, atk: 0, heal: 0, cost: 40 },
+        { id: 'ride-goggles', en: 'Ride Goggles', zh: '骑行护目镜', slot: 'goggles', def: 0, atk: 0, heal: 0, cost: 25 },
+        { id: 'breath-gem', en: 'Breath Gem', zh: '龙息宝石', slot: 'charm', def: 0, atk: 0, heal: 0, cost: 30 }
     ];
     const UNLOCK_STOCK = [
         { id: 'torch-pack', en: 'Torch Pack', zh: '火把×8', slot: 'bag', bagId: 'torch', qty: 8, cost: 8, unlock: 1 },

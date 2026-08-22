@@ -1182,7 +1182,8 @@
             const z = Math.round(b.z || 0);
             boxes.push({ x0: x - 1, z0: z - 1, x1: x + (b.w || 5) + 1, z1: z + (b.d || 5) + 1 });
         });
-        boxes.push({ x0: cx - 62, z0: cz - 50, x1: cx + 72, z1: cz + 50 });
+        // plazaClear 只用来赶走随机树/花/野兽，骑龙允许停进广场
+        boxes.push({ x0: cx - 8, z0: cz - 10, x1: cx + 10, z1: cz + 8, plazaClear: true });
         return boxes;
     }
 
@@ -1255,10 +1256,10 @@
             const w = b.w || 7;
             const d = b.d || 7;
             flattenPad(heights, n, x - 1, z - 1, w + 2, d + 2);
-            const y0 = yAt(heights, n, x + 3, z + 3);
-            const h = b.shape === 'tower' ? 8 : 5;
-            stampTowerAt(edits, x, z, w, d, h, b.wall || 'plank', b.roof || 'leaf', true, y0);
-            putBlock(edits, x + Math.floor(w / 2), y0 + 4, z + d, 'gold');
+            const y0 = yAt(heights, n, x + Math.floor(w / 2), z + Math.floor(d / 2));
+            const h = b.h || (b.shape === 'tower' ? 9 : 5);
+            stampHubHouse(edits, x, z, w, d, h, b, y0);
+            putBlock(edits, x + Math.floor(w / 2), y0 + Math.min(h - 1, 4), z + d, 'gold');
             const doorX = x + Math.floor(w / 2) + 0.5;
             const doorZ = z + d - 0.2;
             houses.push({
@@ -1339,10 +1340,13 @@
             z: fireZ + 0.5,
             y: yAt(heights, n, fireX, fireZ)
         });
+        const farm = specs.filter(function (b) { return b.id === 'farm'; })[0];
+        const gx0 = farm ? Math.round(farm.x) + 1 : cx + 12;
+        const gz0 = farm ? Math.round(farm.z) + (farm.d || 6) + 1 : cz + 18;
         let gx, gz;
         for (gz = 0; gz < 3; gz += 1) {
             for (gx = 0; gx < 4; gx += 1) {
-                plants.push({ x: cx + 12 + gx, z: cz + 18 + gz, kind: 'wheat' });
+                plants.push({ x: gx0 + gx, z: gz0 + gz, kind: 'wheat' });
             }
         }
         services.push({
@@ -1350,9 +1354,27 @@
             label: '菜园',
             en: 'Garden',
             role: 'garden',
-            x: cx + 13.5,
-            z: cz + 19.5,
-            y: yAt(heights, n, cx + 13, cz + 19)
+            x: gx0 + 1.5,
+            z: gz0 + 1.5,
+            y: yAt(heights, n, gx0, gz0)
+        });
+        const signs = (Lv && Lv.hubSignsOf) ? Lv.hubSignsOf({ cx: cx, cz: cz }) : [];
+        signs.forEach(function (s) {
+            const sx = Math.round(s.x);
+            const sz = Math.round(s.z);
+            props.push({
+                kind: 'sign',
+                x: sx,
+                z: sz,
+                y: yAt(heights, n, sx, sz),
+                yaw: s.yaw || 0,
+                who: s.who,
+                zh: s.zh,
+                en: s.en,
+                prompts: s.prompts,
+                hub: true,
+                signId: s.id
+            });
         });
         return {
             services: services,
@@ -1403,7 +1425,7 @@
             for (ix = px - 3; ix <= px + 3; ix += 1) {
                 setY(heights, n, ix, iz, y0);
                 const rim = iz === pz - 1 || iz === pz + 4 || ix === px - 3 || ix === px + 3;
-                paveTop(heights, n, edits, ix, iz, rim ? (edge || 'stone_brick') : (fill || 'dirt'));
+                paveTop(heights, n, edits, ix, iz, rim ? (edge || 'gravel') : hubPathKind(ix, iz, fill || 'stone', edge || 'gravel', rim));
             }
         }
     }
@@ -1421,9 +1443,21 @@
                 const az = oz + dz;
                 setY(heights, n, ax, az, y0);
                 const ring = (dx * dx + dz * dz) >= (r - 1) * (r - 1);
-                paveTop(heights, n, edits, ax, az, ring ? (yard.edge || 'stone_brick') : (yard.fill || 'dirt'));
+                const kind = hubPathKind(ax, az, yard.fill || 'stone', yard.edge || 'gravel', ring);
+                if (kind) paveTop(heights, n, edits, ax, az, kind);
             }
         }
+    }
+
+    function hubPathKind(x, z, fill, edge, rim) {
+        const n = hash3(x, 19, z);
+        if (rim) {
+            if (n > 0.64) return null;
+            return n > 0.3 ? 'gravel' : (edge || 'gravel');
+        }
+        if (n > 0.84) return 'gravel';
+        if (n > 0.5) return 'stone_brick';
+        return fill || 'stone';
     }
 
     function stampHubStroke(n, heights, edits, stroke, y0) {
@@ -1432,22 +1466,26 @@
         const half = Math.max(1, Math.floor((Number(s.width) || 3) / 2));
         cells.forEach(function (c, i) {
             let dx, dz;
-            for (dz = -half - 1; dz <= half + 1; dz += 1) {
-                for (dx = -half - 1; dx <= half + 1; dx += 1) {
+            for (dz = -half - 2; dz <= half + 2; dz += 1) {
+                for (dx = -half - 2; dx <= half + 2; dx += 1) {
                     const dist = Math.max(Math.abs(dx), Math.abs(dz));
                     const ax = c.x + dx;
                     const az = c.z + dz;
+                    const extra = dist === half + 2 && hash3(ax, 7, az) > 0.78;
+                    if (dist > half + 1 && !extra) continue;
+                    const rim = dist > half;
+                    const kind = hubPathKind(ax, az, s.fill || 'stone', s.edge || 'gravel', rim);
+                    if (!kind) continue;
                     setY(heights, n, ax, az, y0);
-                    if (dist <= half) paveTop(heights, n, edits, ax, az, s.fill || 'dirt');
-                    else if (dist === half + 1) paveTop(heights, n, edits, ax, az, s.edge || 'stone_brick');
+                    paveTop(heights, n, edits, ax, az, kind);
                 }
             }
-            if (s.lamps && i > 0 && i % 8 === 0) {
+            if (s.lamps && i > 0 && i % 10 === 0) {
                 stampHubLamp(heights, n, edits, c.x + half + 1, c.z, y0);
                 stampHubLamp(heights, n, edits, c.x - half - 1, c.z, y0);
             }
         });
-        if (s.apron) stampHubApron(heights, n, edits, s.x1, s.z1, y0, s.fill, s.edge);
+        if (s.apron) stampHubApron(heights, n, edits, s.x1, s.z1, y0, s.fill || 'stone', s.edge || 'gravel');
     }
 
     function stampHubRoad(n, heights, edits, cx, cz, specs) {
@@ -1465,7 +1503,7 @@
                     x0: ox, z0: oz,
                     x1: Math.round(p.x || 0) + 1,
                     z1: Math.round(p.z || 0) + 3,
-                    width: 3, fill: 'dirt', edge: 'stone_brick'
+                    width: 3, fill: 'stone', edge: 'gravel'
                 }, y0);
             });
             return;
@@ -1541,6 +1579,38 @@
         stampTowerAt(edits, x, z, w, d, h, wall, roof, open, base);
     }
 
+    function stampHubHouse(edits, x, z, w, d, h, spec, y0) {
+        const s = spec || {};
+        const wall = s.wall || 'plank';
+        const roof = s.roof || 'leaf';
+        const shape = s.shape || 'house';
+        const tall = Math.max(3, h || 5);
+        stampTowerAt(edits, x, z, w, d, tall, wall, roof, true, y0);
+        let ix, iz, dy;
+        if (shape === 'stall') {
+            for (ix = x; ix < x + w; ix += 1) {
+                putBlock(edits, ix, y0 + 2, z + d, roof);
+                putBlock(edits, ix, y0 + 2, z + d + 1, roof);
+            }
+        }
+        if (shape === 'forge') {
+            for (dy = 0; dy < 3; dy += 1) putBlock(edits, x + w - 1, y0 + tall + dy, z + 1, 'stone');
+        }
+        if (shape === 'tower') {
+            putBlock(edits, x, y0 + tall, z, roof);
+            putBlock(edits, x + w - 1, y0 + tall, z, roof);
+            putBlock(edits, x, y0 + tall, z + d - 1, roof);
+            putBlock(edits, x + w - 1, y0 + tall, z + d - 1, roof);
+        }
+        if (shape === 'barn') {
+            const mid = x + Math.floor(w / 2);
+            for (iz = z; iz < z + d; iz += 1) putBlock(edits, mid, y0 + tall, iz, roof);
+        }
+        if (shape === 'hall') {
+            putBlock(edits, x + Math.floor(w / 2), y0 + tall, z + Math.floor(d / 2), roof);
+        }
+    }
+
     function stampTowerAt(edits, x, z, w, d, h, wall, roof, open, y0) {
         const midX = x + Math.floor(w / 2);
         const midZ = z + Math.floor(d / 2);
@@ -1578,8 +1648,10 @@
                     putBlock(edits, x + 2, y0 + dy, z, 'gold');
                 }
             }
-            stampHubBuilding(edits, heights, n, p, y0);
-            stampHubLetters(edits, p, x, z, y0);
+            if (Number(p.level) !== 1) {
+                stampHubBuilding(edits, heights, n, p, y0);
+                stampHubLetters(edits, p, x, z, y0);
+            }
             out.push({
                 x: x + 1.5,
                 z: z + 0.5,
@@ -2032,6 +2104,67 @@
         }
     }
 
+    function stampRideDoor(n, heights, edits, climate, cx, cz, hub) {
+        const RP = global.BlockLegendRidePolicy;
+        if (hub || climate !== 'snow' || !RP || !RP.rideDoorLayoutOf) return null;
+        const layout = RP.rideDoorLayoutOf({
+            cx: cx,
+            cz: cz,
+            surfaceY: yAt(heights, n, cx, cz)
+        });
+        function stamp(list) {
+            if (!list) return;
+            for (let i = 0; i < list.length; i += 1) {
+                const b = list[i];
+                if (b.x < 1 || b.z < 1 || b.x >= n - 1 || b.z >= n - 1) continue;
+                putBlock(edits, b.x, b.y, b.z, b.kind);
+            }
+        }
+        stamp(layout.posts);
+        stamp(layout.lintel);
+        stamp(layout.fill);
+        return {
+            posts: layout.posts,
+            lintel: layout.lintel,
+            fill: layout.fill,
+            ox: layout.ox,
+            oz: layout.oz,
+            y0: layout.y0,
+            keepout: layout.keepout,
+            opened: false
+        };
+    }
+
+    function stampRideFortress(n, heights, edits, climate, cx, cz, hub) {
+        const RP = global.BlockLegendRidePolicy;
+        if (hub || climate !== 'end' || !RP || !RP.fortressLayoutOf) return null;
+        const layout = RP.fortressLayoutOf({
+            cx: cx,
+            cz: cz,
+            surfaceY: yAt(heights, n, cx, cz)
+        });
+        function stamp(list) {
+            if (!list) return;
+            for (let i = 0; i < list.length; i += 1) {
+                const b = list[i];
+                if (b.x < 1 || b.z < 1 || b.x >= n - 1 || b.z >= n - 1) continue;
+                putBlock(edits, b.x, b.y, b.z, b.kind);
+            }
+        }
+        stamp(layout.island);
+        stamp(layout.tower);
+        return {
+            island: layout.island,
+            tower: layout.tower,
+            bridge: layout.bridge,
+            land: layout.land,
+            door: layout.door,
+            deckY: layout.deckY,
+            keepout: layout.keepout,
+            bridgeDropped: false
+        };
+    }
+
     function stampSkyMark(n, heights, edits, climate, cx, cz, towns, skyMarks) {
         const x = Math.max(12, Math.min(n - 20, cx + 52));
         const z = Math.max(12, Math.min(n - 20, cz - 44));
@@ -2319,9 +2452,15 @@
         const landmarkSites = [];
         const landmarkProps = [];
         const landmarkTags = [];
-        stampLandmarks(n, heights, edits, ponds, climateName, cx, cz, villages, rng, landmarkSites, landmarkProps, landmarkTags);
+        if (!opts.hub) {
+            stampLandmarks(n, heights, edits, ponds, climateName, cx, cz, villages, rng, landmarkSites, landmarkProps, landmarkTags);
+        }
         const skyMarks = [];
         stampSkyMark(n, heights, edits, climateName, cx, cz, towns, skyMarks);
+        const rideFortress = stampRideFortress(n, heights, edits, climateName, cx, cz, opts.hub);
+        if (rideFortress && rideFortress.keepout) landmarkSites.push(rideFortress.keepout);
+        const rideDoor = stampRideDoor(n, heights, edits, climateName, cx, cz, opts.hub);
+        if (rideDoor && rideDoor.keepout) landmarkSites.push(rideDoor.keepout);
         const wordCells = {};
         let levelPortals = [];
         let unlockPost = null;
@@ -2493,22 +2632,27 @@
             });
         }
         const pondKeys = Object.keys(ponds);
-        if (opts.hub || climateName === 'plains' || climateName === 'forest' || climateName === 'cherry') {
+        if (opts.hub || climateName === 'plains' || climateName === 'forest' || climateName === 'cherry'
+            || climateName === 'snow' || climateName === 'nether' || climateName === 'astral' || climateName === 'end') {
+            // 营地骑龙停在出生点旁边，玩家一睁眼就能看到；被房子/池塘挡住时逐个后备。
+            // 广场清场盒(plazaClear)对骑龙不生效，否则永远进不了营地中心。
+            const dragonBlocked = blocked.filter(function (b) { return !b.plazaClear; });
             const spots = opts.hub
-                ? [[11, -9], [9, 12], [-10, -8]]
+                ? [[4, -4], [5, 3], [-5, 3], [6, -5], [11, -9], [9, 12], [-10, -8]]
                 : [[9, 8], [-8, 10], [12, -7]];
             let parked = false;
             for (let si = 0; si < spots.length && !parked; si += 1) {
                 const mx = cx + spots[si][0];
                 const mz = cz + spots[si][1];
                 if (mx < 5 || mz < 5 || mx > n - 6 || mz > n - 6) continue;
-                if (inAnyRect(mx, mz, blocked) || ponds[mx + ',' + mz]) continue;
+                if (inAnyRect(mx, mz, dragonBlocked) || ponds[mx + ',' + mz]) continue;
                 if (trees.some(function (t) { return Math.abs(t.x - mx) + Math.abs(t.z - mz) < 3; })) continue;
                 animals.push({
                     x: mx + 0.5,
                     z: mz + 0.5,
                     kind: 'dragon',
                     rideable: true,
+                    pen: true,
                     habitat: 'ground',
                     homeX: mx + 0.5,
                     homeZ: mz + 0.5,
@@ -2637,6 +2781,8 @@
             scenic: scenic,
             landmarks: landmarkTags,
             skyMarks: skyMarks,
+            rideFortress: rideFortress,
+            rideDoor: rideDoor,
             surfaceAt: function (x, z) { return surfaceAtWorld(this, x, z); },
             treeAt: function (x, z) {
                 return trees.find(function (t) { return t.x === x && t.z === z; }) || null;
@@ -3034,8 +3180,10 @@
 
     function surfaceAtWorld(world, x, z) {
         if (x < 0 || z < 0 || x >= world.size || z >= world.size) return HEIGHT_MAX + 4;
-        const top = rawHeight(world, x, z);
-        for (let y = top - 1; y >= 0; y -= 1) {
+        const raw = rawHeight(world, x, z);
+        const deck = world.rideFortress && Number(world.rideFortress.deckY);
+        const hi = deck > 0 ? Math.max(raw, deck + 8) : raw;
+        for (let y = hi; y >= 0; y -= 1) {
             const kind = voxelAt(world, x, y, z);
             if (kind && isGroundKind(kind)) return y + 1;
         }
@@ -3066,9 +3214,13 @@
         return { ok: true, kind: kind, drop: drop, x: x, y: y, z: z };
     }
 
-    function columnScanYEnd(surface, heightMax) {
+    function columnScanYEnd(surface, heightMax, world) {
         const cap = (Number(heightMax) > 0 ? Number(heightMax) : HEIGHT_MAX) + 16;
-        const top = (Number(surface) || 0) + 20;
+        let top = (Number(surface) || 0) + 20;
+        const deck = world && world.rideFortress && Number(world.rideFortress.deckY);
+        if (deck > 0) top = Math.max(top, deck + 10);
+        const doorY = world && world.rideDoor && Number(world.rideDoor.y0);
+        if (doorY > 0) top = Math.max(top, doorY + 18);
         return Math.min(cap, Math.max(12, top));
     }
 
@@ -3098,7 +3250,7 @@
         putBlock, flattenPad, defaultHubPortalSpecs, levelPortalBoxes,
         hubKeepoutBoxes, paveTop, hubLineCells, stampHubLand, stampHubInterior, stampHubRoad, stampHubLetters,
         stampHubBuilding, stampHubPlaza, stampHubStroke, stampHubYard, stampTowerAt, stampLevelPortals, stampUnlockPost,
-        stampTower, stampPillar, stampCrater, stampLandmarks, stampSkyMark, stampWordCubes,
+        stampTower, stampPillar, stampCrater, stampLandmarks, stampRideDoor, stampRideFortress, stampSkyMark, stampWordCubes,
         addWordArch, stampWordGates, openWordGate, carveCaves, createWorld,
         rawHeight, oreNoise, oreOrStone, groundKind, eachTreeVoxel,
         buildTreeCols, treeVoxelAt, treeKindAt, editKey, voxelAt, voxelSpecies,

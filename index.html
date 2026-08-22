@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
     <title>我的方块学园 · 地下城闯关，边打边学</title>
-    <link rel="stylesheet" href="./game.css?v=20260821-hub1">
+    <link rel="stylesheet" href="./game.css?v=20260822-sign1">
 </head>
 <body class="bl-body">
     <main class="bl-stage">
@@ -116,16 +116,25 @@
         </div>
         <button type="button" class="bl-touch-btn is-craft" id="craft-btn" aria-label="合成">合成</button>
         <div class="bl-touch" id="touch-pad" hidden>
-            <div class="bl-dpad" id="touch-dpad" aria-label="方向">
-                <button type="button" class="bl-dpad-btn is-up" data-dir="fwd" aria-label="前"></button>
-                <button type="button" class="bl-dpad-btn is-left" data-dir="left" aria-label="左"></button>
-                <button type="button" class="bl-dpad-btn is-right" data-dir="right" aria-label="右"></button>
-                <button type="button" class="bl-dpad-btn is-down" data-dir="back" aria-label="后"></button>
+            <div class="bl-stick" id="touch-dpad" aria-label="移动">
+                <div class="bl-stick-knob" id="touch-stick-knob" aria-hidden="true"></div>
             </div>
             <div class="bl-touch-act" aria-label="动作">
-                <button type="button" class="bl-touch-btn" id="touch-place" data-act="place" aria-label="放置">放</button>
-                <button type="button" class="bl-touch-btn" id="touch-attack" data-act="attack" aria-label="攻击">打</button>
-                <button type="button" class="bl-touch-btn is-jump" id="touch-jump" data-act="jump" aria-label="跳跃">跳</button>
+                <button type="button" class="bl-touch-btn is-attack" id="touch-attack" data-act="attack" aria-label="攻击">
+                    <svg class="bl-touch-ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M13 1h2v2h-1v1h-1v1h-1v1h-1v1h-1v1H9v1H8v1H7v1H6v1H5v1H3v1H2v1H1v-2h1v-1h1v-1h1v-1h1V9h1V8h1V7h1V6h1V5h1V4h1V3h1V2h1zM4 12h2v2H4z"/></svg>
+                </button>
+                <button type="button" class="bl-touch-btn is-sprint" id="touch-sprint" data-act="sprint" aria-label="冲刺">
+                    <svg class="bl-touch-ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M1 5h2v1h1v1h1v1h1v2H6V9H5V8H4V7H3V6H1zm6 0h2v1h1v1h1v1h1v2h-2V9h-1V8h-1V7H9V6H7z"/></svg>
+                </button>
+                <button type="button" class="bl-touch-btn is-jump" id="touch-jump" data-act="jump" aria-label="跳跃">
+                    <svg class="bl-touch-ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7 2h2v2h2v2h2v2h-2V7H9v7H7V7H5v1H3V6h2V4h2z"/></svg>
+                </button>
+                <button type="button" class="bl-touch-btn is-use" id="touch-place" data-act="place" aria-label="放置">
+                    <svg class="bl-touch-ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7 2h2v5h5v2H9v5H7V9H2V7h5z"/></svg>
+                </button>
+                <button type="button" class="bl-touch-btn is-sneak" id="touch-sneak" data-act="sneak" aria-label="潜行">
+                    <svg class="bl-touch-ico" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M7 2h2v7h2V8h2v2h-2v2H9v2H7v-2H5v-2H3V8h2v1h2zM3 14h10v2H3z"/></svg>
+                </button>
             </div>
         </div>
         <div class="bl-break is-hidden" id="break-bar"><i id="break-fill"></i></div>
@@ -588,19 +597,23 @@
     <script src="./child-courses.js?v=20260819-w1s1"></script>
     <script src="./vendor/three.min.js?v=20260815-bl-s1"></script>
     <script src="./vendor/GLTFLoader.js?v=20260820-gltf1"></script>
-    <script src="./data/shop.js?v=20260821-hub3"></script>
+    <script src="./data/shop.js?v=20260822-ride2"></script>
+    <script src="./data/ride-policy.js?v=20260822-ride10"></script>
         <script src="./data/tools.js?v=20260820-smelt2"></script>
         <script src="./data/craft.js?v=20260820-chest1"></script>
     <script src="./data/atlas-paint.js?v=20260820-seam1"></script>
-    <script src="./data/fx.js?v=20260820-ride1"></script>
+    <script src="./data/fx.js?v=20260822-ride4"></script>
     <script src="./data/dragon-rig.js?v=20260820-rig1"></script>
-    <script src="./data/dragon-gltf.js?v=20260820-gltf1"></script>
+    <script src="./data/dragon-skin.js?v=20260822-skin6"></script>
+    <script src="./data/dragon-gltf.js?v=20260822-skin6"></script>
     <script src="./data/academy-dragon.js?v=20260820-bcd1"></script>
     <script src="./data/perf.js?v=20260820-perf2"></script>
     <script src="./data/mobile-chrome.js?v=20260820-hud2"></script>
-    <script src="./data/world-gen.js?v=20260821-hub7"></script>
-    <script src="./engine.js?v=20260820-smelt2"></script>
-    <script src="./data/combat.js?v=20260820-blocks1"></script>
+    <script src="./data/touch-hud.js?v=20260821-pad1"></script>
+    <script src="./data/signboard.js?v=20260822-sign1"></script>
+    <script src="./data/world-gen.js?v=20260822-ride9"></script>
+    <script src="./engine.js?v=20260822-ride6"></script>
+    <script src="./data/combat.js?v=20260822-ride8"></script>
     <script src="./data/speech-input.js?v=20260819-e1s2"></script>
     <script src="./data/speech-hud.js?v=20260820-voice1"></script>
     <script src="./data/action-words.js?v=20260820-act1"></script>
@@ -612,7 +625,7 @@
     <script src="./data/review-schedule.js?v=20260819-e2s3"></script>
     <script src="./data/word-memory.js?v=20260819-d1s3"></script>
     <script src="./data/difficulty.js?v=20260819-d2s1"></script>
-    <script src="./data/levels.js?v=20260821-hub6"></script>
+    <script src="./data/levels.js?v=20260822-camp2"></script>
     <script src="./data/quests.js?v=20260819-bl-opt55"></script>
     <script src="./data/skins.js?v=20260817-bl-art3"></script>
     <script src="./assets/img2threejs/voxelPix.js?v=20260816-bl-mobs3"></script>
@@ -690,11 +703,11 @@
     <script src="./assets/img2threejs/createBlazeModel.js?v=20260817-bl-i2t1"></script>
     <script src="./assets/img2threejs/createWardenModel.js?v=20260817-bl-i2t1"></script>
     <script src="./assets/img2threejs/createWitherModel.js?v=20260816-bl-mobs4"></script>
-    <script src="./assets/img2threejs/createDragonModel.js?v=20260821-svox2"></script>
+    <script src="./assets/img2threejs/createDragonModel.js?v=20260822-skin1"></script>
     <script src="./assets/img2threejs/createStormModel.js?v=20260816-bl-mobs4"></script>
     <script src="./assets/img2threejs/createTools3d.js?v=20260819-bl-opt51"></script>
-        <script src="./assets/img2threejs/createProps3d.js?v=20260820-smelt2"></script>
+        <script src="./assets/img2threejs/createProps3d.js?v=20260822-sign1"></script>
     <script src="./mobs.js?v=20260821-hub3"></script>
-        <script src="./game.js?v=20260821-hub7"></script>
+        <script src="./game.js?v=20260822-ride10"></script>
 </body>
 </html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <title>学园龙 · 骑乘剪影</title>
+    <style>
+        html, body { margin: 0; background: #5a7a4a; color: #f4f0e6; font-family: sans-serif; }
+        h1 { margin: 12px 16px 4px; font-size: 18px; }
+        .sub { margin: 0 16px 10px; opacity: .75; font-size: 13px; }
+        .row { display: flex; gap: 12px; padding: 0 16px 16px; flex-wrap: wrap; }
+        canvas { display: block; background: #6b8f52; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>紫金学园龙 · GLB 本地绑骨</h1>
+    <p class="sub">左：侧面。中：骑乘后上方。右：正面。dragon-3 平展翅 + 运行时翅骨上下扇。</p>
+    <div class="row">
+        <canvas id="side" width="420" height="280"></canvas>
+        <canvas id="ride" width="420" height="280"></canvas>
+        <canvas id="front" width="420" height="280"></canvas>
+    </div>
+    <script src="./vendor/three.min.js?v=20260815-bl-s1"></script>
+    <script src="./vendor/GLTFLoader.js?v=20260820-gltf1"></script>
+    <script src="./data/fx.js?v=20260822-ride4"></script>
+    <script src="./data/dragon-skin.js?v=20260822-skin6"></script>
+    <script src="./data/dragon-gltf.js?v=20260822-skin6"></script>
+    <script src="./assets/atlas4v/dragon-atlas.js?v=20260821-chunky1"></script>
+    <script src="./assets/img2threejs/dragon-voxels.js?v=20260821-svox2"></script>
+    <script src="./assets/img2threejs/smoothVoxelDragon.js?v=20260821-svox2"></script>
+    <script src="./assets/img2threejs/createDragonModel.js?v=20260822-skin1"></script>
+    <script>
+    (function () {
+        const THREE = window.THREE;
+        const views = [
+            { id: 'side', pos: [6.4, 1.8, 0.5], look: [0, 0.95, 0.05] },
+            { id: 'ride', pos: [0.5, 4.0, -5.6], look: [0, 1.0, 0.2] },
+            { id: 'front', pos: [0.6, 1.6, 5.6], look: [0, 0.95, 0.15] }
+        ];
+        const shared = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        shared.setPixelRatio(1);
+        shared.setSize(420, 280, false);
+        if ('outputEncoding' in shared) shared.outputEncoding = THREE.sRGBEncoding;
+        window.BlockLegendDragonGltf.load(THREE).catch(function () { return null; }).then(function () {
+            const cards = views.map(function (v) {
+                const canvas = document.getElementById(v.id);
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x6b8f52);
+                const camera = new THREE.PerspectiveCamera(38, 420 / 280, 0.1, 40);
+                camera.position.set(v.pos[0], v.pos[1], v.pos[2]);
+                camera.lookAt(v.look[0], v.look[1], v.look[2]);
+                scene.add(new THREE.HemisphereLight(0xfff4d8, 0x6b8a4a, 0.85));
+                const sun = new THREE.DirectionalLight(0xfff2d0, 1.15);
+                sun.position.set(3, 6, 2);
+                scene.add(sun);
+                const model = window.BlockLegendDragonModel.create(THREE, { hideShield: true });
+                scene.add(model);
+                return { canvas: canvas, scene: scene, camera: camera, model: model };
+            });
+            const clock = new THREE.Clock();
+            function frame() {
+                requestAnimationFrame(frame);
+                const t = clock.getElapsedTime();
+                cards.forEach(function (c) {
+                    if (c.model.userData.tick) c.model.userData.tick(t, true);
+                    shared.render(c.scene, c.camera);
+                    c.canvas.getContext('2d').drawImage(shared.domElement, 0, 0);
+                });
+            }
+            frame();
+        });
+    }());
+    </script>
+</body>
+</html>

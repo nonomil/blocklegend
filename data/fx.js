@@ -203,6 +203,30 @@
         return Math.sin(time * 2.2) * 0.1;
     }
 
+    /**
+     * 骑龙姿态：左右给 bank（机翼式倾斜），升降给 pitch（头身一起抬/压）。
+     * 符号：左飞 bank>0（左翼下沉）；爬升 pitch>0（抬头）。幅度压在约 16°–22°。
+     */
+    function rideAttitude(opts) {
+        const o = opts || {};
+        const ax = Number(o.ax) || 0;
+        let bankIn = (o.left ? 1 : 0) - (o.right ? 1 : 0) - ax;
+        if (bankIn > 1) bankIn = 1;
+        if (bankIn < -1) bankIn = -1;
+        let climb = o.climb;
+        if (climb == null) {
+            climb = (o.jump ? 1 : 0) - (o.sneak ? 1 : 0);
+            if (o.followLook) climb -= Math.sin(Number(o.lookPitch) || 0) * 0.9;
+        }
+        climb = Number(climb) || 0;
+        if (climb > 1) climb = 1;
+        if (climb < -1) climb = -1;
+        return {
+            bank: bankIn * 0.38,
+            pitch: climb * 0.28
+        };
+    }
+
     function rideCam(opts) {
         const o = opts || {};
         if (!o.mounted) return null;
@@ -256,6 +280,7 @@
         rideMountY: rideMountY,
         wingFlap: wingFlap,
         rideCam: rideCam,
+        rideAttitude: rideAttitude,
         rideFov: rideFov,
         waterFlow: waterFlow,
         plantSway: plantSway,

@@ -57,6 +57,31 @@ export async function applyStandalonePaths(root) {
           './generated/blocklegend-roster/boss-phases/keyed/'
         ]
       ]
+    },
+    {
+      rel: '打开方块传奇.bat',
+      from: [
+        ['set "ROOT=%~dp0..\\..\\.."\r\ncd /d "%ROOT%"', 'cd /d "%~dp0"'],
+        ['set "ROOT=%~dp0..\\..\\.."\ncd /d "%ROOT%"', 'cd /d "%~dp0"'],
+        ['http://127.0.0.1:4196/prj/games/blocklegend/index.html', 'http://127.0.0.1:4196/']
+      ]
+    },
+    {
+      rel: '打开审查场.bat',
+      from: [
+        ['set "ROOT=%~dp0..\\..\\.."\r\ncd /d "%ROOT%"', 'cd /d "%~dp0"'],
+        ['set "ROOT=%~dp0..\\..\\.."\ncd /d "%ROOT%"', 'cd /d "%~dp0"'],
+        ['http://127.0.0.1:4198/prj/games/blocklegend/index.html?playtest=1&v=20260816-bl-play2', 'http://127.0.0.1:4198/?playtest=1']
+      ]
+    },
+    {
+      rel: '打开角色审查.bat',
+      from: [
+        ['set "ROOT=%~dp0..\\..\\.."\r\ncd /d "%ROOT%"', 'cd /d "%~dp0"'],
+        ['set "ROOT=%~dp0..\\..\\.."\ncd /d "%ROOT%"', 'cd /d "%~dp0"'],
+        ['http://127.0.0.1:4198/prj/games/blocklegend/review-roster.html?v=20260816-bl-mobs3', 'http://127.0.0.1:4197/review-roster.html'],
+        ['http.server 4198 --bind 127.0.0.1', 'http.server 4197 --bind 127.0.0.1']
+      ]
     }
   ];
 

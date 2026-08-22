@@ -224,18 +224,7 @@ html, body.bl-body {
 .bl-flavor em.is-hidden,
 .bl-flavor.is-hidden { display: none; }
 .bl-hub-guide {
-    position: absolute;
-    left: 50%;
-    top: 16%;
-    z-index: 6;
-    transform: translateX(-50%);
-    width: min(440px, 88vw);
-    padding: 14px 16px 12px;
-    border: 2px solid #5a3a18;
-    background: rgba(18, 12, 8, 0.9);
-    color: #f4e8c8;
-    text-align: center;
-    pointer-events: auto;
+    display: none !important;
 }
 .bl-hub-guide.is-hidden { display: none; }
 .bl-hub-guide-who {
@@ -1204,6 +1193,7 @@ html, body.bl-body {
     opacity: 0.72;
 }
 .bl-quiz-layer {
+    z-index: 12;
     background: transparent;
     align-items: flex-start;
     justify-content: center;
@@ -2042,95 +2032,90 @@ button.bl-quiz-en,
 .bl-craft-btn:hover { background: #6b4a28; }
 .bl-craft-btn.is-off { opacity: .45; cursor: not-allowed; }
 
-/* 手机触控：能点到，但不挡半个屏幕 */
+/* 手机触控：方块风方框摇杆 + 右侧动作键 */
 :root {
-    --bl-touch-size: clamp(48px, 7vw, 56px);
+    --bl-touch-size: clamp(58px, 12vmin, 78px);
+    --bl-stick: clamp(156px, 32vmin, 220px);
+    --bl-stick-knob: clamp(58px, 12vmin, 78px);
+    --bl-act: var(--bl-touch-size);
 }
 .bl-touch {
     position: absolute;
     inset: 0;
-    z-index: 4;
+    z-index: 6;
     pointer-events: none;
 }
 .bl-touch[hidden] { display: none; }
 body.is-overlay .bl-touch { display: none; }
-.bl-dpad,
+.bl-stick,
 .bl-touch-act { pointer-events: auto; }
-.bl-dpad {
+.bl-stick {
     position: absolute;
-    left: max(16px, env(safe-area-inset-left));
-    bottom: max(22px, env(safe-area-inset-bottom));
-    width: calc(var(--bl-touch-size) * 3 + 12px);
-    height: calc(var(--bl-touch-size) * 3 + 12px);
-    display: grid;
-    grid-template-columns: repeat(3, var(--bl-touch-size));
-    grid-template-rows: repeat(3, var(--bl-touch-size));
-    gap: 6px;
-}
-.bl-dpad-btn {
-    margin: 0;
-    padding: 0;
-    width: var(--bl-touch-size);
-    height: var(--bl-touch-size);
-    border: 2px solid rgba(255, 255, 255, .5);
-    background: rgba(255, 255, 255, .16);
-    border-radius: 999px;
-    -webkit-tap-highlight-color: transparent;
+    left: max(12px, env(safe-area-inset-left));
+    bottom: max(18px, env(safe-area-inset-bottom));
+    width: var(--bl-stick);
+    height: var(--bl-stick);
+    border: 2px solid rgba(36, 36, 36, .78);
+    background: rgba(170, 170, 170, .16);
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
     touch-action: none;
-    appearance: none;
+    -webkit-tap-highlight-color: transparent;
 }
-.bl-dpad-btn.is-up { grid-area: 1 / 2; }
-.bl-dpad-btn.is-left { grid-area: 2 / 1; }
-.bl-dpad-btn.is-right { grid-area: 2 / 3; }
-.bl-dpad-btn.is-down { grid-area: 3 / 2; }
-.bl-dpad-btn::after {
-    content: "";
-    display: block;
-    width: 0;
-    height: 0;
-    margin: 0 auto;
-    border: 9px solid transparent;
+.bl-stick-knob {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--bl-stick-knob);
+    height: var(--bl-stick-knob);
+    margin: calc(var(--bl-stick-knob) / -2) 0 0 calc(var(--bl-stick-knob) / -2);
+    border: 2px solid rgba(28, 28, 28, .86);
+    background: rgba(78, 78, 78, .46);
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
+    transform: translate(var(--bl-kx, 0px), var(--bl-ky, 0px));
+    pointer-events: none;
 }
-.bl-dpad-btn.is-up::after { border-bottom-color: rgba(255, 255, 255, .9); border-top-width: 0; }
-.bl-dpad-btn.is-down::after { border-top-color: rgba(255, 255, 255, .9); border-bottom-width: 0; }
-.bl-dpad-btn.is-left::after { border-right-color: rgba(255, 255, 255, .9); border-left-width: 0; margin-left: 10px; }
-.bl-dpad-btn.is-right::after { border-left-color: rgba(255, 255, 255, .9); border-right-width: 0; margin-right: 10px; }
-.bl-dpad-btn.is-held,
 .bl-touch-btn.is-held {
-    background: rgba(255, 255, 255, .30);
-    border-color: rgba(255, 255, 255, .72);
-    transform: scale(.92);
+    background: rgba(120, 120, 120, .48);
+    border-color: rgba(20, 20, 20, .9);
 }
 .bl-touch-act {
     position: absolute;
-    right: max(16px, env(safe-area-inset-right));
-    bottom: max(22px, env(safe-area-inset-bottom));
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(18px, env(safe-area-inset-bottom));
+    display: grid;
+    grid-template-columns: repeat(3, var(--bl-act));
+    grid-template-rows: repeat(3, var(--bl-act));
+    gap: 10px;
 }
+.bl-touch-btn.is-attack { grid-column: 1; grid-row: 2; }
+.bl-touch-btn.is-sprint { grid-column: 2; grid-row: 2; }
+.bl-touch-btn.is-jump { grid-column: 3; grid-row: 1; }
+.bl-touch-btn.is-use { grid-column: 3; grid-row: 2; }
+.bl-touch-btn.is-sneak { grid-column: 3; grid-row: 3; }
 .bl-touch-btn {
-    width: var(--bl-touch-size);
-    height: var(--bl-touch-size);
+    width: var(--bl-act);
+    height: var(--bl-act);
     margin: 0;
     padding: 0;
-    border-radius: 999px;
-    border: 2px solid rgba(255, 255, 255, .5);
-    background: rgba(255, 255, 255, .16);
-    color: rgba(255, 255, 255, .92);
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, .55);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: 2px solid rgba(36, 36, 36, .78);
+    background: rgba(150, 150, 150, .28);
+    color: rgba(42, 42, 42, .92);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14);
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
     appearance: none;
 }
-.bl-touch-btn.is-jump {
-    width: var(--bl-touch-size);
-    height: var(--bl-touch-size);
-    font-size: 18px;
+.bl-touch-ico {
+    display: block;
+    width: 62%;
+    height: 62%;
+    pointer-events: none;
 }
 .bl-touch-btn.is-craft {
     position: absolute;
@@ -2139,6 +2124,9 @@ body.is-overlay .bl-touch { display: none; }
     z-index: 5;
     pointer-events: auto;
     font-size: 14px;
+    font-weight: 700;
+    color: rgba(255, 246, 210, .92);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .55);
 }
 
 .bl-word-power {

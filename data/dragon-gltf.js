@@ -4,7 +4,7 @@
 (function (global) {
     'use strict';
 
-    const GLB_PATH = 'assets/models/academy-dragon.glb';
+    const GLB_PATH = 'assets/models/academy-dragon-rig.glb';
     const TARGET_LEN = 3.45;
 
     let cached = null;
@@ -95,31 +95,61 @@
         });
     }
 
-    function bindRuntime(root, animations, THREE) {
-        tintUntextured(root, THREE);
-        stripShadows(root);
-        root.name = 'dragon';
-        root.userData.form = 'gltf';
+    /**
+     * GLB 的 PBR 材质（metalness=1）在没有环境贴图的游戏场景里会渲染成纯黑，
+     * 统一降级成带原贴图的 Lambert，和引擎其他模型一个光照模型。
+     */
+    function gameSafeMaterials(root, THREE) {
+        if (!THREE.MeshLambertMaterial) return;
+        root.traverse(function (o) {
+            if (!o.isMesh && !o.isSkinnedMesh) return;
+            const mats = Array.isArray(o.material) ? o.material : [o.material];
+            const next = mats.map(function (m) {
+                if (!m || !m.map || m.isMeshLambertMaterial) return m;
+                return new THREE.MeshLambertMaterial({
+                    map: m.map,
+                    side: m.side,
+                    transparent: !!m.transparent,
+                    opacity: m.opacity != null ? m.opacity : 1
+                });
+            });
+            o.material = Array.isArray(o.material) ? next : next[0];
+        });
+    }
+
+    /**
+     * holder 是引擎每帧 set position/rotation 的外壳；
+     * inner 保留 fitRoot 的居中偏移和朝向，浮沉动画只动 inner，互不打架。
+     */
+    function bindRuntime(holder, inner, animations, THREE) {
+        tintUntextured(inner, THREE);
+        gameSafeMaterials(inner, THREE);
+        stripShadows(inner);
+        holder.name = 'dragon';
+        holder.userData.form = 'gltf';
+        if (inner.userData.sculptRuntime) holder.userData.sculptRuntime = inner.userData.sculptRuntime;
         let mixer = null;
         let flyAction = null;
         if (animations && animations.length && global.THREE && global.THREE.AnimationMixer) {
-            mixer = new global.THREE.AnimationMixer(root);
+            mixer = new global.THREE.AnimationMixer(inner);
             const pick = animations.find(function (c) {
                 return /fly|flap|idle|glide/i.test(c.name);
             }) || animations[0];
             flyAction = mixer.clipAction(pick);
             flyAction.play();
         }
-        root.userData.dragonBaseY = 0;
-        root.userData.tick = function (t, moving) {
+        const baseY = inner.position.y || 0;
+        const flap = inner.userData.flap;
+        holder.userData.tick = function (t, moving, pose) {
             const time = Number(t) || 0;
             if (mixer) {
                 mixer.update(moving ? 0.032 : 0.012);
                 if (flyAction) flyAction.timeScale = moving ? 1.15 : 0.45;
             }
-            root.position.y = (root.userData.dragonBaseY || 0) + 0.03 + Math.sin(time * 1.5) * 0.02;
+            if (flap) flap(time, moving, pose);
+            inner.position.y = baseY + 0.03 + Math.sin(time * 1.5) * 0.02;
         };
-        return root;
+        return holder;
     }
 
     function load(THREE) {
@@ -145,15 +175,22 @@
 
     function create(THREE, options) {
         if (!cached || !THREE) return null;
-        const root = cached.scene.clone(true);
+        let root = cached.scene.clone(true);
+        // 静态 GLB（无 skins）本地绑翅骨；已带动画的模型跳过
+        if (!cached.animations.length && global.BlockLegendDragonSkin) {
+            const rigged = global.BlockLegendDragonSkin.rig(THREE, root);
+            if (rigged) root = rigged;
+        }
         if (options && options.hideShield) {
             root.traverse(function (o) {
                 if (o.name === 'boss-shield') o.visible = false;
             });
         }
         fitRoot(root, THREE);
-        root.userData.rideScale = 1;
-        return bindRuntime(root, cached.animations, THREE);
+        const holder = new THREE.Group();
+        holder.add(root);
+        holder.userData.rideScale = 1;
+        return bindRuntime(holder, root, cached.animations, THREE);
     }
 
     function isReady() {

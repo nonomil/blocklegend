@@ -10,3 +10,5 @@ Thumbs.db
 .idea/
 .vscode/
 local.properties
+assets/models/*.glb
+!assets/models/academy-dragon-rig.glb

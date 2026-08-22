@@ -1215,6 +1215,7 @@
         ladder: '梯子',
         fence: '栅栏',
         boat: '船',
+        sign: '牌子',
         fish: '鱼',
         wheat: '小麦',
         tree: '树',

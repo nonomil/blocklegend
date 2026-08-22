@@ -345,6 +345,13 @@
             openSettle: function () { toggleLayer('settle-layer', true); },
             startLevel: function (level, extra) { return startLevel(level, extra || {}); },
             finishLevel: function () { return finishLevel(); },
+            tryFinishLevel: function () { return tryFinishLevel(); },
+            noteFortressWord: function () { return noteFortressWord(); },
+            noteRideStormWord: function () { return noteRideStormWord(); },
+            noteRideDoorWord: function () { return noteRideDoorWord(); },
+            openRideDoor: function () { return openRideDoor(); },
+            toggleMount: function (row) { return toggleMount(row); },
+            dropFortressBridge: function () { return dropFortressBridge(); },
             openTrade: function () { return openTrade(); },
             askWord: function (text, extra) {
                 const key = String(text || '').toLowerCase();
@@ -1652,16 +1659,37 @@
     function tryDragonBreath() {
         if (!engine || !engine.player || !engine.player.mounted) return false;
         const now = nowMs();
-        if (session.breathAt && now - session.breathAt < 1000) return true;
+        const RP = window.BlockLegendRidePolicy;
+        const breathCd = RP && RP.breathCooldownMs
+            ? RP.breathCooldownMs({ combo: session.combo })
+            : 1000;
+        if (session.breathAt && now - session.breathAt < breathCd) return true;
         session.breathAt = now;
+        const mount = engine.player.mounted;
+        if (mount) mount.breath = 1;
         const p = engine.player;
         const aim = nearestLookMob();
-        // 龙头近似位置：玩家(骑手)前方一点
         const fx = -Math.sin(engine.look.yaw), fz = -Math.cos(engine.look.yaw);
-        const head = { x: p.x + fx * 1.2, y: (p.y || 0) + 0.6, z: p.z + fz * 1.2, height: 0 };
+        const bone = mount && mount.mesh && mount.mesh.userData
+            && mount.mesh.userData.sculptRuntime
+            && mount.mesh.userData.sculptRuntime.nodes
+            && mount.mesh.userData.sculptRuntime.nodes.head;
+        let head = { x: p.x + fx * 1.2, y: (p.y || 0) + 0.6, z: p.z + fz * 1.2, height: 0 };
+        if (bone && bone.getWorldPosition && engine.THREE_REF) {
+            const wp = bone.getWorldPosition(new engine.THREE_REF.Vector3());
+            if (isFinite(wp.x) && isFinite(wp.y) && isFinite(wp.z)) {
+                head = { x: wp.x, y: wp.y, z: wp.z, height: 0 };
+            }
+        }
         const target = aim || { x: p.x + fx * 8, z: p.z + fz * 8 };
         const dmg = C.breathDamage
-            ? C.breathDamage({ now: now, wordAt: session.wordAt })
+            ? C.breathDamage({
+                now: now,
+                wordAt: session.wordAt,
+                windowMs: RP && RP.wordWindowMs
+                    ? RP.wordWindowMs({ gem: RP.hasGem(rideGear()) })
+                    : undefined
+            })
             : 4;
         fireBossShot(head, {
             aim: target,
@@ -1755,35 +1783,34 @@
         touchPadBound = true;
         const dirs = ['fwd', 'back', 'left', 'right'];
         let padId = null;
+        const knob = document.getElementById('touch-stick-knob');
+        const TH = window.BlockLegendTouchHud;
+
+        function paintKnob(state) {
+            if (!knob) return;
+            let travel = 48;
+            if (dpad) {
+                const box = dpad.getBoundingClientRect();
+                travel = Math.max(0, (box.width - knob.offsetWidth) / 2);
+            }
+            const px = TH && TH.knobPixel ? TH.knobPixel(state, travel) : { x: 0, y: 0 };
+            knob.style.setProperty('--bl-kx', px.x + 'px');
+            knob.style.setProperty('--bl-ky', px.y + 'px');
+        }
 
         function paintDirs(state) {
             if (engine.setMoveAxis) engine.setMoveAxis(state ? state.x : 0, state ? state.y : 0);
             dirs.forEach(function (dir) {
                 engine.setHeld(dir, !!(state && state[dir]));
-                const btn = dpad && dpad.querySelector('[data-dir="' + dir + '"]');
-                if (btn) btn.classList.toggle('is-held', !!(state && state[dir]));
             });
+            paintKnob(state);
         }
 
         function dirFromEvent(ev) {
             if (!dpad) return null;
             const box = dpad.getBoundingClientRect();
-            const rx = (ev.clientX - (box.left + box.width / 2)) / Math.max(1, box.width / 2);
-            const ry = (ev.clientY - (box.top + box.height / 2)) / Math.max(1, box.height / 2);
-            const mag = Math.hypot(rx, ry);
-            const dead = 0.18;
-            if (mag < dead) return { x: 0, y: 0, fwd: false, back: false, left: false, right: false };
-            const scale = Math.min(1, mag);
-            const nx = (rx / mag) * scale;
-            const ny = (ry / mag) * scale;
-            return {
-                x: nx,
-                y: -ny,
-                fwd: ny < -0.22,
-                back: ny > 0.22,
-                left: nx < -0.22,
-                right: nx > 0.22
-            };
+            if (TH && TH.stickFromPointer) return TH.stickFromPointer(box, ev.clientX, ev.clientY);
+            return null;
         }
 
         function holdBtn(el, on) {
@@ -1815,6 +1842,8 @@
         const jump = document.getElementById('touch-jump');
         const attack = document.getElementById('touch-attack');
         const place = document.getElementById('touch-place');
+        const sprint = document.getElementById('touch-sprint');
+        const sneak = document.getElementById('touch-sneak');
 
         function bindHold(el, onDown, onUp) {
             if (!el) return;
@@ -1838,6 +1867,8 @@
         }
 
         bindHold(jump, function () { engine.setHeld('jump', true); }, function () { engine.setHeld('jump', false); });
+        bindHold(sprint, function () { engine.setHeld('boost', true); }, function () { engine.setHeld('boost', false); });
+        bindHold(sneak, function () { engine.setHeld('sneak', true); }, function () { engine.setHeld('sneak', false); });
         bindHold(attack, beginMine, endMine);
         bindHold(place, usePlace, function () {});
         root.addEventListener('contextmenu', function (e) { e.preventDefault(); });
@@ -1994,6 +2025,15 @@
         session.secretRun = !!(extra && extra.secret);
         session.askedCount = 0;
         session.levelStartedAt = nowMs();
+        session.fortress = null;
+        session.rideStorm = null;
+        session.rideDoor = null;
+        session.spiritHinted = false;
+        session.rideMode = '';
+        session.rideLimitMs = 0;
+        session.rideDemoAt = 0;
+        session.rideWarn8 = false;
+        session.airHuntSpawned = {};
         session.bossHitsOnShield = 0;
         session.bossNeed = (D && D.tierOf(session.tier).bossAnswers) || 1;
         setCasting(false);
@@ -2035,6 +2075,10 @@
         paintSayStrip();
         syncHud();
         if (!session.secretRun && L.flavorOf) showFlavor(L.flavorOf(session.level));
+        const rideStart = window.BlockLegendRidePolicy;
+        if (rideStart && rideStart.isRideLevel(session.level) && rideStart.hasSaddle(rideGear())) {
+            toast(rideStart.segmentIntro(session.level));
+        }
     }
 
     function todayStr() {
@@ -2864,7 +2908,7 @@
 
     function spawnBoss() {
         if (session.secretRun) {
-            finishLevel();
+            tryFinishLevel();
             return;
         }
         session.boss = L.createBoss(session.level);
@@ -3583,6 +3627,11 @@
         }
         (engine.world.placedProps || []).forEach(function (p) {
             const row = { x: p.x + 0.5, z: p.z + 0.5, y: p.y, prop: p };
+            if (p.kind === 'sign') {
+                row.word = { text: p.en || 'sign', zh: p.zh || '牌子' };
+                consider(row, 'prop', 'sign', p.y + 1.05, 5.5, 0.52);
+                return;
+            }
             consider(row, 'prop', p.kind, p.y + 0.4);
         });
         (engine.world.beds || []).forEach(function (b) {
@@ -3826,21 +3875,298 @@
         return best;
     }
 
+    function rideGear() {
+        return (progress && progress.gear) || {};
+    }
+
+    function endRide(msg) {
+        const FX = globalThis.BlockLegendFx;
+        const RP = window.BlockLegendRidePolicy;
+        if (!engine || !engine.player || !engine.player.mounted) return;
+        if (engine.dismount) engine.dismount();
+        else {
+            engine.player.mounted = null;
+            engine.player.y = engine.world.surfaceAt(Math.floor(engine.player.x), Math.floor(engine.player.z));
+            engine.player.vy = 0;
+        }
+        session.rideMode = '';
+        session.rideDemoAt = 0;
+        session.rideLimitMs = 0;
+        session.rideWarn8 = false;
+        if (RP && session.fortress) {
+            const land = RP.fortressOnLand(session.fortress);
+            session.fortress = land;
+            if (land && land.toast) msg = land.toast;
+        }
+        if (engine.fovKick && FX && FX.rideFov) engine.fovKick(FX.rideFov('down'));
+        if (msg) toast(msg);
+    }
+
+    function tickRideDemo(now) {
+        const RP = window.BlockLegendRidePolicy;
+        if (!RP || !engine || !engine.player || !engine.player.mounted) return;
+        if (session.rideMode !== 'demo' && session.rideMode !== 'segment') return;
+        if (RP.rideHoldOpen && RP.rideHoldOpen(session.fortress)) return;
+        const limit = Number(session.rideLimitMs) || (session.rideMode === 'demo' ? RP.DEMO_MS : 0);
+        if (!limit) return;
+        const left = (Number(session.rideDemoAt) || 0) + limit - now;
+        if (left <= 8000 && left > 0 && !session.rideWarn8) {
+            session.rideWarn8 = true;
+            toast(session.rideMode === 'demo' ? '还剩几秒 · 体验快结束了' : '还剩几秒 · 说完词就落地');
+        }
+        if (!RP.demoExpired(session.rideDemoAt, now, limit)) return;
+        if (session.rideMode === 'demo') session.rideDemoUsed = true;
+        endRide(session.rideMode === 'segment'
+            ? '先把词说完 · 落地检查点'
+            : RP.denyToast('need-saddle', true));
+    }
+
+    function tickSpiritScale() {
+        const RP = window.BlockLegendRidePolicy;
+        if (!RP || !engine || !engine.world) return;
+        const s = RP.spiritScale(session.level, rideGear());
+        const light = RP.spiritLightOf
+            ? RP.spiritLightOf({
+                gear: rideGear(),
+                level: session.level,
+                combo: session.combo,
+                mounted: !!(engine.player && engine.player.mounted)
+            })
+            : null;
+        (engine.world.animals || []).forEach(function (a) {
+            if (a.kind !== 'dragon' || !a.mesh) return;
+            if (a._spiritScaled !== s) {
+                const base = a.mesh.userData.baseScale || a.mesh.scale.x || 1;
+                if (!a.mesh.userData.baseScale) a.mesh.userData.baseScale = base;
+                a.mesh.scale.setScalar(a.mesh.userData.baseScale * s);
+                a._spiritScaled = s;
+            }
+            if (!light || typeof THREE === 'undefined') return;
+            if (!a.spiritGlow) {
+                const glow = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.14, 8, 8),
+                    new THREE.MeshBasicMaterial({ color: light.color, transparent: true, opacity: 0.92 })
+                );
+                glow.position.set(0.22, 0.62, 0.16);
+                const lamp = new THREE.PointLight(light.color, light.intensity, 7);
+                lamp.position.copy(glow.position);
+                a.mesh.add(glow);
+                a.mesh.add(lamp);
+                a.spiritGlow = glow;
+                a.spiritLamp = lamp;
+            }
+            a.spiritGlow.visible = !!light.on;
+            a.spiritLamp.visible = !!light.on;
+            a.spiritGlow.scale.setScalar(Math.max(0.4, light.scale / 0.12));
+            a.spiritLamp.intensity = light.intensity;
+            a.spiritLamp.color.setHex(light.color);
+            if (a.spiritGlow.material && a.spiritGlow.material.color) {
+                a.spiritGlow.material.color.setHex(light.color);
+            }
+        });
+    }
+
+    function spawnRideAir(air) {
+        if (!air || !air.kinds || !air.kinds.length || !engine || !engine.player) return;
+        const p = engine.player;
+        const spots = [[9, 3], [-8, 5], [6, -8], [-5, -7]];
+        const n = Math.min(Number(air.count) || 1, spots.length);
+        for (let i = 0; i < n; i += 1) {
+            const kind = air.kinds[i % air.kinds.length];
+            const spot = spots[i];
+            const extra = kind === 'storm' ? { scale: 1.2 } : null;
+            const mob = spawnMonster(kind, p.x + spot[0], p.z + spot[1], extra);
+            if (!mob) continue;
+            mob.airHunt = true;
+            mob.airLift = kind === 'storm' ? 1.8 : ((i % 2) ? 1.1 : 0.4);
+            if (p.mounted) {
+                const RP = window.BlockLegendRidePolicy;
+                mob.y = RP && RP.airHuntY
+                    ? RP.airHuntY({ mounted: true, playerY: p.y, groundY: mob.y, lift: mob.airLift })
+                    : (p.y || 12) + mob.airLift;
+                if (mob.mesh) mob.mesh.position.y = mob.y;
+            }
+        }
+    }
+
+    function maybeSpawnRideAir(fortressStep) {
+        const RP = window.BlockLegendRidePolicy;
+        if (!RP) return;
+        if (!session.airHuntSpawned || typeof session.airHuntSpawned !== 'object') {
+            session.airHuntSpawned = {};
+        }
+        const packs = RP.airPacksOf
+            ? RP.airPacksOf(session.level, fortressStep || 0)
+            : (RP.airSpawnOf ? [RP.airSpawnOf(session.level, fortressStep || 0)].filter(Boolean) : []);
+        for (let i = 0; i < packs.length; i += 1) {
+            const air = packs[i];
+            if (!air) continue;
+            const key = (air.on === 'mount' ? 'mount' : ('s' + air.step)) + '-' + (air.kinds || []).join(',');
+            if (session.airHuntSpawned[key]) continue;
+            session.airHuntSpawned[key] = true;
+            spawnRideAir(air);
+        }
+    }
+
+    function paintFortressHint() {
+        const RP = window.BlockLegendRidePolicy;
+        const el = document.getElementById('buddy-say');
+        if (!el || !RP) return;
+        let line = '';
+        if (session.fortress && RP.fortressHint) line = RP.fortressHint(session.fortress);
+        else if (engine && engine.player && engine.player.mounted && RP.rideHint) {
+            line = RP.rideHint(session.level);
+        }
+        if (!line) return;
+        el.textContent = line;
+        el.classList.add('is-on');
+    }
+
+    function burstRideStorm() {
+        (session.monsters || []).slice().forEach(function (m) {
+            if (!m || m.kind !== 'storm' || !m.airHunt || m.hp <= 0) return;
+            hurtMonster(m, Math.max(m.hp, 1), true);
+        });
+    }
+
+    function openRideDoor() {
+        const world = engine && engine.world;
+        const pack = world && world.rideDoor;
+        if (!pack || pack.opened || !pack.fill) return false;
+        if (!world.edits) world.edits = {};
+        let cleared = 0;
+        for (let i = 0; i < pack.fill.length; i += 1) {
+            const b = pack.fill[i];
+            const key = b.x + ',' + b.y + ',' + b.z;
+            if (world.edits[key]) {
+                world.edits[key] = null;
+                cleared += 1;
+            }
+            if (engine.remeshAt) engine.remeshAt(b.x, b.z);
+        }
+        pack.opened = true;
+        return cleared > 0;
+    }
+
+    function noteRideDoorWord() {
+        const RP = window.BlockLegendRidePolicy;
+        if (!RP || !RP.rideDoorOnWord) return;
+        if (!RP.shouldStartRideDoor || !RP.shouldStartRideDoor(session.level)) return;
+        if (!(engine && engine.player && engine.player.mounted)) return;
+        if (!session.rideDoor) session.rideDoor = RP.rideDoorStart();
+        if (session.rideDoor.open) return;
+        const prev = session.rideDoor;
+        const next = RP.rideDoorOnWord(session.rideDoor);
+        session.rideDoor = next;
+        if (RP.shouldOpenRideDoor && RP.shouldOpenRideDoor(prev, next)) openRideDoor();
+        if (next && next.toast) toast(next.toast);
+        paintFortressHint();
+    }
+
+    function noteRideStormWord() {
+        const RP = window.BlockLegendRidePolicy;
+        if (!RP || !RP.stormOnWord) return;
+        if (Number(session.level) !== 8) return;
+        if (!(engine && engine.player && engine.player.mounted)) return;
+        if (!session.rideStorm) session.rideStorm = RP.stormStart();
+        if (session.rideStorm.done) return;
+        const next = RP.stormOnWord(session.rideStorm);
+        session.rideStorm = next;
+        if (next && next.toast) toast(next.toast);
+        if (next && next.done) burstRideStorm();
+        paintFortressHint();
+    }
+
+    function dropFortressBridge() {
+        const world = engine && engine.world;
+        const pack = world && world.rideFortress;
+        if (!pack || pack.bridgeDropped || !pack.bridge) return false;
+        const W = window.BlockLegendWorld;
+        if (!W || !W.placeVoxel) return false;
+        let placed = 0;
+        for (let i = 0; i < pack.bridge.length; i += 1) {
+            const b = pack.bridge[i];
+            const kind = b.kind === 'log' ? 'log' : 'plank';
+            const res = W.placeVoxel(world, b.x, b.y, b.z, kind);
+            if (res && res.ok) {
+                placed += 1;
+                if (engine.remeshAt) engine.remeshAt(res.x, res.z);
+            }
+        }
+        pack.bridgeDropped = true;
+        return placed > 0;
+    }
+
+    function ensureFortressBridge() {
+        if (!session.fortress || Number(session.fortress.step) < 2) return false;
+        return dropFortressBridge();
+    }
+
+    function noteFortressWord() {
+        const RP = window.BlockLegendRidePolicy;
+        if (!RP || !session.fortress) return;
+        if (!(engine && engine.player && engine.player.mounted)) return;
+        const prev = session.fortress;
+        const next = RP.fortressOnWord(session.fortress);
+        session.fortress = next;
+        if (RP.shouldDropBridge && RP.shouldDropBridge(prev, next)) dropFortressBridge();
+        if (next && next.toast) toast(next.toast);
+        maybeSpawnRideAir(next && next.step);
+        paintFortressHint();
+    }
+
+    function tryFinishLevel() {
+        const RP = window.BlockLegendRidePolicy;
+        if (RP && RP.shouldStartFortress && RP.shouldStartFortress(session.level)) {
+            const gate = RP.fortressCanFinish({
+                fortress: session.fortress,
+                mounted: !!(engine && engine.player && engine.player.mounted)
+            });
+            if (!gate.ok) {
+                toast(RP.fortressDenyToast(gate.reason));
+                return false;
+            }
+        }
+        finishLevel();
+        return true;
+    }
+
     function toggleMount(row) {
         const FX = globalThis.BlockLegendFx;
+        const RP = window.BlockLegendRidePolicy;
         if (engine.player.mounted) {
-            if (engine.dismount) engine.dismount();
-            else {
-                engine.player.mounted = null;
-                engine.player.y = engine.world.surfaceAt(Math.floor(engine.player.x), Math.floor(engine.player.z));
-                engine.player.vy = 0;
-            }
-            if (engine.fovKick && FX && FX.rideFov) engine.fovKick(FX.rideFov('down'));
-            toast('从龙背下来了 · 右键或 F 还能再骑');
+            endRide('从龙背下来了 · 右键或 F 还能再骑');
             return true;
         }
         const dragon = row || nearestRideable(4.6);
         if (!dragon) return false;
+        if (RP) {
+            const gate = RP.canStartMount({
+                gear: rideGear(),
+                hub: !!session.hub,
+                demoUsed: !!session.rideDemoUsed,
+                level: session.level
+            });
+            if (!gate.ok) {
+                toast(RP.denyToast(gate.reason, !!session.hub));
+                return true;
+            }
+            session.rideMode = gate.mode;
+            session.rideLimitMs = Number(gate.limitMs) || 0;
+            session.rideDemoAt = (gate.mode === 'demo' || gate.mode === 'segment') ? nowMs() : 0;
+            session.rideWarn8 = false;
+            if (gate.mode === 'segment' && RP.shouldStartFortress && RP.shouldStartFortress(session.level)
+                && !session.fortress) {
+                session.fortress = RP.fortressStart();
+            }
+            if (gate.mode === 'segment' && Number(session.level) === 8 && !session.rideStorm && RP.stormStart) {
+                session.rideStorm = RP.stormStart();
+            }
+            if (gate.mode === 'segment' && RP.shouldStartRideDoor && RP.shouldStartRideDoor(session.level)
+                && !session.rideDoor) {
+                session.rideDoor = RP.rideDoorStart();
+            }
+        }
         engine.player.mounted = dragon;
         engine.player.x = dragon.x;
         engine.player.z = dragon.z;
@@ -3850,9 +4176,16 @@
             : Math.max((dragon.y != null ? dragon.y : surfaceY) + 1.32, surfaceY + 12);
         engine.player.vy = 0;
         if (engine.fovKick && FX && FX.rideFov) engine.fovKick(FX.rideFov('up'));
-        toast('骑上龙了 · 空格升高 · Shift 或低头下降 · F 下来');
+        toast(session.rideMode === 'demo'
+            ? '体验飞行 20 秒 · 之后去商人摊换龙鞍'
+            : (session.rideMode === 'segment' && RP && RP.segmentIntro(session.level)
+                ? RP.segmentIntro(session.level)
+                : '骑上龙了 · 空格升高 · Shift 或低头下降 · F 下来'));
         noteQuest({ type: 'look', kind: 'dragon' });
         flashAction('ride');
+        maybeSpawnRideAir(session.fortress && session.fortress.step);
+        ensureFortressBridge();
+        paintFortressHint();
         return true;
     }
 
@@ -4309,7 +4642,20 @@
                         : sub.portal && sub.portal.state === 'due' ? '传送门 · 复习'
                             : '传送门 · 走进去')
                     : (sub.row && sub.row.rideable
-                        ? (engine.player.mounted ? '骑着 · 左键龙息 / Q·E 回旋 / R 急速 / F 下来' : '坐骑 · 右键或 F 骑上去')
+                        ? (engine.player.mounted
+                            ? '骑着 · 左键龙息 / Q·E 回旋 / R 急速 / F 下来'
+                            : (function () {
+                                const RP = window.BlockLegendRidePolicy;
+                                const gate = RP && RP.canStartMount({
+                                    gear: rideGear(),
+                                    hub: !!session.hub,
+                                    demoUsed: !!session.rideDemoUsed,
+                                    level: session.level
+                                });
+                                if (gate && gate.ok) return '坐骑 · 右键或 F 骑上去';
+                                if (gate && gate.reason === 'not-ride-level') return '坐骑 · 这关先用脚学词';
+                                return '坐骑 · 先去商人摊换龙鞍';
+                            }()))
                         : (sub.type === 'npc' ? 'Merchant Leo · 商人雷奥' : (label.who || '')));
             }
             if (hpBar) hpBar.classList.add('is-hidden');
@@ -4538,6 +4884,18 @@
         session.quiz = quiz;
         session.quizRetry = false;
         session.quizEndsAt = nowMs() + (quiz.limitMs || W.QUIZ_MS);
+        const rideP = window.BlockLegendRidePolicy;
+        if (rideP && rideP.quizBonusMs) {
+            session.quizEndsAt += rideP.quizBonusMs({
+                goggles: rideP.hasGoggles(rideGear()),
+                mounted: !!(engine && engine.player && engine.player.mounted)
+            });
+        }
+        if (!session.spiritHinted && rideP && rideP.hasSaddle(rideGear())
+            && engine && engine.player && engine.player.mounted) {
+            session.spiritHinted = true;
+            toast('词灵跟着读 · 连对 3 次龙息更快');
+        }
         session.paused = true;
         setCasting(false);
         toggleLayer('quiz-layer', true);
@@ -5029,6 +5387,9 @@
             }
             if (correct) {
                 session.wordAt = nowMs();
+                noteFortressWord();
+                noteRideStormWord();
+                noteRideDoorWord();
                 progress.rightCount = (Number(progress.rightCount) || 0) + 1;
                 if (word && word.side && word.side.masteryKey) {
                     noteSideResult(word, true);
@@ -5258,7 +5619,12 @@
             dmg = Math.max(1, Math.round(dmg * (bonus.bolt || 1)));
         }
         const crit = !!(verdict.answered && verdict.correct);
-        if (verdict.correct) session.wordAt = nowMs();
+        if (verdict.correct) {
+            session.wordAt = nowMs();
+            noteFortressWord();
+            noteRideStormWord();
+            noteRideDoorWord();
+        }
         if (mob.isBoss && session.boss) {
             const r = L.applyBossDamage(session.boss, dmg, { now: nowMs(), channel: verdict.channel });
             session.boss = r.boss;
@@ -5608,7 +5974,7 @@
         noteQuest({ type: 'kill', kind: mob.kind, quizCorrect: !!mob.asked });
         if (!session.boss && session.monsters.length === 0) {
             if (session.wavesLeft > 0) spawnWave();
-            else if (session.secretRun) finishLevel();
+            else if (session.secretRun) tryFinishLevel();
             else spawnBoss();
         }
     }
@@ -5961,7 +6327,7 @@
         document.body.classList.remove('is-touch');
         if (engine && engine.setMoveAxis) engine.setMoveAxis(0, 0);
         if (engine && engine.setHeld) {
-            ['fwd', 'back', 'left', 'right', 'jump'].forEach(function (dir) {
+            ['fwd', 'back', 'left', 'right', 'jump', 'sneak', 'boost'].forEach(function (dir) {
                 engine.setHeld(dir, false);
             });
         }
@@ -6722,6 +7088,8 @@
             moveBolts(dt);
             moveBossShots(dt);
             tickRideTrail(t);
+            tickRideDemo(t);
+            tickSpiritScale();
             collectPickups();
             separateFromAnimals();
             regenOutOfCombat(dt);
@@ -7010,9 +7378,19 @@
             if (C.dayCalm && C.dayCalm(m.kind, { exposed: skyExposed(m.x, m.z) }) && !m.provoked) m.aggro = false;
             const stanceY = function () {
                 const ground = engine.world.surfaceAt(Math.floor(m.x), Math.floor(m.z));
-                return C.stanceAltitude
+                const base = C.stanceAltitude
                     ? C.stanceAltitude(m.kind, ground, tSec, { isBoss: m.isBoss, bossId: m.bossId })
                     : (flyer ? ground + (loc.hover || 1.35) : ground);
+                const RP = window.BlockLegendRidePolicy;
+                if (m.airHunt && RP && RP.airHuntY) {
+                    return RP.airHuntY({
+                        mounted: !!p.mounted,
+                        playerY: p.y,
+                        groundY: base,
+                        lift: m.airLift
+                    });
+                }
+                return base;
             };
             if (loc.mode === 'anchor' || (m.parked && !m.aggro) || !m.aggro) {
                 if (m.parked && m.aggro && loc.mode !== 'anchor') m.parked = false;
@@ -7672,7 +8050,7 @@
         const d = Math.hypot(engine.player.x - mark.x, engine.player.z - mark.z);
         if (mark.kind === 'settle' && d < 1.7) {
             clearSettleFlag();
-            finishLevel();
+            tryFinishLevel();
             return;
         }
         if (mark.kind === 'unlock' && d < 1.7) tryCampUnlock();
@@ -7886,30 +8264,7 @@
         const talk = currentHubTalk();
         session.hubTalk = talk;
         const root = document.getElementById('hub-guide');
-        const who = document.getElementById('hub-guide-who');
-        const zh = document.getElementById('hub-guide-zh');
-        const en = document.getElementById('hub-guide-en');
-        const prompts = document.getElementById('hub-guide-prompts');
-        const nextBtn = document.getElementById('hub-guide-next');
-        if (!root) {
-            paintQuest();
-            return;
-        }
-        if (!talk || session.hubTalkClosed) {
-            root.classList.add('is-hidden');
-            paintQuest();
-            return;
-        }
-        if (who) who.textContent = talk.who || '老师';
-        if (zh) zh.textContent = talk.zh || '';
-        if (en) en.textContent = talk.en || '';
-        if (prompts) {
-            prompts.innerHTML = (talk.prompts || []).map(function (p) {
-                return '<span class="bl-hub-prompt"><b>' + p.en + '</b><i>' + p.zh + '</i></span>';
-            }).join('');
-        }
-        if (nextBtn) nextBtn.classList.toggle('is-hidden', !!talk.last);
-        root.classList.remove('is-hidden');
+        if (root) root.classList.add('is-hidden');
         paintQuest();
     }
 
@@ -8158,6 +8513,10 @@
         }
         session.coins = res.coined;
         progress.gear = res.gear;
+        if (res.item && res.item.id === 'dragon-saddle') {
+            session.rideMode = engine.player && engine.player.mounted ? 'free' : session.rideMode;
+            session.rideDemoUsed = false;
+        }
         if (res.bagId && C.addLoot) {
             session.bag = C.addLoot(session.bag, res.bagId, res.qty || 1);
             paintHotbar();
@@ -8169,7 +8528,13 @@
             if (sfx && sfx.eat) sfx.eat();
             toast('HP +' + res.heal);
         } else {
-            toast('Bought ' + ((res.item && res.item.en) || id));
+            toast(res.item && res.item.id === 'dragon-saddle'
+                ? '换上龙鞍了 · 词灵孵出来了 · 营地和第4/6/8/12关能骑'
+                : (res.item && res.item.id === 'ride-goggles'
+                    ? '戴上护目镜 · 骑龙答题多 2 秒'
+                    : (res.item && res.item.id === 'breath-gem'
+                        ? '龙息宝石 · 说中后窗口多 1 秒'
+                        : ('Bought ' + ((res.item && res.item.en) || id)))));
         }
         persist();
         openTrade();

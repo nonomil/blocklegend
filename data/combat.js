@@ -51,7 +51,9 @@
         fire_spirit: { kind: 'fire_spirit', hp: 32, coins: 7, contact: 2, speed: 1.2, loot: 'ember-core', color: 0xe07020, hitRadius: 0.45 },
         sculk_worm: { kind: 'sculk_worm', hp: 38, coins: 7, contact: 2, speed: 0.82, loot: 'sculk-thread', color: 0x1a3a40, hitRadius: 0.55 },
         shadow_stalker: { kind: 'shadow_stalker', hp: 44, coins: 8, contact: 2, speed: 1.18, loot: 'shadow-hood', color: 0x1c1c24, hitRadius: 0.45 },
-        pillager: { kind: 'pillager', hp: 42, coins: 8, contact: 2, speed: 1.0, loot: 'crossbow-bolt', color: 0x5a2a3a, hitRadius: 0.5 }
+        pillager: { kind: 'pillager', hp: 42, coins: 8, contact: 2, speed: 1.0, loot: 'crossbow-bolt', color: 0x5a2a3a, hitRadius: 0.5 },
+        wither: { kind: 'wither', hp: 80, coins: 12, contact: 2, speed: 0.68, loot: 'wither-star', color: 0x1c1c24, hitRadius: 0.85 },
+        storm: { kind: 'storm', hp: 90, coins: 12, contact: 2, speed: 0.62, loot: 'ghast-tear', color: 0xaa00ff, hitRadius: 1.05 }
     };
     const ANIMALS = {
         pig: { kind: 'pig', hp: 16, coins: 2, contact: 0, loot: ['pork'], bodyRadius: 0.95 },
@@ -122,6 +124,7 @@
         spore_bug: 'chase', fire_spirit: 'chase', sculk_worm: 'chase', shadow_stalker: 'chase',
         vindicator: 'chase',
         blaze: 'ranged', ghast: 'ranged', skeleton: 'ranged', phantom: 'ranged', snowgolem: 'ranged', guardian: 'ranged', pillager: 'ranged',
+        storm: 'ranged', wither: 'ranged',
         warden: 'shield', enderman: 'shield', golem: 'shield',
         witch: 'summon'
     };
@@ -178,6 +181,8 @@
         witch: { shot: 'bolt', color: 0x7a3ce0, halo: 0xd9b3ff, intervalMs: 3000, count: 1, glow: 0x5a2a78, anim: 'puff' },
         blaze: { shot: 'fire', color: 0xff7a20, halo: 0xffc04a, intervalMs: 2600, count: 3, glow: 0xff6020, anim: 'pulse' },
         ghast: { shot: 'fire', color: 0xff8a40, halo: 0xffe0a0, intervalMs: 2800, count: 1, glow: 0xffc8a0, anim: 'puff' },
+        wither: { shot: 'sonic', color: 0x4a4a58, halo: 0xc8c8d8, intervalMs: 3000, count: 1, glow: 0x2a2a32, anim: 'pulse' },
+        storm: { shot: 'bolt', color: 0xaa00ff, halo: 0xfff0a0, intervalMs: 2600, count: 1, glow: 0xcc66ff, anim: 'pulse', range: 8 },
         fire_spirit: { shot: 'fire', color: 0xe07020, halo: 0xffc04a, intervalMs: 2400, count: 1, glow: 0xff6020, anim: 'pulse' },
         guardian: { shot: 'sonic', color: 0x4ad4e0, halo: 0x1a6a70, intervalMs: 2600, count: 1, glow: 0x40c8c0, anim: 'pulse' },
         creeper: { shot: null, glow: 0x3a6a20, anim: 'swell' },

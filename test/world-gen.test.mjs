@@ -3,9 +3,12 @@ import assert from 'node:assert/strict';
 
 // 加载 world-gen.js：它是 IIFE，node 下 global === globalThis，
 // 所以加载后 globalThis.BlockLegendWorld 可直接用。
+await import('../data/ride-policy.js');
 await import('../data/world-gen.js');
 const W = globalThis.BlockLegendWorld;
+const RP = globalThis.BlockLegendRidePolicy;
 assert.ok(W, 'BlockLegendWorld 应挂载到 globalThis');
+assert.ok(RP, 'BlockLegendRidePolicy 应先于 world-gen 挂载');
 
 const BIOME_NAMES = ['plains', 'forest', 'desert', 'mountain', 'snow'];
 
@@ -304,4 +307,67 @@ test('气候决定城区建筑形貌、体量和室内', () => {
   assert.ok(forest.houses.some((h) => h.w !== desert.houses[0].w || h.d !== desert.houses[0].d), '体量应随气候变');
   assert.ok(desert.houses.every((h) => h.extra), '沙漠室内应有气候内容');
   assert.notEqual(forest.houses[0].extra, desert.houses[0].extra, '室内内容应不同');
+});
+
+test('营地骑龙停在出生点旁边', () => {
+  const w = W.createWorld(3, { climate: 'plains', hub: true, portals: [] });
+  const c = Math.floor(w.size / 2) + 0.5;
+  const dragons = (w.animals || []).filter((a) => a.kind === 'dragon');
+  assert.equal(dragons.length, 1, '营地应有一只骑乘龙');
+  assert.ok(dragons[0].rideable, '营地龙应可骑');
+  const dist = Math.hypot(dragons[0].x - c, dragons[0].z - c);
+  assert.ok(dist <= 8, '骑龙应停在出生点 8 格内，实际 ' + dist.toFixed(1));
+});
+
+test('末地堡垒甲板算地表，能站住', () => {
+  const end = W.createWorld(12, { climate: 'end' });
+  const L = end.rideFortress;
+  assert.ok(L);
+  const cell = L.island.find((b) => b.kind === 'stone' && b.y === L.deckY);
+  assert.ok(cell);
+  assert.ok(W.surfaceAtWorld(end, cell.x, cell.z) > L.deckY, '甲板列地表应高于甲板石');
+  const plains = W.createWorld(7, { climate: 'plains' });
+  const c = Math.floor(plains.size / 2);
+  assert.ok(W.surfaceAtWorld(plains, c, c) <= 20, '平原出生点地表不应被抬高');
+});
+
+test('雪地世界有骑龙动作门，开局冰封还在', () => {
+  const snow = W.createWorld(47, { climate: 'snow' });
+  assert.ok(snow.rideDoor, '雪地应挂 rideDoor');
+  assert.ok(snow.rideDoor.fill.length >= 6);
+  const ice = snow.rideDoor.fill.find((b) => b.kind === 'ice');
+  assert.ok(ice);
+  assert.equal(snow.edits[ice.x + ',' + ice.y + ',' + ice.z], 'ice');
+  const post = snow.rideDoor.posts[0];
+  assert.equal(snow.edits[post.x + ',' + post.y + ',' + post.z], post.kind);
+  const plains = W.createWorld(7, { climate: 'plains' });
+  assert.equal(plains.rideDoor, null);
+  const hub = W.createWorld(3, { climate: 'snow', hub: true, portals: [] });
+  assert.equal(hub.rideDoor, null, '营地不盖雪夜门');
+});
+
+test('末地堡垒列扫描盖过塔顶', () => {
+  const end = W.createWorld(12, { climate: 'end' });
+  assert.ok(end.rideFortress);
+  const y = W.columnScanYEnd(4, 48, end);
+  assert.ok(y > end.rideFortress.deckY + 6, '低地表列也要扫到塔顶');
+  assert.ok(W.columnScanYEnd(10, 48) <= 32, '没堡垒时平原扫描不变');
+});
+
+test('末地世界有浮空堡垒岛和塔，桥先不落', () => {
+  const end = W.createWorld(12, { climate: 'end' });
+  assert.ok(end.rideFortress, '末地应挂 rideFortress');
+  assert.ok(end.rideFortress.island.length >= 20);
+  assert.ok(end.rideFortress.bridge.length >= 6);
+  const sample = end.rideFortress.island[8];
+  assert.equal(end.edits[sample.x + ',' + sample.y + ',' + sample.z], sample.kind);
+  const tower = end.rideFortress.tower[0];
+  assert.equal(end.edits[tower.x + ',' + tower.y + ',' + tower.z], tower.kind);
+  const plank = end.rideFortress.bridge.find((b) => b.kind === 'plank');
+  assert.ok(plank);
+  assert.equal(end.edits[plank.x + ',' + plank.y + ',' + plank.z], undefined, '开局桥不应出现');
+  const plains = W.createWorld(12, { climate: 'plains' });
+  assert.equal(plains.rideFortress, null);
+  const hub = W.createWorld(3, { climate: 'end', hub: true, portals: [] });
+  assert.equal(hub.rideFortress, null, '营地即使气候写成末地也不盖堡垒');
 });
