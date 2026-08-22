@@ -30,4 +30,15 @@ for (const rel of FILES) {
   await fs.copyFile(path.join(root, rel), path.join(www, rel));
 }
 
+const models = path.join(www, 'assets', 'models');
+const keep = new Set(['academy-dragon-rig.glb', '.gitkeep']);
+try {
+  const names = await fs.readdir(models);
+  for (const name of names) {
+    if (!keep.has(name)) await fs.rm(path.join(models, name), { force: true, recursive: true });
+  }
+} catch {
+  /* no models dir */
+}
+
 console.log('[prepare-mobile] assembled www/ from flattened game tree');
